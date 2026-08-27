@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shell Drill — learn the Linux terminal by typing in it</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#0A0E14;
+  --panel:#111823;
+  --panel-2:#161F2C;
+  --line:#22303F;
+  --bone:#D9E0E8;
+  --dim:#7A8B9C;
+  --amber:#FFB454;
+  --cyan:#5CCFE6;
+  --rose:#F07178;
+  --lime:#A7D96C;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Space Grotesk",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--void);color:var(--bone);
+  font-family:var(--mono);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+/* faint CRT wash — decorative only */
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.014) 0 1px,transparent 1px 3px);
+  mix-blend-mode:screen;
+}
+a{color:var(--cyan)}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+header.top{
+  display:flex;flex-wrap:wrap;gap:14px;align-items:baseline;
+  padding:22px 0 16px;border-bottom:1px solid var(--line);margin-bottom:22px;
+}
+.brand{font-weight:700;font-size:19px;letter-spacing:.16em;text-transform:uppercase}
+.brand b{color:var(--amber);font-weight:700}
+.tagline{color:var(--dim);font-size:12.5px;letter-spacing:.04em}
+.top .spacer{flex:1}
+
+.grid{display:grid;grid-template-columns:230px 1fr;gap:26px;align-items:start}
+
+/* ---------- sidebar ---------- */
+aside{position:sticky;top:20px}
+.sect-label{
+  font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+  margin:0 0 10px;font-weight:500;
+}
+.mod{
+  display:flex;gap:9px;align-items:center;width:100%;text-align:left;
+  background:none;border:0;border-left:2px solid transparent;
+  color:var(--dim);padding:7px 10px;cursor:pointer;font-size:12.5px;
+  transition:color .12s,border-color .12s,background .12s;
+}
+.mod:hover{color:var(--bone);background:rgba(255,255,255,.03)}
+.mod[aria-current="true"]{color:var(--amber);border-left-color:var(--amber);background:rgba(255,180,84,.06)}
+.mod .n{opacity:.65;font-variant-numeric:tabular-nums}
+.mod .done{margin-left:auto;font-size:11px;color:var(--lime);opacity:.9}
+.mod.locked{opacity:.55}
+
+.stats{margin-top:26px;border-top:1px solid var(--line);padding-top:16px;font-size:12px}
+.stat{display:flex;justify-content:space-between;padding:3px 10px;color:var(--dim)}
+.stat b{color:var(--bone);font-weight:500;font-variant-numeric:tabular-nums}
+.reset{margin:14px 0 0 10px;background:none;border:0;color:var(--dim);font-size:11px;
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0}
+.reset:hover{color:var(--rose)}
+
+/* ---------- distro picker ---------- */
+.distro{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.distro .lbl{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-right:4px}
+.pill{
+  background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  padding:5px 11px;border-radius:2px;cursor:pointer;font-size:12px;letter-spacing:.02em;
+  transition:all .12s;
+}
+.pill:hover{color:var(--bone);border-color:#33475c}
+.pill[aria-pressed="true"]{background:rgba(92,207,230,.1);border-color:var(--cyan);color:var(--cyan)}
+.pill small{opacity:.6;margin-left:5px}
+
+/* ---------- task brief ---------- */
+.brief{
+  border:1px solid var(--line);border-left:3px solid var(--amber);
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  padding:20px 24px;margin-bottom:16px;
+}
+.brief .meta{
+  display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+  font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:11px;
+}
+.brief .meta .idx{color:var(--amber)}
+.brief h1{
+  font-family:var(--sans);font-size:clamp(19px,2.6vw,26px);font-weight:500;
+  line-height:1.28;margin:0;letter-spacing:-.01em;
+}
+.brief .ctx{font-family:var(--sans);color:var(--dim);font-size:14px;margin:9px 0 0}
+.brief code{background:rgba(92,207,230,.1);color:var(--cyan);padding:1px 5px;font-size:.92em}
+.actions{display:flex;gap:8px;margin-top:15px;flex-wrap:wrap}
+.ghost{
+  background:none;border:1px solid var(--line);color:var(--dim);
+  padding:5px 12px;font-size:11.5px;cursor:pointer;border-radius:2px;transition:all .12s;
+}
+.ghost:hover{border-color:var(--amber);color:var(--amber)}
+.hintbox{
+  margin-top:13px;border-left:2px solid var(--cyan);background:rgba(92,207,230,.06);
+  padding:9px 14px;font-size:13px;color:#B8CBD8;font-family:var(--sans);
+}
+.hintbox b{color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:3px}
+
+/* ---------- terminal ---------- */
+.term{
+  background:#080B10;border:1px solid var(--line);border-radius:3px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.4),0 18px 50px -30px #000;
+}
+.bar{
+  display:flex;align-items:center;gap:8px;padding:8px 13px;
+  border-bottom:1px solid var(--line);background:var(--panel);
+}
+.dot{width:9px;height:9px;border-radius:50%;background:#2C3A4A}
+.dot.r{background:#54303a}.dot.y{background:#5a4830}.dot.g{background:#38512f}
+.bar .title{margin-left:6px;font-size:11.5px;color:var(--dim);letter-spacing:.05em}
+.screen{
+  padding:14px 16px;min-height:270px;max-height:44vh;overflow-y:auto;
+  font-size:13.5px;line-height:1.62;cursor:text;
+}
+.screen::-webkit-scrollbar{width:9px}
+.screen::-webkit-scrollbar-thumb{background:#22303F;border-radius:5px}
+.ln{white-space:pre-wrap;word-break:break-word}
+.ln.cmd .p{color:var(--lime)}
+.ln.cmd .h{color:var(--cyan)}
+.ln.cmd .path{color:var(--amber)}
+.ln.ok{color:var(--lime)}
+.ln.err{color:var(--rose)}
+.ln.note{color:var(--dim)}
+.ln.sys{color:var(--cyan)}
+.inputline{display:flex;align-items:baseline;gap:8px;padding:2px 16px 15px}
+.ps1{color:var(--lime);white-space:nowrap;font-size:13.5px}
+.ps1 .h{color:var(--cyan)}
+.ps1 .path{color:var(--amber)}
+#entry{
+  flex:1;background:none;border:0;color:var(--bone);font-family:var(--mono);
+  font-size:13.5px;padding:0;caret-color:var(--amber);
+}
+#entry:focus{outline:none}
+#entry::placeholder{color:#3E4C5C}
+
+/* ---------- breakdown (signature) ---------- */
+.breakdown{
+  margin-top:16px;border:1px solid var(--line);background:var(--panel);
+  border-top:2px solid var(--lime);padding:17px 20px;
+  animation:rise .28s ease-out;
+}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.breakdown h2{
+  font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--lime);
+  margin:0 0 13px;font-weight:500;
+}
+.tok{display:flex;gap:14px;padding:6px 0;border-bottom:1px dashed rgba(34,48,63,.8);align-items:baseline}
+.tok:last-child{border-bottom:0}
+.tok .k{color:var(--amber);min-width:110px;font-weight:500;font-size:13px}
+.tok .v{color:#A9B8C6;font-family:var(--sans);font-size:13.5px}
+.nextbtn{
+  margin-top:15px;background:var(--lime);color:#0A0E14;border:0;font-weight:700;
+  padding:9px 20px;cursor:pointer;border-radius:2px;font-size:12.5px;letter-spacing:.05em;
+}
+.nextbtn:hover{filter:brightness(1.1)}
+
+.done-card{border-top-color:var(--amber);text-align:center;font-family:var(--sans)}
+.done-card .big{font-size:30px;color:var(--amber);font-family:var(--mono);font-weight:700}
+
+/* ---------- mode toggle ---------- */
+.modes{display:flex;gap:6px;margin-left:4px}
+.modes .pill[aria-pressed="true"]{background:rgba(255,180,84,.12);border-color:var(--amber);color:var(--amber)}
+
+/* ---------- quiz ---------- */
+.qopts{display:flex;flex-direction:column;gap:9px}
+.qopt{
+  display:flex;gap:13px;align-items:flex-start;text-align:left;width:100%;
+  background:var(--panel);border:1px solid var(--line);color:var(--bone);
+  padding:14px 17px;border-radius:3px;cursor:pointer;font-size:14px;line-height:1.5;
+  transition:border-color .12s,background .12s;
+}
+.qopt:hover{border-color:#3B5063;background:var(--panel-2)}
+.qopt .txt{font-family:var(--sans)}
+.qopt .txt code{font-family:var(--mono);font-size:12.5px;background:rgba(92,207,230,.1);color:var(--cyan);padding:1px 5px}
+.qopt .box{
+  width:16px;height:16px;flex-shrink:0;margin-top:2px;border:1px solid var(--dim);
+  border-radius:2px;position:relative;
+}
+.qopt.on{border-color:var(--cyan);background:rgba(92,207,230,.07)}
+.qopt.on .box{background:var(--cyan);border-color:var(--cyan)}
+.qopt.on .box::after{content:"";position:absolute;left:5px;top:1px;width:4px;height:9px;
+  border:solid #0A0E14;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.qopt.hit{border-color:var(--lime);background:rgba(167,217,108,.09)}
+.qopt.hit .box{background:var(--lime);border-color:var(--lime)}
+.qopt.hit .box::after{content:"";position:absolute;left:5px;top:1px;width:4px;height:9px;
+  border:solid #0A0E14;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.qopt.missed{border-color:var(--amber);background:rgba(255,180,84,.08)}
+.qopt.missed .box::after{content:"";position:absolute;inset:3px;background:var(--amber);border-radius:1px}
+.qopt.wrong{border-color:var(--rose);background:rgba(240,113,120,.08)}
+.qopt.wrong .box{border-color:var(--rose)}
+.qopt.wrong .box::after{content:"×";position:absolute;left:3px;top:-3px;color:var(--rose);font-size:14px}
+.qopt.hit::after,.qopt.missed::after,.qopt.wrong::after{
+  margin-left:auto;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-family:var(--mono);white-space:nowrap}
+.qopt.hit::after{content:"correct";color:var(--lime)}
+.qopt.missed::after{content:"missed";color:var(--amber)}
+.qopt.wrong::after{content:"not correct";color:var(--rose)}
+
+/* ---------- module guide ---------- */
+.guide{
+  border:1px solid var(--line);background:var(--panel);padding:0;margin-bottom:16px;
+}
+.guide summary{
+  cursor:pointer;padding:11px 18px;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--cyan);list-style:none;user-select:none;
+}
+.guide summary::-webkit-details-marker{display:none}
+.guide summary::before{content:"▸ ";display:inline-block;transition:transform .15s}
+.guide[open] summary::before{content:"▾ "}
+.guide .body{padding:0 18px 16px;font-family:var(--sans);font-size:13.5px;color:#A9B8C6;line-height:1.62}
+.guide .body p{margin:0 0 10px}
+.guide .body code{font-family:var(--mono);background:rgba(255,180,84,.1);color:var(--amber);padding:1px 5px;font-size:12.5px}
+
+/* ---------- cheatsheet drawer ---------- */
+.refbtn{
+  background:var(--panel);border:1px solid var(--cyan);color:var(--cyan);
+  padding:6px 14px;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+  cursor:pointer;border-radius:2px;
+}
+.refbtn:hover{background:rgba(92,207,230,.12)}
+.scrim{
+  position:fixed;inset:0;background:rgba(4,7,11,.72);z-index:100;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);z-index:101;
+  background:var(--panel);border-left:1px solid var(--line);
+  transform:translateX(100%);transition:transform .24s ease-out;
+  display:flex;flex-direction:column;
+}
+.drawer.open{transform:none}
+.drawer .dhead{padding:18px 22px 12px;border-bottom:1px solid var(--line)}
+.drawer h2{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin:0 0 3px;font-weight:500}
+.drawer .sub{font-size:12px;color:var(--dim);font-family:var(--sans)}
+.closex{position:absolute;top:14px;right:18px;background:none;border:0;color:var(--dim);font-size:20px;cursor:pointer;line-height:1}
+.closex:hover{color:var(--rose)}
+#refsearch{
+  width:100%;margin-top:13px;background:#080B10;border:1px solid var(--line);
+  color:var(--bone);font-family:var(--mono);font-size:13px;padding:8px 11px;border-radius:2px;
+}
+#refsearch:focus{outline:none;border-color:var(--cyan)}
+.reflist{overflow-y:auto;padding:6px 22px 40px;flex:1}
+.reflist::-webkit-scrollbar{width:9px}
+.reflist::-webkit-scrollbar-thumb{background:#22303F;border-radius:5px}
+.refgroup{margin-top:20px}
+.refgroup h3{
+  font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+  margin:0 0 8px;font-weight:500;border-bottom:1px solid var(--line);padding-bottom:6px;
+}
+.refrow{display:grid;grid-template-columns:minmax(120px,38%) 1fr;gap:12px;padding:5px 0;align-items:baseline}
+.refrow code{color:var(--amber);font-size:12.5px;word-break:break-word}
+.refrow span{color:#9FB0BF;font-family:var(--sans);font-size:13px}
+.refempty{color:var(--dim);font-family:var(--sans);padding:20px 0}
+@media(max-width:560px){.refrow{grid-template-columns:1fr;gap:1px;padding:8px 0}}
+
+@media(max-width:820px){
+  .grid{grid-template-columns:1fr}
+  aside{position:static;border-bottom:1px solid var(--line);padding-bottom:14px}
+  .modlist{display:flex;overflow-x:auto;gap:2px;padding-bottom:4px}
+  .mod{border-left:0;border-bottom:2px solid transparent;white-space:nowrap;flex-shrink:0}
+  .mod[aria-current="true"]{border-left-color:transparent;border-bottom-color:var(--amber)}
+  .stats{display:flex;gap:16px;justify-content:space-between;margin-top:14px}
+  .stat{padding:0;flex-direction:column;gap:0}
+  .screen{max-height:38vh}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">shell<b>·</b>drill</div>
+    <div class="tagline">learn the shell by using it</div>
+    <div class="modes">
+      <button class="pill" id="m-drill" aria-pressed="true">Terminal drill</button>
+      <button class="pill" id="m-quiz" aria-pressed="false">Knowledge quiz</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="distro" id="distro">
+      <span class="lbl">Distro</span>
+    </div>
+    <button class="refbtn" id="openref">Cheatsheet</button>
+  </header>
+
+  <div class="grid">
+    <aside>
+      <p class="sect-label" id="sectlabel">Modules</p>
+      <div class="modlist" id="modlist"></div>
+      <div class="stats">
+        <div class="stat"><span>solved</span><b id="s-solved">0</b></div>
+        <div class="stat"><span>accuracy</span><b id="s-acc">—</b></div>
+        <div class="stat"><span>streak</span><b id="s-streak">0</b></div>
+      </div>
+      <button class="reset" id="reset">reset progress</button>
+    </aside>
+
+    <main>
+      <details class="guide" id="guide">
+        <summary>Module guide</summary>
+        <div class="body" id="guidebody"></div>
+      </details>
+      <section class="brief" id="brief"></section>
+      <section class="term">
+        <div class="bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="title" id="termtitle">bash — practice shell</span>
+        </div>
+        <div class="screen" id="screen"></div>
+        <div class="inputline">
+          <span class="ps1" id="ps1"></span>
+          <input id="entry" autocomplete="off" autocapitalize="off" spellcheck="false"
+                 aria-label="Type your command" placeholder="type a command and press Enter">
+        </div>
+      </section>
+      <div id="after"></div>
+      <section id="quizview" style="display:none"></section>
+    </main>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="drawer" id="drawer" role="dialog" aria-label="Command cheatsheet" aria-hidden="true">
+  <div class="dhead">
+    <h2>Cheatsheet</h2>
+    <div class="sub">Every command in the course, with what it actually does.</div>
+    <button class="closex" id="closeref" aria-label="Close cheatsheet">×</button>
+    <input id="refsearch" placeholder="filter — try 'permission', 'grep', 'port'" autocomplete="off">
+  </div>
+  <div class="reflist" id="reflist"></div>
+</div>
+<script>
+/* ============================================================
+   SHELL DRILL — data
+   q = task shown to the student   s = canonical solution
+   p = accepted patterns (spaces match any whitespace, sudo optional)
+   h = hint            w = flag breakdown shown after a correct answer
+   ============================================================ */
+
+const PMS = {
+  pacman: {label:"Arch", cmd:"pacman", host:"arch"},
+  apt:    {label:"Debian / Ubuntu", cmd:"apt", host:"ubuntu"},
+  dnf:    {label:"Fedora / RHEL", cmd:"dnf", host:"fedora"},
+  zypper: {label:"openSUSE", cmd:"zypper", host:"suse"}
+};
+
+const MODULES = [
+{
+id:"nav", name:"Getting around",
+guide:`<p>The shell always has a <b>current directory</b>. Every relative path you type is resolved from it, so the first skill is knowing where you are and moving deliberately.</p>
+<p><code>.</code> is here, <code>..</code> is the parent, <code>~</code> is your home directory, and <code>/</code> is the root of the whole filesystem. A path starting with <code>/</code> is absolute; anything else is relative to where you stand.</p>
+<p>Press <b>Tab</b> to complete names in a real shell, and <b>↑</b> to recall previous commands — both work in this trainer's input too.</p>`,
+tasks:[
+{q:"Show which directory you are currently in.", s:"pwd", p:["pwd"], h:"Three letters: print working directory.", w:[["pwd","Prints the absolute path of the directory you're standing in."]]},
+{q:"List the contents of the current directory.", s:"ls", p:["ls"], h:"Two letters.", w:[["ls","Lists files and directories."]]},
+{q:"List everything here, including hidden files, in long format with permissions and sizes.", s:"ls -la", p:["ls -(la|al)","ls -l -a","ls -a -l"], h:"Two options combined after a single dash.", w:[["ls","List directory contents."],["-l","Long format — permissions, owner, size, date."],["-a","All, including dotfiles like .bashrc."]]},
+{q:"Move into the /etc directory.", s:"cd /etc", p:["cd /etc/?"], h:"Change directory, absolute path.", w:[["cd","Change directory."],["/etc","Absolute path — starts at root, so it works from anywhere."]]},
+{q:"Go up one level, to the parent directory.", s:"cd ..", p:["cd \\.\\."], h:"Two dots mean 'the directory above this one'.", w:[["..","The parent directory. One dot (.) would mean the current one."]]},
+{q:"Jump back to the directory you were in before the last cd.", s:"cd -", p:["cd -"], h:"A single character argument, not a path.", w:[["cd -","Toggles back to your previous directory. Press it again to return."]]},
+{q:"Return to your home directory, in the shortest way possible.", s:"cd", p:["cd","cd ~","cd \\$HOME"], h:"cd with no argument does something useful.", w:[["cd","With no argument it goes home. cd ~ does the same thing explicitly."]]},
+{q:"Wipe the visible output off the screen.", s:"clear", p:["clear"], h:"Ctrl+L does it too.", w:[["clear","Clears the terminal display. Your scrollback and history stay intact."]]}
+]},
+{
+id:"files", name:"Files & directories",
+guide:`<p>Linux has no undo and no recycle bin. <code>rm</code> deletes immediately and <code>mv</code> overwrites a destination without asking. Read the whole line before pressing Enter, especially when it contains <code>-r</code>, <code>-f</code> or a wildcard.</p>
+<p>Most file commands follow the same shape: <code>command [options] source destination</code>.</p>`,
+tasks:[
+{q:"Create an empty file called notes.txt.", s:"touch notes.txt", p:["touch notes\\.txt"], h:"The command's real job is updating timestamps — but it creates missing files.", w:[["touch","Updates a file's timestamp, and creates it if it doesn't exist."]]},
+{q:"Create the nested directory projects/linux/lab1 in one command, even though projects doesn't exist yet.", s:"mkdir -p projects/linux/lab1", p:["mkdir -p projects/linux/lab1/?"], h:"One option makes parent directories as needed.", w:[["mkdir","Make directory."],["-p","Parents — creates every missing level, and stays quiet if it already exists."]]},
+{q:"Copy report.txt into /tmp.", s:"cp report.txt /tmp", p:["cp report\\.txt /tmp/?"], h:"Source first, destination second.", w:[["cp","Copy."],["report.txt /tmp","Source, then destination. The name is kept unless you give a new one."]]},
+{q:"Copy the whole logs directory, with everything inside it, into /backup.", s:"cp -r logs /backup", p:["cp -(r|R|a) logs/? /backup/?"], h:"Directories need one extra option.", w:[["-r","Recursive — descends into the directory and copies its contents too."]]},
+{q:"Rename old.conf to new.conf.", s:"mv old.conf new.conf", p:["mv old\\.conf new\\.conf"], h:"Renaming and moving are the same operation.", w:[["mv","Move. Within the same directory, moving a file to a new name is a rename."]]},
+{q:"Delete the file temp.log.", s:"rm temp.log", p:["rm temp\\.log"], h:"Two letters.", w:[["rm","Remove. Permanent — there is no trash folder."]]},
+{q:"Delete the directory cache and everything in it, without being prompted.", s:"rm -rf cache", p:["rm -(rf|fr|Rf|fR) cache/?","rm -r -f cache/?","rm -f -r cache/?"], h:"Recursive plus force.", w:[["-r","Recursive — needed for directories."],["-f","Force — no prompts, no complaints about missing files."],["⚠","rm -rf with a wrong path is the classic way to destroy a system. Check the path first."]]},
+{q:"Create a symbolic link in your home directory called syslog that points to /var/log/syslog.", s:"ln -s /var/log/syslog ~/syslog", p:["ln -s /var/log/syslog (~|/root|\\$HOME)/syslog"], h:"Link, symbolic, target first.", w:[["ln -s","Creates a symbolic link — a pointer to another path, like a shortcut."],["order","Target first, then the name of the link you're creating."]]},
+{q:"Remove the empty directory called scratch.", s:"rmdir scratch", p:["rmdir scratch/?"], h:"There's a dedicated command that only works on empty directories.", w:[["rmdir","Removes a directory only if it's empty — a safety net compared to rm -rf."]]}
+]},
+{
+id:"read", name:"Reading & searching",
+guide:`<p>Most troubleshooting is reading files and finding things in them. <code>grep</code> searches <b>inside</b> files for text; <code>find</code> searches the filesystem for <b>files themselves</b>. Mixing those two up is the most common beginner error.</p>
+<p>For anything longer than a screen, reach for <code>less</code> instead of <code>cat</code>: <code>/</code> searches, <code>n</code> jumps to the next match, <code>q</code> quits.</p>`,
+tasks:[
+{q:"Print the entire contents of /etc/hostname to the screen.", s:"cat /etc/hostname", p:["cat /etc/hostname"], h:"Short for concatenate.", w:[["cat","Dumps a whole file to standard output. Fine for short files."]]},
+{q:"Open /etc/services in a scrollable pager you can search and quit with q.", s:"less /etc/services", p:["less /etc/services","more /etc/services"], h:"It's the successor to a command called more.", w:[["less","Pages through a file. / searches, n = next match, q = quit."]]},
+{q:"Show only the first 20 lines of access.log.", s:"head -n 20 access.log", p:["head -n ?20 access\\.log","head -20 access\\.log"], h:"The opposite of tail.", w:[["head","Shows the beginning of a file."],["-n 20","Number of lines. Default is 10."]]},
+{q:"Show the last 20 lines of access.log.", s:"tail -n 20 access.log", p:["tail -n ?20 access\\.log","tail -20 access\\.log"], h:"Same shape as the previous task.", w:[["tail","Shows the end of a file — usually the newest log entries."]]},
+{q:"Watch /var/log/syslog live, so new lines appear as they are written.", s:"tail -f /var/log/syslog", p:["tail -f /var/log/syslog","tail -F /var/log/syslog"], h:"One option means 'follow'.", w:[["-f","Follow — keeps the file open and streams new lines. Ctrl+C to stop."],["-F","Like -f but survives the file being rotated."]]},
+{q:"Search app.log for the word error, ignoring uppercase and lowercase differences.", s:"grep -i error app.log", p:["grep -i \"?'?error\"?'? app\\.log"], h:"One option makes the match case-insensitive.", w:[["grep","Searches for a pattern inside files."],["-i","Ignore case — matches Error, ERROR and error."]]},
+{q:"Search every file under /etc for the word password, showing line numbers.", s:"grep -rn password /etc", p:["grep -(rn|nr|Rn|nR) \"?'?password\"?'? /etc/?","grep -r -n \"?'?password\"?'? /etc/?","grep -n -r \"?'?password\"?'? /etc/?"], h:"Two options: one to descend into directories, one to number the hits.", w:[["-r","Recursive — walks down through every subdirectory."],["-n","Prints the line number of each match."],["tip","Add -i to also ignore case: grep -rin."]]},
+{q:"Count how many lines are in access.log.", s:"wc -l access.log", p:["wc -l access\\.log"], h:"Word count, but limited to one unit.", w:[["wc","Word count — counts lines, words and bytes."],["-l","Lines only."]]},
+{q:"Find every file ending in .conf under the current directory.", s:"find . -name \"*.conf\"", p:["find \\.? -name \"?'?\\*\\.conf\"?'?"], h:"Start the search at the current directory, then filter by name.", w:[["find .","Searches recursively, starting from the current directory."],["-name \"*.conf\"","Filters by filename. Quote the wildcard so the shell passes it to find untouched."]]},
+{q:"Find files under the current directory that were modified in the last 7 days.", s:"find . -mtime -7", p:["find \\.? -mtime -7"], h:"Modification time, in days. The minus sign means 'less than'.", w:[["-mtime -7","Modified fewer than 7 days ago. +7 would mean older than 7 days."]]},
+{q:"Show the full path of the nmap executable that your shell would run.", s:"which nmap", p:["which nmap","command -v nmap","type nmap"], h:"Answers 'which one of these would actually run?'", w:[["which","Reports the path of the binary found first in your $PATH."]]}
+]},
+{
+id:"perms", name:"Permissions & ownership",
+guide:`<p>Every file has an owner, a group, and three permission sets: <b>user</b>, <b>group</b>, <b>other</b>. In <code>ls -l</code> output, <code>-rwxr-xr--</code> reads as: regular file, owner can read/write/execute, group can read/execute, everyone else can only read.</p>
+<p>Numeric mode adds them up: <b>r=4, w=2, x=1</b>. So <code>755</code> is rwx for the owner and r-x for group and other, and <code>600</code> is read/write for the owner only — which is what SSH private keys must be.</p>`,
+tasks:[
+{q:"Show the permissions and owner of /etc/passwd.", s:"ls -l /etc/passwd", p:["ls -l /etc/passwd"], h:"Long format on a single file.", w:[["ls -l","Long listing: type, permissions, links, owner, group, size, date."]]},
+{q:"Make the file deploy.sh executable, without changing its other permissions.", s:"chmod +x deploy.sh", p:["chmod \\+x deploy\\.sh","chmod a\\+x deploy\\.sh","chmod u\\+x deploy\\.sh"], h:"Symbolic mode: add the execute bit.", w:[["chmod","Change mode (permissions)."],["+x","Adds the execute bit. Without it, ./deploy.sh gives 'Permission denied'."]]},
+{q:"Set script.sh to 755 using numeric mode.", s:"chmod 755 script.sh", p:["chmod 0?755 script\\.sh"], h:"Three digits: owner, group, other.", w:[["7 = rwx","Owner can read, write and execute (4+2+1)."],["5 = r-x","Group and other can read and execute (4+1). The standard mode for scripts and programs."]]},
+{q:"Lock down the private key id_rsa so only its owner can read and write it.", s:"chmod 600 id_rsa", p:["chmod 0?600 id_rsa"], h:"Read+write for the owner, nothing for anyone else.", w:[["6 = rw-","Owner reads and writes (4+2)."],["00","No access at all for group or other. SSH refuses to use a key that others can read."]]},
+{q:"Give the /var/www directory to the user and group www-data.", s:"sudo chown www-data:www-data /var/www", p:["chown www-data:www-data /var/www/?","chown -R www-data:www-data /var/www/?"], h:"Owner and group are separated by a colon.", w:[["chown","Change owner."],["user:group","Sets both at once. Add -R to apply it through a whole directory tree."],["sudo","Changing ownership requires root."]]},
+{q:"Change only the group of report.txt to analysts.", s:"chgrp analysts report.txt", p:["chgrp analysts report\\.txt","chown :analysts report\\.txt"], h:"There's a dedicated command, or chown with an empty user part.", w:[["chgrp","Change group. chown :analysts file does the same thing."]]},
+{q:"Print the username you are currently logged in as.", s:"whoami", p:["whoami"], h:"One word, exactly as you'd ask it.", w:[["whoami","Prints your effective username. Under sudo it prints root."]]},
+{q:"Show your user ID, group ID and every group you belong to.", s:"id", p:["id"], h:"Two letters.", w:[["id","Shows uid, gid and all group memberships — the fastest way to check access."]]},
+{q:"Open a full interactive root shell.", s:"sudo -i", p:["sudo -i","sudo -s","sudo su -?","su -?"], h:"sudo with one option gives you a login shell.", w:[["sudo -i","Starts an interactive login shell as root, with root's environment."],["caution","Everything you type afterwards runs as root. Prefer per-command sudo."]]}
+]},
+{
+id:"pkg", name:"Installing software",
+guide:`<p>Each distro family has its own package manager, but they all do the same six things: install, search, remove, update, inspect, and tell you which package owns a file. Use the <b>Distro</b> switch at the top to practise the one your class runs.</p>
+<p>Letters are not random. In <code>pacman -Syu</code>, the uppercase letter is the <i>operation</i> (<code>S</code> = sync from repos) and the lowercase letters are options: <code>y</code> refreshes the package databases, <code>u</code> upgrades everything installed.</p>
+<p>Installing needs root, so those commands take <code>sudo</code>. Searching and inspecting only read, so they don't.</p>`,
+byPm:true,
+tasks:[
+{q:"Install Firefox from the repositories.",
+ v:{pacman:{s:"sudo pacman -S firefox",p:["pacman -S firefox"],w:[["-S","Sync — installs from the configured repositories."],["sudo","Writing to the system needs root."]]},
+    apt:{s:"sudo apt install firefox",p:["apt(-get)? install firefox"],w:[["apt install","Installs a package and its dependencies."],["sudo","Writing to the system needs root."]]},
+    dnf:{s:"sudo dnf install firefox",p:["dnf install firefox","yum install firefox"],w:[["dnf install","Resolves dependencies and installs."],["sudo","Writing to the system needs root."]]},
+    zypper:{s:"sudo zypper install firefox",p:["zypper (install|in) firefox"],w:[["zypper install","Installs a package. Short form: zypper in."]]}},
+ h:"The operation is 'install' — and it writes to the system."},
+{q:"Search the repositories for anything matching nmap.",
+ v:{pacman:{s:"pacman -Ss nmap",p:["pacman -Ss nmap"],w:[["-S","Sync operation."],["s","search — searches names and descriptions."],["no sudo","Searching only reads, so root isn't needed."]]},
+    apt:{s:"apt search nmap",p:["apt search nmap","apt-cache search nmap"],w:[["apt search","Searches package names and descriptions."]]},
+    dnf:{s:"dnf search nmap",p:["dnf search nmap","yum search nmap"],w:[["dnf search","Searches the repository metadata."]]},
+    zypper:{s:"zypper search nmap",p:["zypper (search|se) nmap"],w:[["zypper search","Searches available packages. Short form: zypper se."]]}},
+ h:"Same operation as installing, plus a search option. No root needed."},
+{q:"Show detailed information about the firefox package before installing it.",
+ v:{pacman:{s:"pacman -Si firefox",p:["pacman -Si firefox"],w:[["-Si","Sync + info — details for a package in the repos."],["-Qi","Would show info for an already installed package."]]},
+    apt:{s:"apt show firefox",p:["apt show firefox","apt-cache show firefox"],w:[["apt show","Version, size, dependencies and description."]]},
+    dnf:{s:"dnf info firefox",p:["dnf info firefox","yum info firefox"],w:[["dnf info","Version, repo, size and summary."]]},
+    zypper:{s:"zypper info firefox",p:["zypper info firefox"],w:[["zypper info","Detailed package metadata."]]}},
+ h:"You want the package's info, not to install it."},
+{q:"Refresh the package lists and upgrade every installed package.",
+ v:{pacman:{s:"sudo pacman -Syu",p:["pacman -Syu"],w:[["S","Sync operation."],["y","Refresh — re-downloads the package databases from your mirrors."],["u","Upgrade everything that has a newer version."],["never -Sy alone","Refreshing without upgrading leads to partial upgrades, which break Arch systems."]]},
+    apt:{s:"sudo apt update && sudo apt upgrade",p:["apt(-get)? update && (sudo )?apt(-get)? (upgrade|full-upgrade|dist-upgrade)( -y)?"],w:[["apt update","Downloads new package lists. It upgrades nothing by itself."],["&&","Runs the second command only if the first succeeded."],["apt upgrade","Installs the newer versions."]]},
+    dnf:{s:"sudo dnf upgrade",p:["dnf (upgrade|update)( --refresh)?( -y)?","yum update"],w:[["dnf upgrade","Refreshes metadata and upgrades in one step."]]},
+    zypper:{s:"sudo zypper update",p:["zypper (update|up|dup|refresh && (sudo )?zypper update)"],w:[["zypper update","Updates installed packages. zypper dup is for full distribution upgrades on Tumbleweed."]]}},
+ h:"Two things have to happen: refresh, then upgrade."},
+{q:"Remove firefox together with the dependencies nothing else needs.",
+ v:{pacman:{s:"sudo pacman -Rns firefox",p:["pacman -R(ns|sn|s|n)? firefox"],w:[["R","Remove operation."],["s","Recursive — also removes dependencies no other package needs."],["n","Deletes configuration files instead of leaving .pacsave copies."]]},
+    apt:{s:"sudo apt autoremove firefox",p:["apt(-get)? (remove|purge|autoremove) firefox( -y)?","apt(-get)? remove --auto-remove firefox"],w:[["apt remove","Removes the package but keeps config files."],["apt purge","Also removes config files."],["autoremove","Cleans up dependencies nothing needs any more."]]},
+    dnf:{s:"sudo dnf remove firefox",p:["dnf (remove|erase|autoremove) firefox( -y)?","yum remove firefox"],w:[["dnf remove","Removes the package and any dependencies it pulled in on its own."]]},
+    zypper:{s:"sudo zypper remove firefox",p:["zypper (remove|rm) firefox( --clean-deps)?"],w:[["zypper remove","Removes a package. Short form: zypper rm."]]}},
+ h:"The remove operation, plus the option that cleans up orphaned dependencies."},
+{q:"Find out which installed package owns the file /usr/bin/ls.",
+ v:{pacman:{s:"pacman -Qo /usr/bin/ls",p:["pacman -Qo /usr/bin/ls"],w:[["Q","Query — asks about locally installed packages, not the repos."],["o","owns — reports which package a file came from."]]},
+    apt:{s:"dpkg -S /usr/bin/ls",p:["dpkg (-S|--search) /usr/bin/ls","apt-file search /usr/bin/ls"],w:[["dpkg -S","Searches the installed package database for a file. apt itself can't do this."]]},
+    dnf:{s:"dnf provides /usr/bin/ls",p:["dnf (provides|whatprovides) /usr/bin/ls","rpm -qf /usr/bin/ls"],w:[["dnf provides","Reports which package supplies a given file or capability."],["rpm -qf","Does the same for files already on disk."]]},
+    zypper:{s:"zypper search --provides /usr/bin/ls",p:["zypper (search|se) (--provides|--file-list) /usr/bin/ls","rpm -qf /usr/bin/ls"],w:[["--provides","Searches by what a package provides rather than by name."]]}},
+ h:"You're querying the local system, not the repositories."},
+{q:"List every package currently installed on the system.",
+ v:{pacman:{s:"pacman -Q",p:["pacman -Q(e|n)?"],w:[["-Q","Query with no filter lists everything installed."],["-Qe","Only the ones you installed explicitly — useful for rebuilding a system."]]},
+    apt:{s:"apt list --installed",p:["apt list --installed","dpkg (-l|--list)"],w:[["apt list --installed","Everything currently installed, with versions."]]},
+    dnf:{s:"dnf list installed",p:["dnf list installed","rpm -qa","yum list installed"],w:[["dnf list installed","Installed packages and which repo they came from."]]},
+    zypper:{s:"zypper search --installed-only",p:["zypper (search|se) (--installed-only|-i)","rpm -qa"],w:[["--installed-only","Restricts the search to packages already on the system."]]}},
+ h:"Query the local database with no name filter."},
+{q:"Free up disk space by clearing out the downloaded package cache.",
+ v:{pacman:{s:"sudo pacman -Sc",p:["pacman -Sc(c)?"],w:[["-Sc","Removes cached packages that are no longer installed."],["-Scc","Empties the cache completely — including versions you might want to roll back to."]]},
+    apt:{s:"sudo apt clean",p:["apt(-get)? (clean|autoclean)"],w:[["apt clean","Empties /var/cache/apt/archives."],["autoclean","Only removes packages that can no longer be downloaded."]]},
+    dnf:{s:"sudo dnf clean all",p:["dnf clean (all|packages)","yum clean all"],w:[["dnf clean all","Clears cached packages and repository metadata."]]},
+    zypper:{s:"sudo zypper clean",p:["zypper clean( --all| -a)?"],w:[["zypper clean","Clears the local package cache."]]}},
+ h:"The operation is clean."}
+]}
+];
+
+MODULES.push(
+{
+id:"proc", name:"Processes & services",
+guide:`<p>Everything running is a <b>process</b> with a numeric PID. Long-lived background processes managed by the system — sshd, nginx, docker — are <b>services</b> (units), and on almost every modern distro they are controlled by <code>systemctl</code>.</p>
+<p>The usual sequence when something is broken: <code>systemctl status</code> to see the state, then <code>journalctl -u &lt;unit&gt;</code> to read why.</p>`,
+tasks:[
+{q:"Show every running process on the system, with the user and CPU usage for each.", s:"ps aux", p:["ps aux","ps -ef","ps auxf"], h:"Three letters of options, no dash needed in the classic form.", w:[["ps aux","a = all users' processes, u = user-oriented columns, x = include ones without a terminal."],["ps -ef","The same idea in POSIX style."]]},
+{q:"Open a live, continuously updating view of running processes.", s:"top", p:["top","htop","btop"], h:"Three letters. htop is the friendlier version, if it's installed.", w:[["top","Refreshes every few seconds. q quits, k kills a PID."],["htop","Nicer interface with colour, scrolling and mouse support — usually needs installing."]]},
+{q:"Force-kill the process with PID 4821, which has stopped responding.", s:"kill -9 4821", p:["kill -9 4821","kill -(KILL|SIGKILL) 4821"], h:"Signal 9 cannot be caught or ignored.", w:[["kill","Sends a signal to a process. Default is 15 (TERM), a polite request to exit."],["-9","SIGKILL — the kernel terminates it immediately. Try plain kill first; -9 skips cleanup."]]},
+{q:"Kill every process whose command line matches 'node server.js', by name rather than PID.", s:"pkill -f \"node server.js\"", p:["pkill -f \"?'?node server\\.js\"?'?"], h:"There's a kill variant that takes a pattern.", w:[["pkill","Kills by name instead of PID."],["-f","Matches against the full command line, not just the process name."]]},
+{q:"Check whether the sshd service is running.", s:"systemctl status sshd", p:["systemctl status (sshd|ssh)(\\.service)?"], h:"The systemd control command, plus the sub-command you'd expect.", w:[["systemctl status","Shows active/inactive state, the PID, and the last few log lines."]]},
+{q:"Restart the nginx service.", s:"sudo systemctl restart nginx", p:["systemctl restart nginx(\\.service)?"], h:"Same tool, different sub-command. It changes system state.", w:[["restart","Stops and starts the unit. Use reload instead if you only changed config and the service supports it."],["sudo","Changing service state needs root."]]},
+{q:"Start the docker service now and also make it start automatically at every boot.", s:"sudo systemctl enable --now docker", p:["systemctl enable --now docker(\\.service)?","systemctl enable docker(\\.service)? && (sudo )?systemctl start docker(\\.service)?"], h:"enable handles boot; one option also starts it immediately.", w:[["enable","Creates the symlink so the unit starts at boot."],["--now","Also starts it right away, so you don't need a separate start."]]},
+{q:"Follow the log output of the ssh unit live.", s:"journalctl -u ssh -f", p:["journalctl -u (ssh|sshd)(\\.service)? -f","journalctl -f -u (ssh|sshd)(\\.service)?"], h:"The systemd journal, filtered to one unit, in follow mode.", w:[["journalctl","Reads the systemd journal — the central log."],["-u ssh","Filters to a single unit."],["-f","Follow, like tail -f."],["also useful","-b for this boot only, -p err for errors and worse."]]},
+{q:"Show the last 50 journal entries with priority error or worse.", s:"journalctl -p err -n 50", p:["journalctl -p (err|3) -n ?50","journalctl -n ?50 -p (err|3)"], h:"Filter by priority, limit the number of lines.", w:[["-p err","Priority error and above (critical, alert, emergency)."],["-n 50","The last 50 matching entries."]]}
+]},
+{
+id:"sys", name:"Disk & system health",
+guide:`<p>Two commands people constantly confuse: <code>df</code> reports free space per <b>filesystem</b>, while <code>du</code> measures how much space specific <b>directories</b> are using. When a disk fills up, you run <code>df -h</code> to find which mount point is full, then <code>du -sh *</code> inside it to find the culprit.</p>
+<p><code>-h</code> means human-readable on most of these — GB and MB instead of raw blocks.</p>`,
+tasks:[
+{q:"Show free and used disk space for every mounted filesystem, in readable units.", s:"df -h", p:["df -h"], h:"Disk free, human-readable.", w:[["df","Disk free, per filesystem."],["-h","Human-readable sizes (G, M) instead of 1K blocks."]]},
+{q:"Show the total size of /var/log as a single readable number.", s:"du -sh /var/log", p:["du -(sh|hs) /var/log/?"], h:"Disk usage, summarised.", w:[["du","Disk usage — walks the directory and adds up file sizes."],["-s","Summary — one total instead of a line per subdirectory."],["-h","Human-readable."]]},
+{q:"Show how much RAM and swap are in use, in readable units.", s:"free -h", p:["free -h"], h:"One word, plus the usual option.", w:[["free -h","Total, used, free and available memory. Look at 'available', not 'free' — cache counts as reusable."]]},
+{q:"Print the kernel version and full system information.", s:"uname -a", p:["uname -a","uname -r"], h:"Unix name, all fields.", w:[["uname -a","Kernel name, hostname, kernel release, build date and architecture."],["-r","Just the kernel release, which is what you usually need."]]},
+{q:"Show how long the system has been running.", s:"uptime", p:["uptime"], h:"One word.", w:[["uptime","Time since boot, logged-in users, and the 1/5/15-minute load averages."]]},
+{q:"List the block devices and partitions attached to this machine.", s:"lsblk", p:["lsblk","lsblk -f"], h:"list block devices, all one word.", w:[["lsblk","Tree of disks, partitions and mount points."],["-f","Adds filesystem type, label and UUID."]]},
+{q:"Mount the partition /dev/sdb1 at /mnt.", s:"sudo mount /dev/sdb1 /mnt", p:["mount /dev/sdb1 /mnt/?"], h:"Device first, then where it should appear.", w:[["mount","Attaches a filesystem into the directory tree."],["order","Device, then mount point. umount /mnt detaches it again."]]},
+{q:"Show the CPU model and core count.", s:"lscpu", p:["lscpu","cat /proc/cpuinfo"], h:"Same naming pattern as lsblk.", w:[["lscpu","Architecture, model, cores, threads and cache sizes."]]},
+{q:"Print the current date and time.", s:"date", p:["date","timedatectl"], h:"One word.", w:[["date","Current date and time. date +%F prints just 2026-08-27, handy in filenames."]]}
+]},
+{
+id:"net", name:"Networking",
+guide:`<p>The old tools (<code>ifconfig</code>, <code>netstat</code>, <code>route</code>) still show up in tutorials but are deprecated. Modern equivalents: <code>ip</code> for addresses and routes, <code>ss</code> for sockets.</p>
+<p>For security work, <code>ss -tulpn</code> is the one to memorise — it answers "what is listening on this machine, and which process owns it?"</p>`,
+tasks:[
+{q:"Show the IP addresses configured on all network interfaces.", s:"ip a", p:["ip (a|addr|address)( show)?","ifconfig"], h:"Two characters. The old name was ifconfig.", w:[["ip a","Short for ip address show — interfaces, their state and their addresses."]]},
+{q:"Display the kernel routing table, including the default gateway.", s:"ip r", p:["ip (r|route)( show)?","route -n","netstat -rn"], h:"Same tool as the previous task, different object.", w:[["ip r","Routing table. The 'default via ...' line is your gateway."]]},
+{q:"Send exactly 4 ping packets to example.com.", s:"ping -c 4 example.com", p:["ping -c ?4 example\\.com"], h:"Without the option it pings forever.", w:[["ping","Tests reachability with ICMP echo requests."],["-c 4","Count — stop after 4 packets."]]},
+{q:"List all listening TCP and UDP ports with the process that owns each one.", s:"sudo ss -tulpn", p:["ss -[tulpn]{5}","netstat -[tulpn]{5}"], h:"Five option letters. Root is needed to see process names.", w:[["ss","Socket statistics — the replacement for netstat."],["-t / -u","TCP / UDP sockets."],["-l","Listening sockets only."],["-p","Shows the owning process (needs root)."],["-n","Numeric — don't resolve ports to service names."]]},
+{q:"Fetch only the HTTP response headers from https://example.com.", s:"curl -I https://example.com", p:["curl -I https://example\\.com/?","curl --head https://example\\.com/?"], h:"An uppercase option that means 'head'.", w:[["curl","Transfers data to or from a URL."],["-I","Sends a HEAD request — status line and headers, no body."]]},
+{q:"Download the file at https://example.com/file.iso to the current directory.", s:"wget https://example.com/file.iso", p:["wget https://example\\.com/file\\.iso","curl -O https://example\\.com/file\\.iso","curl -o file\\.iso https://example\\.com/file\\.iso"], h:"Either the dedicated downloader, or curl with an option that saves to a file.", w:[["wget URL","Downloads and saves using the remote filename."],["curl -O","Does the same with curl. Lowercase -o lets you choose the name."]]},
+{q:"Look up the DNS records for example.com.", s:"dig example.com", p:["dig example\\.com( A)?","nslookup example\\.com","host example\\.com"], h:"Three letters — the detailed DNS tool.", w:[["dig","Full DNS query output with the answer section and TTLs."],["dig +short","Prints just the address, when that's all you need."]]},
+{q:"Trace the network path taken to reach example.com.", s:"traceroute example.com", p:["traceroute example\\.com","tracepath example\\.com","mtr example\\.com"], h:"One word, describes exactly what it does.", w:[["traceroute","Lists every router hop between you and the target, with latency per hop."]]},
+{q:"Check whether TCP port 22 is open on 10.0.0.5, without sending any data.", s:"nc -zv 10.0.0.5 22", p:["nc -(zv|vz) 10\\.0\\.0\\.5 22","netcat -(zv|vz) 10\\.0\\.0\\.5 22"], h:"netcat, in scan mode, verbose.", w:[["nc","netcat — the general-purpose TCP/UDP tool."],["-z","Zero-I/O — just test whether the port accepts a connection."],["-v","Verbose, so it actually tells you the result."]]},
+{q:"Connect over SSH to the host 10.0.0.5 as the user admin.", s:"ssh admin@10.0.0.5", p:["ssh admin@10\\.0\\.0\\.5","ssh -l admin 10\\.0\\.0\\.5"], h:"user@host.", w:[["ssh user@host","Opens an encrypted remote shell. Add -p 2222 for a non-standard port."]]},
+{q:"Copy report.pdf to /tmp on 10.0.0.5, logging in as admin.", s:"scp report.pdf admin@10.0.0.5:/tmp", p:["scp report\\.pdf admin@10\\.0\\.0\\.5:/tmp/?"], h:"Like cp, but the destination is host:path.", w:[["scp","Copies files over SSH."],["host:/tmp","The colon separates the host from the remote path. Forget it and you just make a local file."]]}
+]},
+{
+id:"pipes", name:"Pipes, redirection & text",
+guide:`<p>This is where the shell stops being a file browser and becomes a toolkit. Each command reads <b>stdin</b> and writes <b>stdout</b> and <b>stderr</b>; the pipe <code>|</code> connects one command's output to the next one's input, and <code>&gt;</code> sends output to a file instead of the screen.</p>
+<p><code>&gt;</code> overwrites, <code>&gt;&gt;</code> appends, and <code>2&gt;&amp;1</code> folds error output into normal output so both travel down the same pipe.</p>`,
+tasks:[
+{q:"Save the output of ls into a file called files.txt, replacing anything already in it.", s:"ls > files.txt", p:["ls ?> ?files\\.txt"], h:"One angle bracket.", w:[[">","Redirects stdout to a file, truncating it first."]]},
+{q:"Append the text \"backup done\" to the end of run.log without erasing it.", s:"echo \"backup done\" >> run.log", p:["echo \"?'?backup done\"?'? ?>> ?run\\.log"], h:"Two angle brackets means append.", w:[["echo","Prints its argument."],[">>","Appends instead of overwriting. Getting this wrong destroys the log."]]},
+{q:"Show only the running processes whose lines mention nginx.", s:"ps aux | grep nginx", p:["ps (aux|-ef) \\| grep -?i? ?nginx","pgrep -a nginx"], h:"Pipe the process list into a search.", w:[["|","Feeds the left command's stdout into the right command's stdin."],["grep nginx","Keeps only matching lines. pgrep does the same job in one step."]]},
+{q:"Count how many lines in access.log contain the text 404.", s:"grep -c 404 access.log", p:["grep -c \"?'?404\"?'? access\\.log","grep \"?'?404\"?'? access\\.log \\| wc -l"], h:"grep can count on its own, or you can pipe into wc -l.", w:[["-c","Counts matching lines instead of printing them."]]},
+{q:"Sort the lines of hosts.txt alphabetically and show each unique line with a count of how often it appeared.", s:"sort hosts.txt | uniq -c", p:["sort hosts\\.txt \\| uniq -c"], h:"uniq only collapses neighbouring duplicates, so sorting has to come first.", w:[["sort","Orders the lines — required, because uniq only sees adjacent lines."],["uniq -c","Collapses duplicates and prefixes each with its count."],["add | sort -rn","To rank the results from most to least frequent."]]},
+{q:"Print only the usernames — the first colon-separated field — from /etc/passwd.", s:"cut -d: -f1 /etc/passwd", p:["cut -d ?\"?'?:\"?'? -f ?1 /etc/passwd","awk -F ?\"?'?:\"?'? '?\\{print \\$1\\}'? /etc/passwd"], h:"Set the delimiter, then choose the field.", w:[["cut","Extracts columns from each line."],["-d:","Delimiter is a colon."],["-f1","Field 1. awk -F: '{print $1}' does the same thing."]]},
+{q:"Print just the first whitespace-separated column of access.log — the client IP addresses.", s:"awk '{print $1}' access.log", p:["awk '?\\{ ?print \\$1 ?\\}'? access\\.log","cut -d ?\"?'? \"?'? -f ?1 access\\.log"], h:"awk splits on whitespace by default; $1 is the first field.", w:[["awk","A small text-processing language. Splits each line into $1, $2, $3..."],["{print $1}","The action to run on every line."]]},
+{q:"Replace every occurrence of http with https in urls.txt and print the result.", s:"sed 's/http/https/g' urls.txt", p:["sed '?s/http/https/g'? urls\\.txt"], h:"Stream editor, substitute, globally.", w:[["sed","Stream editor — edits text as it flows past."],["s/old/new/","Substitute. Without the trailing g it only replaces the first match on each line."],["-i","Would edit the file in place instead of printing."]]},
+{q:"Run ./build.sh and send both its normal output and its error output into build.log.", s:"./build.sh > build.log 2>&1", p:["\\./build\\.sh ?> ?build\\.log 2>&1","\\./build\\.sh &> ?build\\.log","\\./build\\.sh ?> ?build\\.log ?2>&1"], h:"Redirect stdout first, then point stderr at the same place.", w:[["> build.log","Sends stdout (stream 1) to the file."],["2>&1","Sends stderr (stream 2) to wherever stream 1 currently goes. Order matters."],["&>","Bash shorthand for both at once."]]},
+{q:"Show the output of make on screen and save a copy to build.log at the same time.", s:"make | tee build.log", p:["make \\| tee -?a? ?build\\.log"], h:"Named after a T-shaped pipe fitting.", w:[["tee","Splits the stream — writes to the file and passes it on to stdout."],["-a","Appends rather than overwriting."]]},
+{q:"Find every .tmp file under the current directory and delete them all in one line.", s:"find . -name \"*.tmp\" | xargs rm", p:["find \\.? -name \"?'?\\*\\.tmp\"?'? \\| xargs rm( -f)?","find \\.? -name \"?'?\\*\\.tmp\"?'? -delete","find \\.? -name \"?'?\\*\\.tmp\"?'? -exec rm( -f)? \\{\\} \\\\?\\+?;?"], h:"Pipe the list of paths into something that turns them into arguments — or let find do it itself.", w:[["xargs","Turns lines of input into arguments for another command."],["-print0 / -0","Safer with spaces in filenames: find ... -print0 | xargs -0 rm."],["-delete","find can delete matches itself, with no pipe at all."]]},
+{q:"Search your shell history for previous commands containing ssh.", s:"history | grep ssh", p:["history \\| grep -?i? ?ssh"], h:"Your history is just text — pipe it.", w:[["history","Prints your previously run commands, numbered."],["| grep ssh","Filters that list. Ctrl+R searches history interactively."]]}
+]},
+{
+id:"adv", name:"Advanced & security",
+guide:`<p>These are the commands that turn up in incident response and hardening work: archiving evidence, verifying integrity, checking who logged in, and finding files with dangerous permissions.</p>
+<p>A <b>SUID</b> binary runs with its owner's privileges rather than yours. Legitimate ones exist (<code>passwd</code> needs it), but an unexpected root-owned SUID file is a classic privilege-escalation route, which is why <code>find / -perm -4000</code> is a standard audit step.</p>`,
+tasks:[
+{q:"Create a gzip-compressed archive called backup.tar.gz from the directory /home/analyst.", s:"tar -czvf backup.tar.gz /home/analyst", p:["tar -?(czvf|cvzf|czf|cfz|cjvf|cvjf|cJvf|cvf|cf|zcvf) backup\\.tar\\.gz /home/analyst/?"], h:"create, gzip, file — the option order matters, f comes last.", w:[["-c","Create a new archive."],["-z","Compress with gzip."],["-v","Verbose — list files as they're added."],["-f name","File — must come immediately before the archive name."]]},
+{q:"Extract the archive evidence.tar.gz into the current directory.", s:"tar -xzvf evidence.tar.gz", p:["tar -?(xzvf|xvzf|xzf|xfz|xjvf|xvjf|xJvf|xvf|xf|zxvf) evidence\\.tar\\.gz"], h:"Same shape as creating, but with extract instead of create.", w:[["-x","Extract."],["tip","Modern tar detects the compression itself, so -xf usually works too."]]},
+{q:"Generate a new SSH key pair using the ed25519 algorithm.", s:"ssh-keygen -t ed25519", p:["ssh-keygen -t ed25519( -C .*)?"], h:"The key generator, with a type option.", w:[["ssh-keygen","Creates a key pair: a private key and a .pub public key."],["-t ed25519","Key type. Preferred over RSA — shorter, faster, and strong."],["-C","Optional comment, usually your email, to label the key."]]},
+{q:"Set the permissions on your ~/.ssh directory to the mode SSH requires.", s:"chmod 700 ~/.ssh", p:["chmod 0?700 (~|\\$HOME)/\\.ssh/?"], h:"Full access for you, nothing for anyone else.", w:[["700","rwx for the owner, nothing for group or other."],["why","SSH refuses to use keys if the directory or key file is readable by others."]]},
+{q:"Verify the SHA-256 checksum of the file archlinux.iso.", s:"sha256sum archlinux.iso", p:["sha256sum archlinux\\.iso","shasum -a ?256 archlinux\\.iso"], h:"The algorithm name plus 'sum'.", w:[["sha256sum","Prints the file's hash so you can compare it against the published one."],["-c file","Checks a whole list of hashes from a checksum file."]]},
+{q:"Find every SUID binary on the system, hiding permission errors.", s:"sudo find / -perm -4000 2>/dev/null", p:["find / -perm -(4000|u\\+s)( -type f)?( 2>/dev/null)?( -type f)?"], h:"Search from root by permission bits, and throw stderr away.", w:[["-perm -4000","Files with the SUID bit set. The leading dash means 'at least these bits'."],["2>/dev/null","Discards the permission-denied noise from directories you can't read."],["why it matters","A SUID binary runs as its owner — often root. Unexpected ones are an escalation risk."]]},
+{q:"Show a list of recent login sessions on this machine.", s:"last", p:["last( -n ?\\d+)?"], h:"Four letters, reads /var/log/wtmp.", w:[["last","Login history: user, terminal, source address and duration."],["lastb","The same for failed login attempts — worth checking during an incident."]]},
+{q:"Show who is currently logged in and what they are running.", s:"w", p:["w","who"], h:"A single letter.", w:[["w","Logged-in users plus their current process and idle time."],["who","Simpler — just users, terminals and login times."]]},
+{q:"Show which process is listening on port 80.", s:"sudo lsof -i :80", p:["lsof -i ?:80","ss -tulpn \\| grep :?80","fuser 80/tcp"], h:"List open files — sockets count as files.", w:[["lsof","Lists open files; -i restricts it to network connections."],[":80","Filters to that port. ss -tulpn | grep :80 works too."]]},
+{q:"Open your personal cron table for editing so you can schedule a job.", s:"crontab -e", p:["crontab -e"], h:"cron table, edit.", w:[["crontab -e","Opens your schedule in an editor."],["-l","Lists it without editing. Format: minute hour day month weekday command."]]},
+{q:"Create the user analyst with a home directory.", s:"sudo useradd -m analyst", p:["useradd -m analyst","adduser analyst"], h:"An option is needed or they get no home directory.", w:[["useradd","Low-level account creation."],["-m","Creates /home/analyst and populates it from /etc/skel."],["adduser","A friendlier interactive wrapper on Debian-based systems."]]},
+{q:"Change the password for the user analyst.", s:"sudo passwd analyst", p:["passwd analyst"], h:"One word plus the username.", w:[["passwd","Sets a password. With no username it changes your own."]]},
+{q:"Run the previous command again as root, without retyping it.", s:"sudo !!", p:["sudo !!"], h:"Two exclamation marks expand to your last command.", w:[["!!","History expansion — the previous command line, inserted verbatim."],["sudo !!","The classic fix after 'Permission denied'."]]}
+]}
+);
+
+/* ---------- cheatsheet shown in the drawer ---------- */
+const SHEET = [
+["Getting around",[
+["pwd","Print the directory you are currently in"],
+["ls","List files here"],
+["ls -la","Long listing including hidden dotfiles"],
+["ls -lh","Long listing with readable file sizes"],
+["cd /path","Move to an absolute path"],
+["cd ..","Move up one directory"],
+["cd -","Jump back to the previous directory"],
+["cd","Return to your home directory"],
+["clear","Clear the screen (Ctrl+L)"],
+["tree","Show the directory structure as a tree"]
+]],
+["Files & directories",[
+["touch file","Create an empty file, or update its timestamp"],
+["mkdir -p a/b/c","Create nested directories, parents included"],
+["cp src dst","Copy a file"],
+["cp -r dir dst","Copy a directory and everything inside it"],
+["mv old new","Move or rename — same operation"],
+["rm file","Delete a file. Permanent, no trash"],
+["rm -rf dir","Delete a directory forcefully. Check the path twice"],
+["rmdir dir","Delete a directory only if it is empty"],
+["ln -s target link","Create a symbolic link (a shortcut)"],
+["file report.pdf","Identify what a file actually is, ignoring its extension"],
+["stat file","Full metadata: size, permissions, access and change times"]
+]],
+["Reading & searching",[
+["cat file","Print a whole file"],
+["less file","Page through a file: / searches, n = next, q = quit"],
+["head -n 20 file","First 20 lines"],
+["tail -n 20 file","Last 20 lines"],
+["tail -f file","Follow a file live as it grows"],
+["grep -i text file","Search inside a file, ignoring case"],
+["grep -rn text /dir","Search recursively with line numbers"],
+["grep -c text file","Count matching lines"],
+["grep -v text file","Invert — show lines that do NOT match"],
+["wc -l file","Count lines"],
+["find . -name \"*.conf\"","Find files by name"],
+["find . -mtime -7","Find files modified in the last 7 days"],
+["find . -size +100M","Find files larger than 100 MB"],
+["which cmd","Show which binary would run"],
+["diff -u a b","Show differences between two files"]
+]],
+["Permissions & users",[
+["ls -l file","See the permissions and owner"],
+["chmod +x file","Make a file executable"],
+["chmod 755 file","rwx for owner, r-x for group and other"],
+["chmod 600 file","rw for owner only — required for SSH keys"],
+["chmod -R 755 dir","Apply through a whole directory tree"],
+["chown user:group file","Change owner and group"],
+["chgrp group file","Change only the group"],
+["whoami","Your current username"],
+["id","Your UID, GID and group memberships"],
+["sudo cmd","Run one command as root"],
+["sudo -i","Open a root shell"],
+["su - user","Switch to another user"],
+["passwd user","Change a password"],
+["useradd -m user","Create a user with a home directory"],
+["umask 022","Default permissions for newly created files"]
+]],
+["Packages — pacman (Arch)",[
+["sudo pacman -S pkg","Install"],
+["pacman -Ss text","Search the repositories"],
+["pacman -Si pkg","Info about a repository package"],
+["sudo pacman -Syu","Refresh databases and upgrade everything"],
+["sudo pacman -Rns pkg","Remove with unneeded dependencies and configs"],
+["pacman -Q","List installed packages"],
+["pacman -Qi pkg","Info about an installed package"],
+["pacman -Ql pkg","List the files a package owns"],
+["pacman -Qo /path","Which package owns this file"],
+["sudo pacman -Sc","Clean the package cache"]
+]],
+["Packages — apt / dnf / zypper",[
+["sudo apt install pkg","Install (Debian, Ubuntu)"],
+["apt search text","Search the repositories"],
+["apt show pkg","Package details"],
+["sudo apt update","Refresh package lists — upgrades nothing"],
+["sudo apt upgrade","Install the newer versions"],
+["sudo apt autoremove pkg","Remove with orphaned dependencies"],
+["dpkg -S /path","Which package owns this file"],
+["sudo dnf install pkg","Install (Fedora, RHEL)"],
+["dnf search text","Search the repositories"],
+["sudo dnf upgrade","Refresh and upgrade everything"],
+["dnf provides /path","Which package provides this file"],
+["sudo zypper install pkg","Install (openSUSE)"],
+["zypper search text","Search the repositories"],
+["sudo zypper update","Upgrade installed packages"]
+]],
+["Processes & services",[
+["ps aux","Every running process with user and CPU"],
+["top","Live process monitor"],
+["htop","Nicer live monitor, usually needs installing"],
+["kill PID","Ask a process to exit (signal 15)"],
+["kill -9 PID","Force-kill (signal 9), no cleanup"],
+["pkill -f pattern","Kill by command line instead of PID"],
+["pgrep -a name","Find PIDs by name"],
+["systemctl status unit","Is the service running, and why not"],
+["sudo systemctl restart unit","Restart a service"],
+["sudo systemctl enable --now unit","Start it now and at every boot"],
+["systemctl list-units --failed","Every unit that failed"],
+["journalctl -u unit -f","Follow one unit's logs live"],
+["journalctl -p err -b","Errors from the current boot"],
+["cmd &","Run in the background"],
+["fg / bg / jobs","Foreground, background, list background jobs"]
+]],
+["Disk & system",[
+["df -h","Free space per filesystem"],
+["du -sh dir","Total size of a directory"],
+["du -sh * | sort -h","Rank what is eating the space here"],
+["free -h","RAM and swap usage"],
+["uname -a","Kernel and architecture"],
+["uptime","Time since boot and load average"],
+["lsblk","Disks, partitions and mount points"],
+["lscpu","CPU model, cores and threads"],
+["sudo mount /dev/sdb1 /mnt","Attach a filesystem"],
+["sudo umount /mnt","Detach it"],
+["date","Current date and time"]
+]],
+["Networking",[
+["ip a","IP addresses on every interface"],
+["ip r","Routing table and default gateway"],
+["ping -c 4 host","Send 4 echo requests"],
+["sudo ss -tulpn","Listening TCP/UDP ports and their processes"],
+["curl -I url","Fetch response headers only"],
+["curl -O url","Download, keeping the remote filename"],
+["wget url","Download a file"],
+["dig domain","Full DNS lookup"],
+["dig +short domain","Just the address"],
+["traceroute host","Every hop on the way to a host"],
+["nc -zv host 22","Check whether a port is open"],
+["ssh user@host","Remote encrypted shell"],
+["scp file user@host:/path","Copy a file over SSH"],
+["sudo lsof -i :80","What is listening on port 80"]
+]],
+["Pipes, redirection & text",[
+["a | b","Send a's output into b's input"],
+["cmd > file","Write output to a file, overwriting it"],
+["cmd >> file","Append output to a file"],
+["cmd 2> file","Redirect only error output"],
+["cmd > file 2>&1","Send output and errors to the same file"],
+["cmd | tee file","Show output and save it at the same time"],
+["sort file","Sort lines"],
+["sort -h / -rn","Sort by human sizes / numerically, descending"],
+["uniq -c","Collapse adjacent duplicates and count them"],
+["cut -d: -f1 file","Take field 1, split on colons"],
+["awk '{print $1}' file","Print the first whitespace-separated column"],
+["sed 's/a/b/g' file","Replace every a with b"],
+["sed -i 's/a/b/g' file","Same, editing the file in place"],
+["xargs cmd","Turn incoming lines into arguments"],
+["history | grep text","Search your command history"]
+]],
+["Archives, keys & auditing",[
+["tar -czvf out.tar.gz dir","Create a gzip-compressed archive"],
+["tar -xzvf file.tar.gz","Extract an archive"],
+["tar -tzvf file.tar.gz","List an archive's contents without extracting"],
+["ssh-keygen -t ed25519","Generate an SSH key pair"],
+["ssh-copy-id user@host","Install your public key on a server"],
+["sha256sum file","Print a file's SHA-256 hash"],
+["sudo find / -perm -4000 2>/dev/null","Find SUID binaries — a privilege-escalation check"],
+["last","Recent login sessions"],
+["lastb","Failed login attempts"],
+["w","Who is logged in and what they are running"],
+["crontab -e","Edit your scheduled jobs"],
+["sudo !!","Re-run the previous command as root"],
+["man cmd","The manual page for anything here"]
+]]
+];
+
+/* ---------- what individual flags mean, for the debugger ---------- */
+const FLAGS = {
+ls:{l:"long format",a:"include hidden files",h:"human-readable sizes",R:"recurse into subdirectories",t:"sort by time"},
+rm:{r:"recursive, needed for directories",R:"recursive",f:"force, no prompts",i:"prompt before each deletion",v:"verbose"},
+cp:{r:"recursive, needed for directories",R:"recursive",a:"archive, preserves everything",v:"verbose",i:"prompt before overwriting"},
+mkdir:{p:"create parent directories as needed",v:"verbose"},
+ln:{s:"symbolic link",f:"replace an existing link"},
+grep:{i:"ignore case",r:"recursive",R:"recursive, follows symlinks",n:"show line numbers",c:"count matching lines",v:"invert the match",l:"list filenames only",E:"extended regular expressions"},
+find:{},
+head:{n:"number of lines"},
+tail:{n:"number of lines",f:"follow the file live",F:"follow across log rotation"},
+wc:{l:"count lines",w:"count words",c:"count bytes"},
+chmod:{R:"apply recursively"},
+chown:{R:"apply recursively"},
+ps:{a:"all users",u:"user-oriented columns",x:"include processes without a terminal",e:"every process",f:"full format listing"},
+kill:{9:"SIGKILL, cannot be caught",15:"SIGTERM, the polite default"},
+pkill:{f:"match against the full command line",u:"match by user"},
+ss:{t:"TCP sockets",u:"UDP sockets",l:"listening sockets only",p:"show the owning process",n:"numeric, don't resolve names",a:"all sockets"},
+netstat:{t:"TCP",u:"UDP",l:"listening only",p:"owning process",n:"numeric"},
+df:{h:"human-readable sizes",i:"show inodes instead"},
+du:{s:"summary total only",h:"human-readable sizes",a:"include individual files"},
+free:{h:"human-readable sizes",m:"in megabytes"},
+uname:{a:"all fields",r:"kernel release only"},
+ping:{c:"stop after this many packets",i:"interval between packets"},
+curl:{I:"headers only (HEAD request)",O:"save using the remote filename",o:"save under a chosen name",L:"follow redirects",s:"silent"},
+nc:{z:"just test the port, send no data",v:"verbose, report the result"},
+tar:{c:"create an archive",x:"extract an archive",t:"list contents",z:"gzip compression",j:"bzip2 compression",v:"verbose file list",f:"the archive filename follows"},
+lsof:{i:"network connections only"},
+systemctl:{},
+journalctl:{u:"filter to one unit",f:"follow live",n:"number of entries",p:"minimum priority",b:"this boot only"},
+useradd:{m:"create a home directory"},
+pacman:{S:"sync — install from the repositories",Q:"query the local system",R:"remove",U:"install from a local file",s:"search (with S or Q), recursive (with R)",y:"refresh the package databases",u:"upgrade installed packages",i:"show detailed info",l:"list the files in a package",o:"which package owns a file",n:"also remove config files",c:"clean the package cache",e:"explicitly installed only"},
+apt:{y:"assume yes to prompts"},
+dnf:{y:"assume yes to prompts"},
+zypper:{y:"assume yes to prompts"}
+};
+
+/* one-line description of every command, for "you used the wrong tool" feedback */
+const CMDDESC = {
+pwd:"prints your current directory",ls:"lists directory contents",cd:"changes directory",clear:"clears the screen",
+touch:"creates an empty file or updates a timestamp",mkdir:"creates directories",rmdir:"removes empty directories",
+cp:"copies files",mv:"moves or renames",rm:"deletes files",ln:"creates links",cat:"prints a whole file",
+less:"pages through a file",more:"pages through a file",head:"shows the start of a file",tail:"shows the end of a file",
+grep:"searches for text inside files",find:"searches the filesystem for files",wc:"counts lines, words and bytes",
+which:"shows which binary would run",chmod:"changes permissions",chown:"changes ownership",chgrp:"changes the group",
+whoami:"prints your username",id:"prints your UID, GID and groups",sudo:"runs a command as root",su:"switches user",
+passwd:"changes a password",useradd:"creates a user account",ps:"lists running processes",top:"is a live process monitor",
+htop:"is a live process monitor",kill:"sends a signal to a PID",pkill:"kills processes by name",pgrep:"finds PIDs by name",
+systemctl:"controls systemd services",journalctl:"reads the systemd journal",df:"reports free space per filesystem",
+du:"measures directory sizes",free:"reports memory usage",uname:"prints kernel information",uptime:"shows time since boot",
+lsblk:"lists block devices",lscpu:"describes the CPU",mount:"attaches a filesystem",date:"prints the date and time",
+ip:"configures and inspects networking",ping:"tests reachability",ss:"lists sockets",netstat:"lists sockets (deprecated)",
+curl:"transfers data from a URL",wget:"downloads files",dig:"queries DNS",traceroute:"traces the network path",
+nc:"is netcat, a raw TCP/UDP tool",ssh:"opens a remote shell",scp:"copies files over SSH",sort:"sorts lines",
+uniq:"collapses adjacent duplicate lines",cut:"extracts columns",awk:"processes text field by field",
+sed:"edits text as a stream",tee:"writes to a file and to the screen",xargs:"turns input into arguments",
+history:"lists your previous commands",tar:"creates and extracts archives",gzip:"compresses a single file",
+"ssh-keygen":"generates SSH key pairs",sha256sum:"prints a SHA-256 hash",last:"shows login history",
+w:"shows who is logged in",who:"shows who is logged in",lsof:"lists open files and sockets",crontab:"edits scheduled jobs",
+echo:"prints text",pacman:"is Arch's package manager",apt:"is Debian and Ubuntu's package manager",
+"apt-get":"is the older Debian package tool",dnf:"is Fedora's package manager",yum:"is the older Fedora package tool",
+zypper:"is openSUSE's package manager",dpkg:"is Debian's low-level package tool",rpm:"is the low-level RPM tool",
+man:"opens the manual page"
+};
+
+/* ---------- simulated output ----------
+   keyed by "<moduleId>:<taskIndex>"
+   string        = normal line        number = pause in ms
+   "~text" dim   "!text" red   "$text" green   "%text" cyan
+   package tasks hold one entry per package manager                     */
+const OUT = {
+"nav:0":["/home/analyst"],
+"nav:1":["%Documents  %Downloads  %projects  notes.txt  report.txt  deploy.sh"],
+"nav:2":["total 32",
+"drwxr-xr-x  5 analyst analyst 4096 Aug 27 09:14 .",
+"drwxr-xr-x  3 root    root    4096 Jun  2 11:02 ..",
+"-rw-------  1 analyst analyst 5210 Aug 27 09:12 .bash_history",
+"-rw-r--r--  1 analyst analyst  220 Jun  2 11:02 .bashrc",
+"drwx------  2 analyst analyst 4096 Aug 14 17:40 .ssh",
+"drwxr-xr-x  4 analyst analyst 4096 Aug 26 20:31 projects",
+"-rwxr-xr-x  1 analyst analyst 1842 Aug 25 13:07 deploy.sh",
+"-rw-r--r--  1 analyst analyst   93 Aug 27 09:14 notes.txt"],
+"nav:3":["~(now in /etc)"],
+"nav:4":["~(now in /home)"],
+"nav:5":["/home/analyst/projects"],
+"nav:6":["~(now in /home/analyst)"],
+"nav:7":["CLEAR"],
+
+"files:0":[],
+"files:1":[],
+"files:2":[],
+"files:3":[],
+"files:4":[],
+"files:5":[],
+"files:6":[],
+"files:7":[],
+"files:8":[],
+
+"read:0":["workstation-07"],
+"read:1":["~tcpmux          1/tcp",
+"~ssh             22/tcp",
+"~domain          53/tcp",
+"~http            80/tcp",
+"~https          443/tcp",
+"~(press q to quit)"],
+"read:2":["10.0.0.14 - - [27/Aug/2026:08:59:02 +0200] \"GET / HTTP/1.1\" 200 5124",
+"10.0.0.14 - - [27/Aug/2026:08:59:03 +0200] \"GET /style.css HTTP/1.1\" 200 812",
+"10.0.0.91 - - [27/Aug/2026:08:59:11 +0200] \"POST /login HTTP/1.1\" 302 0",
+"~... 17 more lines"],
+"read:3":["10.0.0.91 - - [27/Aug/2026:09:14:47 +0200] \"GET /admin HTTP/1.1\" 404 209",
+"10.0.0.91 - - [27/Aug/2026:09:14:48 +0200] \"GET /.env HTTP/1.1\" 404 209",
+"10.0.0.91 - - [27/Aug/2026:09:14:49 +0200] \"GET /wp-login.php HTTP/1.1\" 404 209",
+"~... 17 more lines"],
+"read:4":["Aug 27 09:20:01 workstation-07 CRON[3121]: (root) CMD (/usr/bin/backup.sh)",600,
+"Aug 27 09:20:14 workstation-07 sshd[3140]: Accepted publickey for analyst from 10.0.0.14 port 51422",900,
+"Aug 27 09:20:31 workstation-07 systemd[1]: Started Session 42 of user analyst.",
+"~^C to stop following"],
+"read:5":["app.log:41:2026-08-27 08:12:04 ERROR failed to open config",
+"app.log:88:2026-08-27 09:01:57 Error: connection refused (retry 1/3)",
+"app.log:92:2026-08-27 09:02:09 ERROR upstream timeout after 30s"],
+"read:6":["/etc/ssh/sshd_config:58:PermitEmptyPasswords no",
+"/etc/pam.d/common-password:26:password requisite pam_pwquality.so retry=3",
+"/etc/shadow:1:root:$y$j9T$Xk2...:19845:0:99999:7:::",
+"!grep: /etc/ssl/private: Permission denied"],
+"read:7":["1204 access.log"],
+"read:8":["./nginx/nginx.conf",
+"./nginx/sites/default.conf",
+"./app/database.conf",
+"./backup/old/nginx.conf"],
+"read:9":["./app/database.conf",
+"./notes.txt",
+"./logs/access.log"],
+"read:10":["/usr/bin/nmap"],
+
+"perms:0":["-rw-r--r-- 1 root root 2891 Aug 14 10:22 /etc/passwd"],
+"perms:1":[],
+"perms:2":[],
+"perms:3":[],
+"perms:4":[],
+"perms:5":[],
+"perms:6":["analyst"],
+"perms:7":["uid=1000(analyst) gid=1000(analyst) groups=1000(analyst),27(sudo),4(adm),999(docker)"],
+"perms:8":["~[sudo] password for analyst:",400,"$root@workstation-07:~#"],
+
+"proc:0":["USER       PID %CPU %MEM    VSZ   RSS TTY   STAT START   TIME COMMAND",
+"root         1  0.0  0.1 168404 12180 ?     Ss   08:41   0:02 /sbin/init",
+"root       412  0.0  0.2  95120 18744 ?     Ss   08:41   0:00 /usr/lib/systemd/systemd-journald",
+"root       889  0.0  0.1  15436  8912 ?     Ss   08:41   0:00 sshd: /usr/sbin/sshd -D",
+"www-data  1204  0.7  1.4 412880 58120 ?     S    08:42   0:31 nginx: worker process",
+"analyst   3140  0.1  0.3  22140 12604 pts/0 Ss   09:20   0:00 -bash",
+"analyst   4821 98.3  6.1 998220 251440 ?    Rl   09:22   4:12 node server.js"],
+"proc:1":["~top - 09:31:44 up 50 min,  1 user,  load average: 1.42, 0.98, 0.61",
+"~Tasks: 214 total,   2 running, 212 sleeping",
+"~%Cpu(s): 24.1 us,  3.2 sy,  0.0 ni, 72.1 id",
+"~MiB Mem :   7936.0 total,   1204.5 free,   3820.1 used",
+"",
+"  PID USER      PR  NI    RES  %CPU  %MEM     TIME+ COMMAND",
+" 4821 analyst   20   0 245.5m  98.3   6.1   4:12.77 node",
+" 1204 www-data  20   0  56.8m   0.7   1.4   0:31.02 nginx",
+"~(q to quit)"],
+"proc:2":[],
+"proc:3":[],
+"proc:4":["$● ssh.service - OpenBSD Secure Shell server",
+"     Loaded: loaded (/lib/systemd/system/ssh.service; enabled; preset: enabled)",
+"     Active: active (running) since Thu 2026-08-27 08:41:19 CEST; 50min ago",
+"   Main PID: 889 (sshd)",
+"      Tasks: 1 (limit: 9430)",
+"     Memory: 5.8M",
+"     CGroup: /system.slice/ssh.service",
+"             └─889 \"sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups\"",
+"",
+"~Aug 27 09:20:14 workstation-07 sshd[3140]: Accepted publickey for analyst from 10.0.0.14"],
+"proc:5":["~[sudo] password for analyst:",700,""],
+"proc:6":["~Created symlink /etc/systemd/system/multi-user.target.wants/docker.service → /lib/systemd/system/docker.service."],
+"proc:7":["~-- Journal begins at Thu 2026-08-27 08:41:12 CEST. --",
+"Aug 27 09:20:14 workstation-07 sshd[3140]: Accepted publickey for analyst from 10.0.0.14 port 51422 ssh2: ED25519 SHA256:9k2..",
+"Aug 27 09:20:14 workstation-07 sshd[3140]: pam_unix(sshd:session): session opened for user analyst(uid=1000)",800,
+"!Aug 27 09:33:02 workstation-07 sshd[4102]: Failed password for invalid user admin from 91.240.118.44 port 55210 ssh2",700,
+"!Aug 27 09:33:05 workstation-07 sshd[4102]: Failed password for invalid user admin from 91.240.118.44 port 55214 ssh2",
+"~^C to stop following"],
+"proc:8":["!Aug 27 08:12:04 workstation-07 nginx[1204]: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)",
+"!Aug 27 08:44:51 workstation-07 kernel: EXT4-fs warning: mounting fs with errors",
+"!Aug 27 09:02:09 workstation-07 app[4821]: ERROR upstream timeout after 30s",
+"~-- 3 entries shown --"],
+
+"sys:0":["Filesystem      Size  Used Avail Use% Mounted on",
+"/dev/nvme0n1p2  234G  198G   24G  90% /",
+"/dev/nvme0n1p1  511M   82M  430M  17% /boot/efi",
+"tmpfs           3.9G   18M  3.9G   1% /dev/shm",
+"/dev/sda1       1.8T  1.2T  520G  71% /mnt/storage"],
+"sys:1":["3.2G\t/var/log"],
+"sys:2":["               total        used        free      shared  buff/cache   available",
+"Mem:           7.8Gi       3.7Gi       1.2Gi       412Mi       2.9Gi       3.4Gi",
+"Swap:          2.0Gi       128Mi       1.9Gi"],
+"sys:3":["Linux workstation-07 6.9.7-arch1-1 #1 SMP PREEMPT_DYNAMIC Thu, 27 Jun 2026 12:14:03 +0000 x86_64 GNU/Linux"],
+"sys:4":[" 09:31:44 up 50 min,  1 user,  load average: 1.42, 0.98, 0.61"],
+"sys:5":["NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS",
+"nvme0n1     259:0    0 238.5G  0 disk",
+"├─nvme0n1p1 259:1    0   512M  0 part /boot/efi",
+"└─nvme0n1p2 259:2    0   238G  0 part /",
+"sda           8:0    0   1.8T  0 disk",
+"└─sda1        8:1    0   1.8T  0 part /mnt/storage"],
+"sys:6":[],
+"sys:7":["Architecture:            x86_64",
+"CPU(s):                  16",
+"Thread(s) per core:      2",
+"Core(s) per socket:      8",
+"Model name:              AMD Ryzen 7 5800X 8-Core Processor",
+"CPU max MHz:             4850.0000",
+"L3 cache:                32 MiB"],
+"sys:8":["Thu Aug 27 09:31:44 CEST 2026"],
+
+"net:0":["1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN",
+"    inet 127.0.0.1/8 scope host lo",
+"2: enp5s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP",
+"    link/ether 3c:7c:3f:а1:04:be brd ff:ff:ff:ff:ff:ff",
+"    inet 10.0.0.14/24 brd 10.0.0.255 scope global dynamic enp5s0",
+"       valid_lft 84291sec preferred_lft 84291sec"],
+"net:1":["default via 10.0.0.1 dev enp5s0 proto dhcp metric 100",
+"10.0.0.0/24 dev enp5s0 proto kernel scope link src 10.0.0.14 metric 100",
+"172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown"],
+"net:2":["PING example.com (93.184.216.34) 56(84) bytes of data.",
+"64 bytes from 93.184.216.34: icmp_seq=1 ttl=56 time=18.4 ms",400,
+"64 bytes from 93.184.216.34: icmp_seq=2 ttl=56 time=17.9 ms",400,
+"64 bytes from 93.184.216.34: icmp_seq=3 ttl=56 time=18.1 ms",400,
+"64 bytes from 93.184.216.34: icmp_seq=4 ttl=56 time=19.2 ms",
+"",
+"--- example.com ping statistics ---",
+"4 packets transmitted, 4 received, 0% packet loss, time 3005ms",
+"rtt min/avg/max/mdev = 17.912/18.400/19.201/0.487 ms"],
+"net:3":["Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:Port Process",
+"udp   UNCONN 0      0          0.0.0.0:68         0.0.0.0:*     users:((\"dhclient\",pid=702,fd=6))",
+"tcp   LISTEN 0      128        0.0.0.0:22         0.0.0.0:*     users:((\"sshd\",pid=889,fd=3))",
+"tcp   LISTEN 0      511        0.0.0.0:80         0.0.0.0:*     users:((\"nginx\",pid=1204,fd=6))",
+"tcp   LISTEN 0      4096     127.0.0.1:3000       0.0.0.0:*     users:((\"node\",pid=4821,fd=19))",
+"tcp   LISTEN 0      4096     127.0.0.1:5432       0.0.0.0:*     users:((\"postgres\",pid=1502,fd=5))"],
+"net:4":["HTTP/2 200",
+"content-type: text/html; charset=UTF-8",
+"date: Thu, 27 Aug 2026 07:31:44 GMT",
+"server: nginx",
+"content-length: 5124",
+"cache-control: max-age=604800"],
+"net:5":["--2026-08-27 09:31:44--  https://example.com/file.iso",
+"Resolving example.com (example.com)... 93.184.216.34",
+"Connecting to example.com|93.184.216.34|:443... connected.",
+"HTTP request sent, awaiting response... 200 OK",
+"Length: 892534784 (851M) [application/octet-stream]",
+"Saving to: 'file.iso'",600,
+"file.iso   34%[========>            ] 291.4M  22.1MB/s   eta 27s",700,
+"file.iso  100%[====================>] 851.2M  23.4MB/s   in 38s",
+"",
+"$2026-08-27 09:32:22 (22.4 MB/s) - 'file.iso' saved [892534784/892534784]"],
+"net:6":["~; <<>> DiG 9.19.21 <<>> example.com",
+"~;; global options: +cmd",
+";; QUESTION SECTION:",
+";example.com.\t\t\tIN\tA",
+"",
+";; ANSWER SECTION:",
+"example.com.\t\t3512\tIN\tA\t93.184.216.34",
+"",
+"~;; Query time: 12 msec",
+"~;; SERVER: 10.0.0.1#53(10.0.0.1) (UDP)"],
+"net:7":["traceroute to example.com (93.184.216.34), 30 hops max, 60 byte packets",
+" 1  _gateway (10.0.0.1)  0.412 ms  0.388 ms  0.377 ms",300,
+" 2  10.128.0.1 (10.128.0.1)  4.221 ms  4.190 ms  4.174 ms",300,
+" 3  bundle-ether1.core1.sto.se (81.228.12.9)  8.442 ms  8.401 ms",300,
+" 4  * * *",300,
+" 5  93.184.216.34 (93.184.216.34)  18.402 ms  18.377 ms  18.351 ms"],
+"net:8":["$Connection to 10.0.0.5 22 port [tcp/ssh] succeeded!"],
+"net:9":["The authenticity of host '10.0.0.5 (10.0.0.5)' can't be established.",
+"ED25519 key fingerprint is SHA256:9kL2xQm4pR7vT1nW8sY3bF6hJ0dK5cA2eG9uZ4iX7oM.",
+"Are you sure you want to continue connecting (yes/no/[fingerprint])? yes",600,
+"~Warning: Permanently added '10.0.0.5' (ED25519) to the list of known hosts.",
+"admin@10.0.0.5's password:",500,
+"$Last login: Wed Aug 26 18:44:02 2026 from 10.0.0.14",
+"$admin@srv-01:~$"],
+"net:10":["admin@10.0.0.5's password:",500,
+"report.pdf                          100%  1284KB   8.4MB/s   00:00"],
+
+"pipes:0":[],
+"pipes:1":[],
+"pipes:2":["www-data  1204  0.7  1.4 412880 58120 ?  S  08:42  0:31 nginx: worker process",
+"root      1198  0.0  0.3 402112 14208 ?  Ss 08:42  0:00 nginx: master process /usr/sbin/nginx",
+"analyst   5023  0.0  0.0  12140  2048 pts/0 S+ 09:34 0:00 grep --color=auto nginx"],
+"pipes:3":["87"],
+"pipes:4":["      1 10.0.0.5",
+"     14 10.0.0.14",
+"    142 10.0.0.91",
+"      3 192.168.1.40"],
+"pipes:5":["root","daemon","bin","sys","sync","www-data","sshd","analyst"],
+"pipes:6":["10.0.0.14","10.0.0.14","10.0.0.91","10.0.0.91","10.0.0.91","~... 1199 more lines"],
+"pipes:7":["https://example.com/login","https://cdn.example.com/app.js","https://api.example.com/v1/status"],
+"pipes:8":[400,"~(no output — everything went to build.log)"],
+"pipes:9":["gcc -O2 -c main.c -o main.o",300,"gcc -O2 -c parser.c -o parser.o",300,"gcc -o app main.o parser.o",
+"$build complete"],
+"pipes:10":[],
+"pipes:11":["  412  ssh admin@10.0.0.5",
+"  418  ssh-keygen -t ed25519",
+"  419  ssh-copy-id admin@10.0.0.5",
+"  501  history | grep ssh"],
+
+"adv:0":["home/analyst/",300,"home/analyst/.bashrc",
+"home/analyst/projects/",300,"home/analyst/projects/report.md",
+"home/analyst/notes.txt",
+"~tar: Removing leading '/' from member names"],
+"adv:1":["evidence/",300,"evidence/timeline.csv","evidence/memdump.raw","evidence/notes.md"],
+"adv:2":["Generating public/private ed25519 key pair.",
+"Enter file in which to save the key (/home/analyst/.ssh/id_ed25519):",400,
+"Enter passphrase (empty for no passphrase):",
+"Enter same passphrase again:",400,
+"Your identification has been saved in /home/analyst/.ssh/id_ed25519",
+"Your public key has been saved in /home/analyst/.ssh/id_ed25519.pub",
+"The key fingerprint is:",
+"SHA256:9kL2xQm4pR7vT1nW8sY3bF6hJ0dK5cA2eG9uZ4iX7oM analyst@workstation-07"],
+"adv:3":[],
+"adv:4":[900,"f4a1c8e2b7d3906a5c1e8f2b4d7a9c3e6b0f5a8d2c7e1b4f9a6d3c0e7b2f5a8d1  archlinux.iso"],
+"adv:5":["/usr/bin/sudo",
+"/usr/bin/passwd",
+"/usr/bin/su",
+"/usr/bin/mount",
+"/usr/bin/newgrp",
+"!/opt/backup/runner",
+"~(that last one is not standard — worth investigating)"],
+"adv:6":["analyst  pts/0        10.0.0.14        Thu Aug 27 09:20   still logged in",
+"analyst  pts/1        10.0.0.14        Wed Aug 26 18:02 - 19:44  (01:42)",
+"root     tty1                          Wed Aug 26 08:11 - 08:44  (00:33)",
+"reboot   system boot  6.9.7-arch1-1    Wed Aug 26 08:10   still running"],
+"adv:7":[" 09:34:12 up 52 min,  1 user,  load average: 0.88, 0.94, 0.61",
+"USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT",
+"analyst  pts/0    10.0.0.14        09:20    0.00s  0.14s  0.02s w"],
+"adv:8":["COMMAND  PID     USER   FD   TYPE DEVICE SIZE/OFF NODE NAME",
+"nginx   1198     root    6u  IPv4  28417      0t0  TCP *:http (LISTEN)",
+"nginx   1204 www-data    6u  IPv4  28417      0t0  TCP *:http (LISTEN)"],
+"adv:9":["~no crontab for analyst - using an empty one",
+"~(opens your editor — lines look like: 0 3 * * * /usr/bin/backup.sh)",
+"crontab: installing new crontab"],
+"adv:10":[],
+"adv:11":["New password:",400,"Retype new password:",400,"$passwd: password updated successfully"],
+"adv:12":["~[sudo] password for analyst:",500,"$(the previous command runs again, this time as root)"]
+};
+
+/* package manager output, keyed by task index then package manager */
+const PKGOUT = {
+0:{
+ pacman:[":: Synchronising package databases...",300," core is up to date"," extra is up to date",
+  "resolving dependencies...","looking for conflicting packages...","",
+  "Packages (1) firefox-129.0-1","","Total Download Size:    66.42 MiB","Total Installed Size:  245.11 MiB","",
+  ":: Proceed with installation? [Y/n] y",":: Retrieving packages...",400,
+  " firefox-129.0-1-x86_64   66.4 MiB  9.12 MiB/s 00:07 [######################] 100%",300,
+  "(1/1) checking keys in the keyring","(1/1) checking package integrity","(1/1) loading package files",
+  "(1/1) checking for file conflicts",":: Processing package changes...","(1/1) installing firefox",
+  "~Optional dependencies for firefox","~    networkmanager: Location detection via available WiFi networks"],
+ apt:["Reading package lists... Done","Building dependency tree... Done","Reading state information... Done",
+  "The following additional packages will be installed:","  firefox-locale-en libvpx7",
+  "The following NEW packages will be installed:","  firefox firefox-locale-en libvpx7",
+  "0 upgraded, 3 newly installed, 0 to remove and 0 not upgraded.",
+  "Need to get 71.2 MB of archives.","After this operation, 253 MB of additional disk space will be used.",
+  "Do you want to continue? [Y/n] y",400,
+  "Get:1 http://archive.ubuntu.com/ubuntu jammy/main amd64 firefox amd64 129.0+build1 [71.2 MB]",500,
+  "Fetched 71.2 MB in 4s (17.8 MB/s)","Selecting previously unselected package firefox.",
+  "(Reading database ... 214503 files and directories currently installed.)",
+  "Preparing to unpack .../firefox_129.0+build1_amd64.deb ...","Unpacking firefox (129.0+build1) ...",
+  "Setting up firefox (129.0+build1) ...","Processing triggers for man-db (2.10.2-1) ...",
+  "Processing triggers for desktop-file-utils (0.26-1ubuntu3) ..."],
+ dnf:["Last metadata expiration check: 0:14:22 ago on Thu 27 Aug 2026 09:17:31 AM CEST.","Dependencies resolved.",
+  "================================================================================",
+  " Package          Arch     Version           Repository            Size",
+  "================================================================================",
+  "Installing:"," firefox          x86_64   129.0-1.fc40      updates               68 M",
+  "Installing dependencies:"," mozilla-filesystem x86_64 1.9-33.fc40      fedora               8.1 k","",
+  "Transaction Summary","Install  2 Packages","","Total download size: 68 M","Is this ok [y/N]: y",400,
+  "Downloading Packages:","(1/2): mozilla-filesystem-1.9-33.fc40.x86_64.rpm    8.1 kB/s | 8.1 kB   00:01",
+  "(2/2): firefox-129.0-1.fc40.x86_64.rpm               14 MB/s |  68 MB   00:04",500,
+  "Running transaction check","Running transaction test","Running transaction",
+  "  Installing        : mozilla-filesystem-1.9-33.fc40.x86_64        1/2",
+  "  Installing        : firefox-129.0-1.fc40.x86_64                  2/2",
+  "$Complete!"],
+ zypper:["Loading repository data...","Reading installed packages...","Resolving package dependencies...","",
+  "The following 2 NEW packages are going to be installed:","  MozillaFirefox MozillaFirefox-branding-openSUSE","",
+  "2 new packages to install.","Overall download size: 64.8 MiB. Already cached: 0 B.",
+  "After the operation, additional 241.3 MiB will be used.","Continue? [y/n/v/...? shows all options] (y): y",400,
+  "Retrieving package MozillaFirefox-129.0-1.1.x86_64   (1/2),  64.2 MiB",500,
+  "Retrieving: MozillaFirefox-129.0-1.1.x86_64.rpm ..............................[done]",
+  "Checking for file conflicts: ..................................................[done]",
+  "(1/2) Installing: MozillaFirefox-129.0-1.1.x86_64 .............................[done]",
+  "(2/2) Installing: MozillaFirefox-branding-openSUSE-129-1.1 ....................[done]"]},
+1:{
+ pacman:["extra/nmap 7.95-1 [installed]","    Utility for network discovery and security auditing",
+  "extra/ncrack 0.7-4","    Network authentication cracking tool from the nmap project",
+  "extra/zenmap 7.95-1","    Official graphical frontend for nmap"],
+ apt:["Sorting... Done","Full Text Search... Done","nmap/jammy 7.94+dfsg-1 amd64",
+  "  The Network Mapper","","nmap-common/jammy 7.94+dfsg-1 all","  Architecture independent files for nmap",
+  "","zenmap/jammy 7.94+dfsg-1 all","  The Network Mapper Front End"],
+ dnf:["Last metadata expiration check: 0:14:22 ago on Thu 27 Aug 2026 09:17:31 AM CEST.",
+  "=================== Name Exactly Matched: nmap ===================",
+  "nmap.x86_64 : Network exploration tool and security scanner",
+  "=================== Name & Summary Matched: nmap =================",
+  "nmap-ncat.x86_64 : Nmap's Netcat replacement","zenmap.noarch : Graphical frontend for nmap"],
+ zypper:["Loading repository data...","Reading installed packages...","",
+  "S | Name       | Summary                                    | Type",
+  "--+------------+--------------------------------------------+--------",
+  "i | nmap       | Portscanner and network exploration tool   | package",
+  "  | nmap-ncat  | Nmap's Netcat replacement                  | package",
+  "  | zenmap     | GTK frontend for nmap                      | package"]},
+2:{
+ pacman:["Repository      : extra","Name            : firefox","Version         : 129.0-1",
+  "Description     : Standalone web browser from mozilla.org","Architecture    : x86_64",
+  "URL             : https://www.mozilla.org/firefox/","Licenses        : MPL-2.0  GPL-2.0-only",
+  "Depends On      : gtk3  libxt  nss  ttf-font  dbus","Download Size   : 66.42 MiB",
+  "Installed Size  : 245.11 MiB","Packager        : Jan Alexander Steffens"],
+ apt:["Package: firefox","Version: 129.0+build1","Priority: optional","Section: web",
+  "Maintainer: Ubuntu Mozilla Team","Installed-Size: 253 MB",
+  "Depends: libc6, libgtk-3-0, libnss3, fontconfig","Download-Size: 71.2 MB",
+  "APT-Sources: http://archive.ubuntu.com/ubuntu jammy/main amd64 Packages",
+  "Description: Safe and easy web browser from Mozilla"],
+ dnf:["Available Packages","Name         : firefox","Version      : 129.0","Release      : 1.fc40",
+  "Architecture : x86_64","Size         : 68 M","Source       : firefox-129.0-1.fc40.src.rpm",
+  "Repository   : updates","Summary      : Mozilla Firefox Web browser",
+  "URL          : https://www.mozilla.org/firefox/","License      : MPL-2.0"],
+ zypper:["Loading repository data...","Reading installed packages...","","Information for package MozillaFirefox:",
+  "Repository     : Main Repository","Name           : MozillaFirefox","Version        : 129.0-1.1",
+  "Arch           : x86_64","Installed      : No","Status         : not installed",
+  "Installed Size : 241.3 MiB","Summary        : Mozilla Firefox Web Browser"]},
+3:{
+ pacman:[":: Synchronising package databases...",300," core        129.6 KiB  428 KiB/s 00:00 [######################] 100%",
+  " extra         8.3 MiB  4.21 MiB/s 00:02 [######################] 100%",
+  " multilib    152.1 KiB  512 KiB/s 00:00 [######################] 100%",
+  ":: Starting full system upgrade...","resolving dependencies...","looking for conflicting packages...","",
+  "Packages (7) glibc-2.40-2  linux-6.9.8.arch1-1  mesa-24.1.4-1  systemd-256.4-1  firefox-129.0-1",
+  "             openssl-3.3.1-2  curl-8.9.1-1","",
+  "Total Download Size:   184.22 MiB","Total Installed Size:  612.40 MiB","Net Upgrade Size:        4.18 MiB","",
+  ":: Proceed with installation? [Y/n] y",600,
+  ":: Retrieving packages...","(7/7) checking package integrity",":: Processing package changes...",
+  "(7/7) upgrading systemd",":: Running post-transaction hooks...","(1/3) Updating linux initcpios...",
+  "~(2/3) Arming ConditionNeedsUpdate...","~(3/3) Updating the desktop file MIME type cache..."],
+ apt:["Hit:1 http://archive.ubuntu.com/ubuntu jammy InRelease",
+  "Get:2 http://security.ubuntu.com/ubuntu jammy-security InRelease [110 kB]",300,
+  "Get:3 http://archive.ubuntu.com/ubuntu jammy-updates InRelease [119 kB]",
+  "Fetched 229 kB in 1s (218 kB/s)","Reading package lists... Done","Building dependency tree... Done",
+  "14 packages can be upgraded. Run 'apt list --upgradable' to see them.",400,
+  "The following packages will be upgraded:","  curl libssl3 linux-generic openssh-server systemd tzdata",
+  "14 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.",
+  "Need to get 92.4 MB of archives.","Do you want to continue? [Y/n] y",500,
+  "Setting up systemd (249.11-0ubuntu3.12) ...","Processing triggers for man-db (2.10.2-1) ...",
+  "~*** System restart required ***"],
+ dnf:["Fedora 40 - x86_64 - Updates              3.1 MB/s | 4.2 MB     00:01",300,
+  "Dependencies resolved.",
+  "================================================================================",
+  " Package        Arch     Version              Repository        Size",
+  "================================================================================",
+  "Upgrading:"," kernel         x86_64   6.9.8-200.fc40       updates          112 M",
+  " systemd        x86_64   255.8-1.fc40         updates          4.8 M",
+  " openssl-libs   x86_64   3.2.2-3.fc40         updates          2.3 M","",
+  "Transaction Summary","Upgrade  14 Packages","","Total download size: 186 M","Is this ok [y/N]: y",600,
+  "Running transaction","$Complete!"],
+ zypper:["Retrieving repository 'Main Repository' metadata ..............................[done]",300,
+  "Loading repository data...","Reading installed packages...","Resolving package dependencies...","",
+  "The following 11 packages are going to be upgraded:",
+  "  curl kernel-default libopenssl3 systemd tzdata zypper","",
+  "11 packages to upgrade.","Overall download size: 148.2 MiB.",
+  "Continue? [y/n/v/...? shows all options] (y): y",600,
+  "(1/11) Installing: libopenssl3-3.1.4-1.1.x86_64 ...............................[done]",
+  "(11/11) Installing: kernel-default-6.9.8-1.1.x86_64 ...........................[done]",
+  "~There are running programs which still use files that have been deleted."]},
+4:{
+ pacman:["checking dependencies...","","Packages (3) firefox-129.0-1  mozilla-common-1.4-8  libvpx-1.14.1-1","",
+  "Total Removed Size:  248.90 MiB","",":: Do you want to remove these packages? [Y/n] y",400,
+  ":: Processing package changes...","(1/3) removing firefox","(2/3) removing mozilla-common",
+  "(3/3) removing libvpx",":: Running post-transaction hooks...","(1/1) Updating the MIME type database..."],
+ apt:["Reading package lists... Done","Building dependency tree... Done",
+  "The following packages will be REMOVED:","  firefox firefox-locale-en libvpx7",
+  "0 upgraded, 0 newly installed, 3 to remove and 0 not upgraded.",
+  "After this operation, 253 MB disk space will be freed.","Do you want to continue? [Y/n] y",400,
+  "(Reading database ... 214503 files and directories currently installed.)",
+  "Removing firefox (129.0+build1) ...","Processing triggers for man-db (2.10.2-1) ..."],
+ dnf:["Dependencies resolved.","Removing:"," firefox         x86_64  129.0-1.fc40   @updates   253 M",
+  "Removing unused dependencies:"," mozilla-filesystem x86_64 1.9-33.fc40  @fedora    8.1 k","",
+  "Transaction Summary","Remove  2 Packages","","Freed space: 253 M","Is this ok [y/N]: y",400,
+  "Running transaction","  Erasing  : firefox-129.0-1.fc40.x86_64    1/2","$Complete!"],
+ zypper:["Loading repository data...","Reading installed packages...","Resolving package dependencies...","",
+  "The following package is going to be REMOVED:","  MozillaFirefox","",
+  "1 package to remove.","After the operation, 241.3 MiB will be freed.",
+  "Continue? [y/n/v/...? shows all options] (y): y",400,
+  "(1/1) Removing MozillaFirefox-129.0-1.1.x86_64 ................................[done]"]},
+5:{
+ pacman:["/usr/bin/ls is owned by coreutils 9.5-1"],
+ apt:["coreutils: /usr/bin/ls"],
+ dnf:["Last metadata expiration check: 0:14:22 ago on Thu 27 Aug 2026 09:17:31 AM CEST.",
+  "coreutils-9.4-6.fc40.x86_64 : A set of basic GNU tools commonly used in shell scripts",
+  "Repo        : @System","Matched from:","Filename    : /usr/bin/ls"],
+ zypper:["Loading repository data...","Reading installed packages...","",
+  "S | Name      | Summary                          | Type",
+  "--+-----------+----------------------------------+--------",
+  "i | coreutils | GNU Core Utilities               | package"]},
+6:{
+ pacman:["acl 2.3.2-1","alsa-lib 1.2.12-1","base 3-2","bash 5.2.032-2","coreutils 9.5-1","curl 8.9.1-1",
+  "firefox 129.0-1","git 2.46.0-1","linux 6.9.8.arch1-1","nmap 7.95-1","openssh 9.8p1-1","systemd 256.4-1",
+  "~... 842 more"],
+ apt:["Listing... Done","accountsservice/jammy,now 22.07.5-2ubuntu1 amd64 [installed,automatic]",
+  "adduser/jammy,now 3.118ubuntu5 all [installed,automatic]",
+  "bash/jammy,now 5.1-6ubuntu1 amd64 [installed]",
+  "coreutils/jammy,now 8.32-4.1ubuntu1 amd64 [installed]",
+  "nmap/jammy,now 7.94+dfsg-1 amd64 [installed]","~... 1738 more"],
+ dnf:["Installed Packages","acl.x86_64                  2.3.2-1.fc40        @anaconda",
+  "bash.x86_64                 5.2.26-3.fc40       @anaconda",
+  "coreutils.x86_64            9.4-6.fc40          @anaconda",
+  "kernel.x86_64               6.9.8-200.fc40      @updates",
+  "nmap.x86_64                 7.95-1.fc40         @updates","~... 1204 more"],
+ zypper:["Loading repository data...","Reading installed packages...","",
+  "S | Name       | Summary                        | Type",
+  "--+------------+--------------------------------+--------",
+  "i | bash       | The GNU Bourne-Again Shell     | package",
+  "i | coreutils  | GNU Core Utilities             | package",
+  "i | nmap       | Portscanner                    | package","~... 1602 more"]},
+7:{
+ pacman:["Packages to keep:","  All locally installed packages","",
+  "Cache directory: /var/cache/pacman/pkg/",":: Do you want to remove all other packages from cache? [Y/n] y",400,
+  "removing old packages from cache...","$4.28 GiB freed"],
+ apt:["~(apt clean prints nothing on success)",400,"$/var/cache/apt/archives emptied — 1.4 GB freed"],
+ dnf:["24 files removed"],
+ zypper:["All repositories have been cleaned up.","$612.4 MiB freed"]}
+};
+
+/* =================== state =================== */
+const S = {mode:"drill", pm:"pacman", m:0, t:0, solved:{}, tries:0, hits:0, streak:0, best:0,
+           qDone:{}, qTries:0, qHits:0,
+           wrongInput:null, awaitingNext:false, hist:[], hp:0, busy:false};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+/* persistence — best effort, silently skipped when unavailable */
+async function save(){
+  try{ await window.storage.set("shelldrill:v1", JSON.stringify(
+    {mode:S.mode, pm:S.pm, m:S.m, t:S.t, solved:S.solved, tries:S.tries, hits:S.hits, best:S.best,
+     qDone:S.qDone, qTries:S.qTries, qHits:S.qHits, qt:Q.tier, qi:Q.i, seen:true})); }catch(e){}
+}
+async function load(){
+  try{ const r = await window.storage.get("shelldrill:v1");
+    if(r && r.value){ const d = JSON.parse(r.value); Object.assign(S,{mode:d.mode||"drill",pm:d.pm||"pacman",m:d.m|0,t:d.t|0,
+      solved:d.solved||{},tries:d.tries|0,hits:d.hits|0,best:d.best|0,
+      qDone:d.qDone||{},qTries:d.qTries|0,qHits:d.qHits|0});
+    Q.tier=d.qt|0; Q.i=d.qi|0; return d.seen===true; }
+  }catch(e){}
+  return false;
+}
+
+/* =================== task access =================== */
+const mod = () => MODULES[S.m];
+function task(){
+  const raw = mod().tasks[S.t];
+  if(!raw.v) return raw;
+  const v = raw.v[S.pm];
+  return {q:raw.q, h:raw.h, s:v.s, p:v.p, w:v.w};
+}
+function outputFor(){
+  if(mod().byPm){ const o = PKGOUT[S.t]; if(o && o[S.pm]) return o[S.pm]; }
+  return OUT[mod().id + ":" + S.t] || [];
+}
+const key = () => mod().byPm ? mod().id+":"+S.t+":"+S.pm : mod().id+":"+S.t;
+
+/* =================== matching =================== */
+function rx(p){
+  return new RegExp("^(?:sudo\\s+)?(?:" + p.replace(/ \?/g,"\\s*").replace(/ /g,"\\s+") + ")$");
+}
+function matches(input){
+  const c = input.trim().replace(/\s+/g," ");
+  return task().p.some(p => rx(p).test(c));
+}
+
+/* =================== tokenising & the debugger =================== */
+function tokens(s){ return (s.trim().match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || []); }
+function strip(t){ return t.filter(x => x !== "sudo"); }
+function flagsOf(toks){
+  const out = [];
+  toks.forEach(t=>{
+    if(t.startsWith("--")) out.push(t);
+    else if(/^-[A-Za-z0-9]/.test(t)) t.slice(1).split("").forEach(c => out.push("-"+c));
+  });
+  return out;
+}
+function operands(toks){ return toks.slice(1).filter(t => !t.startsWith("-")); }
+function lev(a,b){
+  const d = Array.from({length:a.length+1},(_,i)=>[i,...Array(b.length).fill(0)]);
+  for(let j=0;j<=b.length;j++) d[0][j]=j;
+  for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++)
+    d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1] + (a[i-1]===b[j-1]?0:1));
+  return d[a.length][b.length];
+}
+function nearestCmd(w){
+  let best=null, bd=99;
+  Object.keys(CMDDESC).forEach(c=>{ const d=lev(w,c); if(d<bd){bd=d;best=c;} });
+  return bd<=2 ? best : null;
+}
+function flagMeaning(cmd, f){
+  const dict = FLAGS[cmd];
+  if(dict && f.length===2 && dict[f[1]]) return dict[f[1]];
+  return null;
+}
+
+/* returns [{sev, head, body}] explaining exactly what is wrong */
+function diagnose(input){
+  const t = task(), f = [];
+  const push=(sev,head,body)=>f.push({sev,head,body});
+  if(!input.trim()){ push("err","Nothing was entered","Type the command into the prompt and press Enter."); return f; }
+
+  const uAll = tokens(input), eAll = tokens(t.s);
+  const u = strip(uAll), e = strip(eAll);
+  const uCmd = u[0] || "", eCmd = e[0] || "";
+  const PMCMDS = ["pacman","apt","apt-get","dnf","yum","zypper"];
+
+  /* 1 — is the command real? */
+  if(!CMDDESC[uCmd]){
+    const guess = nearestCmd(uCmd);
+    push("err", "`" + uCmd + "` is not a command",
+      guess ? "Nothing by that name exists on a standard system. You most likely meant <code>"+guess+"</code>, which "+CMDDESC[guess]+"."
+            : "Nothing by that name exists on a standard system. Check the cheatsheet for the tool that fits this task.");
+    return f;
+  }
+
+  /* 2 — right tool for the job? */
+  if(uCmd !== eCmd){
+    if(PMCMDS.includes(uCmd) && PMCMDS.includes(eCmd)){
+      push("err","Wrong package manager for this distro",
+        "<code>"+uCmd+"</code> "+CMDDESC[uCmd]+", but this session is set to <b>"+PMS[S.pm].label+"</b>, where the tool is <code>"+eCmd+"</code>. Either switch distro at the top of the page or use "+eCmd+".");
+    } else {
+      push("err","Wrong tool",
+        "<code>"+uCmd+"</code> "+CMDDESC[uCmd]+". This task needs <code>"+eCmd+"</code>, which "+CMDDESC[eCmd]+".");
+    }
+    return f;
+  }
+
+  /* 3 — flags */
+  const uf = flagsOf(u), ef = flagsOf(e);
+  const missing = ef.filter(x => !uf.includes(x));
+  const extra   = uf.filter(x => !ef.includes(x));
+  missing.forEach(m=>{
+    const mean = flagMeaning(eCmd, m);
+    push("err","Missing <code>"+m+"</code>", mean ? "Without it you don't get: "+mean+"." :
+      "The task needs this option. See the breakdown once you solve it, or check the cheatsheet.");
+  });
+  extra.forEach(x=>{
+    const mean = flagMeaning(eCmd, x);
+    push(mean?"warn":"err", (mean?"Unnecessary ":"Unknown ")+"<code>"+x+"</code>",
+      mean ? "<code>"+x+"</code> means: "+mean+" — correct syntax, but not what this task asked for."
+           : "<code>"+eCmd+"</code> has no such option, so it would exit with an error instead of running.");
+  });
+
+  /* 4 — operands */
+  const uo = operands(u), eo = operands(e);
+  const norm = s => s.replace(/^["']|["']$/g,"");
+  if(uo.length < eo.length){
+    const miss = eo.filter(x => !uo.some(y => norm(y)===norm(x)) && !/^(\||>|>>|&&|2>&1)$/.test(x));
+    if(miss.length || !/[|>&]/.test(t.s))
+    push("err","Missing argument", miss.length
+      ? "<code>"+eCmd+"</code> still needs: <code>"+esc(miss.join(" "))+"</code>."
+      : "The command needs "+eo.length+" argument"+(eo.length>1?"s":"")+", you gave "+uo.length+".");
+  } else if(uo.length > eo.length && eo.length){
+    push("warn","Too many arguments","This task only needs <code>"+esc(eo.join(" "))+"</code>. Extra words are passed to the command and usually cause an error.");
+  } else {
+    const same = uo.length===eo.length && uo.every(x=>eo.some(y=>norm(y)===norm(x)));
+    if(same && uo.some((x,i)=>norm(x)!==norm(eo[i]))){
+      push("err","Right arguments, wrong order",
+        "Order matters here: <code>"+esc(eo.join(" "))+"</code>. Source comes before destination, and the target of a link comes before the link name.");
+    } else {
+      uo.forEach((x,i)=>{
+        const want = eo[i]; if(!want) return;
+        const a = norm(x), b = norm(want);
+        if(a===b) return;
+        if(a.toLowerCase()===b.toLowerCase())
+          push("err","Wrong case in <code>"+esc(a)+"</code>","Linux filenames are case-sensitive — <code>"+esc(b)+"</code> and <code>"+esc(a)+"</code> are two different files.");
+        else if(lev(a,b)<=2)
+          push("err","Typo in <code>"+esc(a)+"</code>","It should read <code>"+esc(b)+"</code>.");
+        else if(b.includes("*") && !/["']/.test(x) && a.includes("*"))
+          push("warn","Unquoted wildcard","Quote it as <code>"+esc(b)+"</code>, otherwise the shell expands the <code>*</code> before the command ever sees it.");
+        else
+          push("err","Wrong argument","You passed <code>"+esc(a)+"</code>, the task asks for <code>"+esc(b)+"</code>.");
+      });
+    }
+  }
+
+  /* 5 — root */
+  if(eAll[0]==="sudo" && uAll[0]!=="sudo")
+    push("warn","No sudo","This command writes to the system, so on a real machine it would fail with <i>Permission denied</i>. Accepted here, but get into the habit.");
+
+  /* 6 — pipes and redirection actually present? */
+  [["|","a pipe"],[">","a redirect"],["&&","a chained &&"]].forEach(([sym,name])=>{
+    if(t.s.includes(sym) && !input.includes(sym))
+      push("err","Missing "+name+" <code>"+esc(sym)+"</code>","The task's shape is <code>"+esc(t.s)+"</code> — you need "+name+" to connect the two halves.");
+  });
+
+  if(!f.length) push("warn","Close, but not what the checker expects",
+    "The pieces look right. Compare yours carefully with the shape the task wants, then use <b>Show answer</b> if you're stuck.");
+  return f;
+}
+
+/* realistic shell error for an incorrect entry */
+function errLine(input){
+  const u = strip(tokens(input)), cmd = u[0] || "";
+  if(!cmd) return null;
+  if(!CMDDESC[cmd]) return "bash: " + cmd + ": command not found";
+  const e = strip(tokens(task().s));
+  if(cmd === e[0]){
+    const bad = flagsOf(u).filter(x => !flagMeaning(cmd,x) && x.length===2 && !flagsOf(e).includes(x));
+    if(bad.length) return cmd + ": invalid option -- '" + bad[0][1] + "'\nTry '" + cmd + " --help' for more information.";
+    if(!operands(u).length && operands(e).length) return cmd + ": missing operand\nTry '" + cmd + " --help' for more information.";
+    const eo = operands(e).map(x=>x.replace(/^["']|["']$/g,""));
+    const first = (operands(u)[0]||"").replace(/^["']|["']$/g,"");
+    if(first && !eo.includes(first) && /^[A-Za-z0-9~/._-]+$/.test(first) && !/^\d+$/.test(first))
+      return cmd + ": cannot access '" + first + "': No such file or directory";
+    return null;
+  }
+  return null;
+}
+
+/* =================== terminal rendering =================== */
+function ps1(){
+  const h = PMS[S.pm].host;
+  return '<span class="h">analyst@'+h+'</span>:<span class="path">~</span>$';
+}
+function line(html, cls){
+  const d = document.createElement("div");
+  d.className = "ln " + (cls||"");
+  d.innerHTML = html;
+  $("screen").appendChild(d);
+  $("screen").scrollTop = $("screen").scrollHeight;
+  return d;
+}
+function echoCmd(text){ line(ps1()+" "+esc(text), "cmd"); }
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+async function stream(lines){
+  for(const item of lines){
+    if(typeof item === "number"){ if(!reduced) await sleep(Math.min(item,900)); continue; }
+    if(item === "CLEAR"){ $("screen").innerHTML = ""; continue; }
+    let cls = "", txt = item;
+    const c = txt[0];
+    if(c==="~"){cls="note";txt=txt.slice(1);}
+    else if(c==="!"){cls="err";txt=txt.slice(1);}
+    else if(c==="$"){cls="ok";txt=txt.slice(1);}
+    else if(c==="%"){cls="sys";txt=txt.slice(1);}
+    line(esc(txt) || "&nbsp;", cls);
+    if(!reduced) await sleep(38);
+  }
+}
+
+/* =================== flow =================== */
+function renderDistro(){
+  const box = $("distro");
+  box.querySelectorAll(".pill").forEach(n=>n.remove());
+  Object.entries(PMS).forEach(([k,v])=>{
+    const b = document.createElement("button");
+    b.className="pill"; b.setAttribute("aria-pressed", k===S.pm);
+    b.innerHTML = v.label + " <small>" + v.cmd + "</small>";
+    b.onclick = ()=>{ S.pm=k; renderDistro(); renderTask(); save(); };
+    box.appendChild(b);
+  });
+}
+function renderModules(){
+  const box = $("modlist"); box.innerHTML = "";
+  MODULES.forEach((m,i)=>{
+    const done = m.tasks.filter((_,j)=>S.solved[m.byPm ? m.id+":"+j+":"+S.pm : m.id+":"+j]).length;
+    const b = document.createElement("button");
+    b.className = "mod"; b.setAttribute("aria-current", i===S.m);
+    b.innerHTML = '<span class="n">'+String(i+1).padStart(2,"0")+'</span><span>'+m.name+'</span>'+
+      '<span class="done">'+done+"/"+m.tasks.length+'</span>';
+    b.onclick = ()=>{ S.m=i; S.t=0; renderTask(); save(); };
+    box.appendChild(b);
+  });
+  const solved = Object.keys(S.solved).length;
+  $("s-solved").textContent = solved;
+  $("s-acc").textContent = S.tries ? Math.round(S.hits/S.tries*100)+"%" : "—";
+  $("s-streak").textContent = S.streak + (S.best>S.streak ? " (best "+S.best+")" : "");
+}
+function renderTask(){
+  const t = task(), m = mod();
+  S.wrongInput = null; S.awaitingNext = false;
+  $("guidebody").innerHTML = m.guide;
+  $("termtitle").textContent = "bash — analyst@" + PMS[S.pm].host;
+  $("ps1").innerHTML = ps1();
+  $("after").innerHTML = "";
+  $("brief").innerHTML =
+    '<div class="meta"><span>'+esc(m.name)+'</span><span class="idx">Task '+(S.t+1)+" / "+m.tasks.length+'</span>'+
+    (S.solved[key()] ? '<span style="color:var(--lime)">solved</span>' : '')+'</div>'+
+    "<h1>"+esc(t.q)+"</h1>"+
+    '<div class="actions">'+
+      '<button class="ghost" id="b-hint">Hint</button>'+
+      '<button class="ghost" id="b-debug">Debug my command</button>'+
+      '<button class="ghost" id="b-ans">Show answer</button>'+
+      '<button class="ghost" id="b-prev">← Previous</button>'+
+      '<button class="ghost" id="b-skip">Skip →</button>'+
+    "</div>";
+  $("b-hint").onclick = showHint;
+  $("b-debug").onclick = showDebug;
+  $("b-ans").onclick = showAnswer;
+  $("b-prev").onclick = ()=>step(-1);
+  $("b-skip").onclick = ()=>step(1);
+  $("screen").innerHTML = "";
+  line('<span class="note">Task loaded. Type your command below — meta commands: hint, debug, answer, skip, ref, quiz, clear</span>');
+  renderModules();
+  $("entry").focus();
+}
+function showHint(){
+  if($("hintbox")) return;
+  const d = document.createElement("div");
+  d.className = "hintbox"; d.id = "hintbox";
+  d.innerHTML = "<b>Hint</b>" + task().h;
+  $("brief").appendChild(d);
+}
+function showAnswer(){
+  const t = task();
+  $("after").innerHTML = '<div class="breakdown"><h2>Answer</h2>'+
+    '<div class="tok"><span class="k">'+esc(t.s)+'</span><span class="v">Type it yourself to continue — muscle memory is the point.</span></div></div>';
+}
+function showDebug(){
+  const src = S.wrongInput;
+  if(src === null){
+    $("after").innerHTML = '<div class="breakdown" style="border-top-color:var(--cyan)"><h2>Debugger</h2>'+
+      '<div class="tok"><span class="k">no input yet</span><span class="v">Run a command first. If it fails, this will tell you which part is wrong and why.</span></div></div>';
+    return;
+  }
+  const f = diagnose(src);
+  const rows = f.map(x=>{
+    const col = x.sev==="err" ? "var(--rose)" : "var(--amber)";
+    return '<div class="tok"><span class="k" style="color:'+col+'">'+x.head+'</span><span class="v">'+x.body+"</span></div>";
+  }).join("");
+  $("after").innerHTML = '<div class="breakdown" style="border-top-color:var(--rose)"><h2>Debugger — '+esc(src)+"</h2>"+rows+"</div>";
+}
+function celebrate(){
+  const t = task();
+  const rows = (t.w||[]).map(([k,v])=>'<div class="tok"><span class="k">'+esc(k)+'</span><span class="v">'+v+"</span></div>").join("");
+  const last = S.m===MODULES.length-1 && S.t===mod().tasks.length-1;
+  $("after").innerHTML = '<div class="breakdown"><h2>Why that works</h2>'+rows+
+    '<button class="nextbtn" id="b-next">'+(last?"Finish":"Next task →")+"</button></div>";
+  $("b-next").onclick = ()=>step(1);
+  S.awaitingNext = true;
+}
+function step(d){
+  const m = mod();
+  let t = S.t + d;
+  if(t >= m.tasks.length){ if(S.m < MODULES.length-1){ S.m++; S.t=0; } else { S.t=m.tasks.length-1; return done(); } }
+  else if(t < 0){ if(S.m>0){ S.m--; S.t = MODULES[S.m].tasks.length-1; } else return; }
+  else S.t = t;
+  renderTask(); save();
+}
+function done(){
+  $("after").innerHTML = '<div class="breakdown done-card"><h2 style="color:var(--amber)">Course complete</h2>'+
+    '<div class="big">'+Object.keys(S.solved).length+"</div><p>tasks solved · "+
+    (S.tries?Math.round(S.hits/S.tries*100):0)+"% accuracy · best streak "+S.best+
+    "</p><p>Now do it on a real machine. Everything here works the same in a VM.</p></div>";
+}
+
+/* =================== input =================== */
+async function submit(raw){
+  const input = raw.trim();
+  if(!input || S.busy) return;
+  S.hist.push(input); S.hp = S.hist.length;
+
+  const meta = input.toLowerCase();
+  if(meta==="clear"&&task().s!=="clear"){ $("screen").innerHTML=""; return; }
+  if(meta==="hint"){ echoCmd(input); showHint(); line("~hint shown above the terminal","note"); return; }
+  if(meta==="debug"){ echoCmd(input); showDebug(); line("~debugger output shown below","note"); return; }
+  if(meta==="answer"||meta==="reveal"){ echoCmd(input); showAnswer(); return; }
+  if(meta==="skip"||meta==="next"){ echoCmd(input); step(1); return; }
+  if(meta==="ref"||meta==="cheat"){ echoCmd(input); openRef(); return; }
+  if(meta==="tutorial"){ echoCmd(input); startTour(); return; }
+  if(meta==="quiz"){ echoCmd(input); setMode("quiz"); return; }
+
+  echoCmd(input);
+  S.tries++;
+
+  if(matches(input)){
+    S.hits++; S.streak++; S.best = Math.max(S.best,S.streak);
+    if(!S.solved[key()]) S.solved[key()] = true;
+    S.busy = true;
+    await stream(outputFor());
+    S.busy = false;
+    line("");
+    celebrate(); renderModules(); save();
+  } else {
+    S.streak = 0; S.wrongInput = input;
+    const e = errLine(input);
+    if(e) e.split("\n").forEach(l=>line(esc(l),"err"));
+    else line("~that runs, but it isn't what the task asked for","note");
+    line('<span class="note">Not right yet — press <b>Debug my command</b> (or type <b>debug</b>) to see exactly why.</span>');
+    renderModules(); save();
+  }
+}
+$("entry").addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ const v=e.target.value; e.target.value=""; submit(v); }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); if(S.hp>0){ S.hp--; e.target.value=S.hist[S.hp]||""; } }
+  else if(e.key==="ArrowDown"){ e.preventDefault(); if(S.hp<S.hist.length-1){ S.hp++; e.target.value=S.hist[S.hp]||""; } else { S.hp=S.hist.length; e.target.value=""; } }
+  else if(e.key==="Enter"&&e.ctrlKey){ }
+});
+$("screen").addEventListener("click", ()=>$("entry").focus());
+$("reset").onclick = ()=>{
+  S.solved={}; S.tries=0; S.hits=0; S.streak=0; S.best=0; S.m=0; S.t=0;
+  S.qDone={}; S.qTries=0; S.qHits=0; Q.tier=0; Q.i=0; Q.picked.clear(); Q.checked=false;
+  setMode(S.mode);
+};
+
+/* =================== cheatsheet =================== */
+function renderSheet(q){
+  const box = $("reflist"); box.innerHTML = "";
+  const term = (q||"").toLowerCase(); let shown = 0;
+  SHEET.forEach(([group,rows])=>{
+    const hit = rows.filter(([c,d]) => !term || c.toLowerCase().includes(term) || d.toLowerCase().includes(term) || group.toLowerCase().includes(term));
+    if(!hit.length) return;
+    shown += hit.length;
+    const g = document.createElement("div"); g.className="refgroup";
+    g.innerHTML = "<h3>"+group+"</h3>" + hit.map(([c,d])=>
+      '<div class="refrow"><code>'+esc(c)+"</code><span>"+esc(d)+"</span></div>").join("");
+    box.appendChild(g);
+  });
+  if(!shown) box.innerHTML = '<p class="refempty">Nothing matches “'+esc(q)+'”. Try a shorter word, like “port” or “copy”.</p>';
+}
+function openRef(){ $("drawer").classList.add("open"); $("scrim").classList.add("open");
+  $("drawer").setAttribute("aria-hidden","false"); $("refsearch").focus(); }
+function closeRef(){ $("drawer").classList.remove("open"); $("scrim").classList.remove("open");
+  $("drawer").setAttribute("aria-hidden","true"); }
+$("openref").onclick = openRef;
+$("closeref").onclick = closeRef;
+$("scrim").onclick = closeRef;
+$("refsearch").addEventListener("input", e=>renderSheet(e.target.value));
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeRef(); endTour(); } });
+
+/* =================== tutorial =================== */
+const TOUR = [
+ {el:"brief", t:"Read the task",
+  b:"Every step gives you a job in plain English. There's no multiple choice — you have to type the real command, the way you would on a real machine."},
+ {el:"entry", t:"Type it here",
+  b:"This is a working prompt. Press Enter to run. <b>↑</b> recalls what you typed before, exactly like a real shell. When you get it right, the terminal prints the output the real command would produce."},
+ {el:"b-debug", t:"Stuck? Debug it",
+  b:"Get it wrong and this button explains what's actually broken: unknown command, missing flag, wrong argument order, forgotten sudo. It names the specific part that failed and why."},
+ {el:"b-hint", t:"Hint, then answer",
+  b:"<b>Hint</b> nudges you without giving it away. <b>Show answer</b> reveals the command but you still have to type it — that's the part that sticks."},
+ {el:"distro", t:"Pick your distro",
+  b:"Package commands differ between distros. Switch here and the install tasks, the prompt and the output all change to match Arch, Ubuntu, Fedora or openSUSE."},
+ {el:"openref", t:"Keep the cheatsheet open",
+  b:"Every command in the course with a plain-English explanation, filterable. Leave it open beside you while you work — looking things up is normal, memorising comes later."},
+ {el:"m-quiz", t:"Two ways to practise",
+  b:"<b>Terminal drill</b> is typing real commands. <b>Knowledge quiz</b> is 34 multiple-choice questions on the concepts behind them — what a kernel is, how permissions add up, why sudo beats root. Some questions have more than one correct answer."},
+ {el:"modlist", t:"Ten modules, in order",
+  b:"From <i>pwd</i> to auditing SUID binaries. Progress is saved per module. Type <b>tutorial</b> in the terminal to see this again."}
+];
+let ti = -1;
+function tourCard(){
+  let c = $("tourcard");
+  if(!c){
+    c = document.createElement("div"); c.id="tourcard";
+    c.style.cssText = "position:absolute;z-index:120;width:min(340px,86vw);background:var(--panel-2);"+
+      "border:1px solid var(--amber);border-radius:3px;padding:16px 18px;box-shadow:0 20px 60px -20px #000";
+    document.body.appendChild(c);
+  }
+  return c;
+}
+function showStep(){
+  const s = TOUR[ti], el = $(s.el);
+  document.querySelectorAll(".tourlit").forEach(n=>{n.classList.remove("tourlit");n.style.outline="";n.style.outlineOffset="";});
+  if(el){ el.classList.add("tourlit"); el.style.outline="2px solid var(--amber)"; el.style.outlineOffset="4px";
+    el.scrollIntoView({block:"center", behavior: reduced?"auto":"smooth"}); }
+  const c = tourCard();
+  c.innerHTML = '<div style="font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-bottom:7px">'+
+    "Step "+(ti+1)+" of "+TOUR.length+'</div><div style="font-family:var(--sans);font-size:17px;font-weight:500;margin-bottom:7px">'+
+    s.t+'</div><div style="font-family:var(--sans);font-size:13.5px;color:#A9B8C6;line-height:1.6">'+s.b+"</div>"+
+    '<div style="display:flex;gap:8px;margin-top:14px;align-items:center">'+
+      '<button class="ghost" id="t-skip">Skip tour</button><span style="flex:1"></span>'+
+      (ti>0?'<button class="ghost" id="t-back">Back</button>':"")+
+      '<button class="nextbtn" style="margin:0;padding:7px 16px" id="t-next">'+(ti===TOUR.length-1?"Start":"Next")+"</button></div>";
+  const r = el ? el.getBoundingClientRect() : {bottom:80,left:20,width:0};
+  const top = window.scrollY + Math.min(r.bottom + 14, window.innerHeight - 200);
+  const left = Math.max(14, Math.min(window.scrollX + r.left, window.innerWidth - 360));
+  c.style.top = top+"px"; c.style.left = left+"px";
+  $("t-next").onclick = ()=>{ ti++; ti>=TOUR.length ? endTour() : showStep(); };
+  $("t-skip").onclick = endTour;
+  if($("t-back")) $("t-back").onclick = ()=>{ ti--; showStep(); };
+}
+function startTour(){ ti = 0; $("scrim").classList.add("open"); $("scrim").onclick = endTour; showStep(); }
+function endTour(){
+  const c = $("tourcard"); if(c) c.remove();
+  document.querySelectorAll(".tourlit").forEach(n=>{n.classList.remove("tourlit");n.style.outline="";n.style.outlineOffset="";});
+  $("scrim").classList.remove("open"); $("scrim").onclick = closeRef;
+  ti = -1; save(); $("entry").focus();
+}
+
+/* =================== knowledge quiz ===================
+   c:1 marks a correct option. Several may be correct. */
+const QUIZ = [
+{tier:"First steps", items:[
+{q:"What is Linux, strictly speaking?",
+ o:[{t:"The kernel — the core that talks to your hardware",c:1},
+    {t:"A complete operating system you download from linux.com"},
+    {t:"A brand owned by Ubuntu"},
+    {t:"One piece of a distribution, which adds the shell, tools and desktop around it",c:1}],
+ e:"Linux itself is only the kernel: it manages memory, processes, drivers and hardware. A <b>distribution</b> (Ubuntu, Arch, Fedora) bundles that kernel with a shell, GNU utilities, a package manager and usually a desktop. That's why every distro feels different while sharing the same core."},
+{q:"You see two prompts: <code>$</code> and <code>#</code>. What do they tell you?",
+ o:[{t:"$ means a normal user, # means root",c:1},
+    {t:"$ means the last command succeeded, # means it failed"},
+    {t:"# marks the line as a comment"},
+    {t:"$ means the shell is waiting for a password"}],
+ e:"By convention <code>$</code> is an unprivileged user and <code>#</code> is root. When you see <code>#</code>, every command runs with full system privileges — that's the moment to slow down and re-read what you typed."},
+{q:"Which of these are true about the Linux command line?",
+ o:[{t:"Commands and filenames are case-sensitive",c:1},
+    {t:"Tab completes filenames and commands",c:1},
+    {t:"Spaces in filenames need quoting or escaping",c:1},
+    {t:"A file extension determines whether a file can run"}],
+ e:"<code>Report.txt</code> and <code>report.txt</code> are two different files. Tab completion is the single biggest accuracy win available to you. Extensions are only a naming convention on Linux — what makes a file runnable is the <b>execute permission</b>, not <code>.sh</code>."},
+{q:"What is the difference between a terminal and a shell?",
+ o:[{t:"The terminal is the window; the shell is the program interpreting what you type",c:1},
+    {t:"Bash and zsh are shells",c:1},
+    {t:"They are two words for the same thing"},
+    {t:"GNOME Terminal, Konsole and Alacritty are terminals",c:1}],
+ e:"The terminal emulator just draws text and passes your keystrokes on. The shell — bash, zsh, fish — parses your line, expands wildcards and runs the program. Swapping terminals changes the look; swapping shells changes the behaviour."},
+{q:"A command is stuck running. Which key combinations help?",
+ o:[{t:"Ctrl+C cancels the running command",c:1},
+    {t:"Ctrl+Z suspends it and hands you back the prompt",c:1},
+    {t:"Ctrl+D signals end of input, closing the shell if the line is empty",c:1},
+    {t:"Ctrl+S cancels the command"}],
+ e:"Ctrl+C sends SIGINT (stop now). Ctrl+Z sends SIGTSTP (pause — resume with <code>fg</code>). Ctrl+D is end-of-file, not a cancel. Ctrl+S actually <i>freezes</i> terminal output — press Ctrl+Q if you hit it by accident and think the machine has hung."},
+{q:"Where should you look first when you don't know how a command works?",
+ o:[{t:"<code>man command</code>, the built-in manual page",c:1},
+    {t:"<code>command --help</code> for a short summary",c:1},
+    {t:"<code>tldr command</code> for practical examples, if it is installed",c:1},
+    {t:"There is no built-in documentation on Linux"}],
+ e:"Man pages are already on the machine, work offline, and match your installed version — which a random blog post will not. Inside <code>man</code>, <code>/</code> searches and <code>q</code> quits."},
+{q:"What does <code>sudo</code> actually do?",
+ o:[{t:"Runs a single command with administrative privileges",c:1},
+    {t:"Asks for <i>your</i> password, not root's, on most distros",c:1},
+    {t:"Records what was run, which matters for auditing",c:1},
+    {t:"Permanently makes you an administrator"}],
+ e:"<code>sudo</code> elevates one command, logs it, and drops back down. That is why it is preferred over logging in as root: the privilege is scoped and auditable."},
+{q:"Which are good reasons not to work as root all the time?",
+ o:[{t:"A typo can destroy the system with no confirmation",c:1},
+    {t:"Any program you launch inherits full privileges",c:1},
+    {t:"Root is disabled on Linux and cannot be used"},
+    {t:"Files you create end up owned by root, breaking your normal account later",c:1}],
+ e:"Root has no guardrails — no ownership checks, no permission errors to stop you. Working as a normal user means the system itself catches most mistakes before they happen."}
+]},
+{tier:"Files & the filesystem", items:[
+{q:"Which of these are absolute paths?",
+ o:[{t:"/home/analyst/notes.txt",c:1},
+    {t:"../logs/access.log"},
+    {t:"/etc/ssh/sshd_config",c:1},
+    {t:"projects/lab1"}],
+ e:"An absolute path starts at <code>/</code>, the root of the filesystem, and means the same thing from anywhere. A relative path is resolved from your current directory, so it breaks the moment you <code>cd</code> elsewhere."},
+{q:"What do these directories hold?",
+ o:[{t:"/etc — system-wide configuration files",c:1},
+    {t:"/var — data that changes, such as logs",c:1},
+    {t:"/home — users' personal directories",c:1},
+    {t:"/tmp — the recycle bin for deleted files"}],
+ e:"Linux has no recycle bin. <code>/tmp</code> is scratch space usually wiped at boot — never keep anything there you care about. Learning this layout turns 'where is that file?' into a two-second answer."},
+{q:"How do you make a file hidden in Linux?",
+ o:[{t:"Start its name with a dot, like <code>.bashrc</code>",c:1},
+    {t:"Set a hidden attribute with <code>chmod +h</code>"},
+    {t:"Move it into a special /hidden directory"},
+    {t:"Mark it hidden in the file manager's properties"}],
+ e:"Hiding is purely a naming convention: anything starting with <code>.</code> is skipped by <code>ls</code> and file managers. It keeps config clutter out of sight — it is not security, since <code>ls -a</code> reveals everything."},
+{q:"Reading <code>-rwxr-xr--</code> on a file, which statements are true?",
+ o:[{t:"The owner can read, write and execute it",c:1},
+    {t:"Members of the group can read and execute it",c:1},
+    {t:"Everyone else can only read it",c:1},
+    {t:"It is a directory"}],
+ e:"The first character is the type: <code>-</code> regular file, <code>d</code> directory, <code>l</code> symlink. The remaining nine are three sets of rwx: owner, group, others."},
+{q:"Which are true about deleting files?",
+ o:[{t:"<code>rm</code> removes immediately, with no trash to recover from",c:1},
+    {t:"<code>rm -rf</code> on the wrong path can wipe out a whole system",c:1},
+    {t:"<code>rmdir</code> refuses to delete a non-empty directory, which makes it safer",c:1},
+    {t:"Deleted files can always be restored with <code>undelete</code>"}],
+ e:"There is no undo. A habit that saves you: run <code>ls</code> on the path first to see exactly what matches, then change <code>ls</code> to <code>rm</code>. Never build an <code>rm -rf</code> line from memory in a hurry."},
+{q:"What is a symbolic link?",
+ o:[{t:"A small file containing a path, which points at another file",c:1},
+    {t:"A second name for the same data on disk, valid even after the original is deleted"},
+    {t:"A compressed copy of the original file"},
+    {t:"A backup that re-syncs itself whenever the original changes"}],
+ e:"A symlink stores a path, not data, so it costs nothing and can cross filesystems — but it goes stale if the target moves. That second option describes a <i>hard</i> link, which points at the same data on disk and survives the original name being deleted."},
+{q:"Which are true about wildcards in the shell?",
+ o:[{t:"<code>*</code> matches any number of characters",c:1},
+    {t:"<code>?</code> matches exactly one character",c:1},
+    {t:"The shell expands them before the command ever runs",c:1},
+    {t:"Each command implements its own wildcard support"}],
+ e:"By the time <code>rm *.log</code> reaches <code>rm</code>, the shell has already replaced the pattern with real filenames. That is why you quote patterns you want passed through untouched, as in <code>find . -name \"*.conf\"</code>."}
+]},
+{tier:"Permissions & users", items:[
+{q:"In numeric mode, what does 755 mean?",
+ o:[{t:"rwx for the owner, r-x for group and others",c:1},
+    {t:"rw- for the owner, r-- for everyone else"},
+    {t:"Read and write for everyone on the system"},
+    {t:"Execute only, for all three groups"}],
+ e:"Read is 4, write is 2, execute is 1, added up per group. 7 = 4+2+1 (rwx), 5 = 4+1 (r-x), 6 = 4+2 (rw-), 0 = nothing."},
+{q:"SSH says your private key's permissions are too open. Which of these apply?",
+ o:[{t:"<code>chmod 600 ~/.ssh/id_ed25519</code>",c:1},
+    {t:"<code>chmod 700 ~/.ssh</code>",c:1},
+    {t:"<code>chmod 777 ~/.ssh</code>"},
+    {t:"SSH refuses keys that other users on the machine can read",c:1}],
+ e:"A private key readable by anyone else is a compromised key, so SSH simply will not use it. <code>777</code> is the opposite of a fix — it grants everyone full access and is almost never the right answer to anything."},
+{q:"Which statements about users and groups are correct?",
+ o:[{t:"Every file has exactly one owner and one group",c:1},
+    {t:"A user can belong to many groups",c:1},
+    {t:"<code>id</code> shows your UID, GID and group memberships",c:1},
+    {t:"Root is subject to the same permission checks as everyone else"}],
+ e:"Root bypasses permission checks entirely, which is precisely why unnecessary root use is dangerous. Group membership is the normal way to share access — add people to a group rather than loosening permissions for everyone."},
+{q:"What does the execute bit do?",
+ o:[{t:"On a file, it allows running it as a program",c:1},
+    {t:"On a directory, it allows entering it and reaching files inside",c:1},
+    {t:"On a directory, it allows listing the names inside"},
+    {t:"It is what <code>chmod +x</code> sets",c:1}],
+ e:"Directories are the confusing case: <code>r</code> lets you list the names, <code>x</code> lets you traverse into it and open the files. A directory with r but no x gives you names you cannot actually use."},
+{q:"Which of these are legitimate uses of a SUID binary?",
+ o:[{t:"<code>passwd</code>, which must write to /etc/shadow as root",c:1},
+    {t:"<code>sudo</code>, which has to elevate privileges",c:1},
+    {t:"A shell script so the whole team can run it"},
+    {t:"An unexpected SUID file in /opt is worth investigating",c:1}],
+ e:"SUID makes a program run as its <i>owner</i> rather than the person launching it. A handful of system tools need it; anything unexplained with SUID root is a classic privilege-escalation route, which is why <code>find / -perm -4000</code> is a standard audit step."},
+{q:"Which are true about <code>sudo</code> versus <code>su</code>?",
+ o:[{t:"<code>sudo</code> runs one command with elevated rights",c:1},
+    {t:"<code>su -</code> switches you into another account's shell entirely",c:1},
+    {t:"<code>sudo</code> use is logged, so it can be audited afterwards",c:1},
+    {t:"Both require the root password on Ubuntu"}],
+ e:"On Ubuntu and most desktop distros the root account has no password set at all — <code>sudo</code> asks for <i>your</i> password and checks whether you are permitted, which is configured in <code>/etc/sudoers</code>."}
+]},
+{tier:"Packages & the system", items:[
+{q:"What does a package manager do for you?",
+ o:[{t:"Downloads software from signed, curated repositories",c:1},
+    {t:"Resolves and installs dependencies automatically",c:1},
+    {t:"Keeps everything updatable from a single command",c:1},
+    {t:"Scans downloaded programs for viruses"}],
+ e:"This is why installing software on Linux is safer than hunting for installers: packages come from repositories your distro signs, and one update command covers the whole system instead of each app updating itself."},
+{q:"Which pairings of distro and package manager are correct?",
+ o:[{t:"Ubuntu and Debian → apt",c:1},
+    {t:"Arch → pacman",c:1},
+    {t:"Fedora and RHEL → dnf",c:1},
+    {t:"openSUSE → apt"}],
+ e:"openSUSE uses <code>zypper</code>. The families matter more than the names: Debian-based distros use .deb and apt, Red Hat-based use .rpm and dnf, Arch uses .pkg.tar.zst and pacman."},
+{q:"On Ubuntu, what does <code>sudo apt update</code> do?",
+ o:[{t:"Refreshes the list of available packages without installing anything",c:1},
+    {t:"Downloads and installs every available upgrade"},
+    {t:"Upgrades the distro to the next major release"},
+    {t:"Removes packages that are no longer needed"}],
+ e:"<code>update</code> refreshes the catalogue, <code>upgrade</code> installs the newer versions. The two words mean nearly opposite things here, which trips up almost everyone at the start."},
+{q:"Which statements about <code>pacman -Syu</code> are correct?",
+ o:[{t:"S selects the sync operation — install from the repositories",c:1},
+    {t:"y refreshes the package databases",c:1},
+    {t:"u upgrades installed packages",c:1},
+    {t:"The letters are arbitrary and carry no meaning"}],
+ e:"Uppercase picks the operation (S sync, Q query, R remove, U from a local file); lowercase modifies it. Running <code>-Sy</code> alone and then installing something causes a partial upgrade — the classic way to break an Arch system."},
+{q:"Which are true about rolling release versus fixed release distros?",
+ o:[{t:"Arch is rolling — packages update continuously",c:1},
+    {t:"Ubuntu LTS is fixed, with major versions and long support windows",c:1},
+    {t:"Rolling distros get new software sooner",c:1},
+    {t:"Fixed releases never receive security updates"}],
+ e:"Fixed releases absolutely get security patches — they just hold major versions steady, which is what servers want. Rolling gives you the newest kernel and drivers at the cost of more frequent breakage. Neither is better; they optimise for different things."},
+{q:"A service will not start. Which commands help you find out why?",
+ o:[{t:"<code>systemctl status nginx</code>",c:1},
+    {t:"<code>journalctl -u nginx -n 50</code>",c:1},
+    {t:"<code>systemctl list-units --failed</code>",c:1},
+    {t:"<code>ls -la /etc</code>"}],
+ e:"<code>status</code> gives you the state and the last few log lines; the journal gives you the actual error. That pair answers most 'it is broken' questions on a modern Linux system."}
+]},
+{tier:"Going further", items:[
+{q:"What does the pipe <code>|</code> do in <code>ps aux | grep nginx</code>?",
+ o:[{t:"Feeds the output of the left command into the input of the right one",c:1},
+    {t:"Runs both commands independently and prints both results"},
+    {t:"Saves the output of the left command to a file"},
+    {t:"Runs the right command only if the left one succeeds"}],
+ e:"Piping is the core idea of Unix: each tool does one thing and reads and writes plain text, so you compose them. Saving to a file is redirection — <code>&gt;</code> — a different operator."},
+{q:"Which redirections are described correctly?",
+ o:[{t:"<code>cmd &gt; file</code> overwrites the file",c:1},
+    {t:"<code>cmd &gt;&gt; file</code> appends to it",c:1},
+    {t:"<code>cmd 2&gt; file</code> captures error output only",c:1},
+    {t:"<code>cmd &gt; file</code> appends to it"}],
+ e:"Every process has three streams: stdin (0), stdout (1) and stderr (2). Errors go to stderr so they still reach your screen when you redirect normal output — and <code>2&gt;&amp;1</code> is how you merge them back together."},
+{q:"What is <code>/dev/null</code> used for?",
+ o:[{t:"A device that discards anything written to it, used to throw output away",c:1},
+    {t:"A temporary file the system clears at every boot"},
+    {t:"The default location for system logs"},
+    {t:"A holding area for deleted files, so they can be restored"}],
+ e:"It is a special device that swallows everything written to it and returns nothing when read. Useful for hiding expected errors — but do not make it a reflex, because you can hide the errors that mattered."},
+{q:"Which are true about processes?",
+ o:[{t:"Every process has a numeric PID",c:1},
+    {t:"<code>kill</code> sends a signal; the default politely asks the process to exit",c:1},
+    {t:"<code>kill -9</code> cannot be caught or ignored by the process",c:1},
+    {t:"<code>kill -9</code> should be your first attempt"}],
+ e:"Plain <code>kill</code> (SIGTERM) gives the program a chance to flush files and shut down properly. <code>-9</code> (SIGKILL) has the kernel destroy it immediately with no cleanup — reach for it only when the polite version fails."},
+{q:"What does the <code>$PATH</code> environment variable control?",
+ o:[{t:"The list of directories the shell searches for the command you typed",c:1},
+    {t:"Which directories your account is allowed to enter"},
+    {t:"The directory you land in when you open a terminal"},
+    {t:"Where the system stores installed packages"}],
+ e:"The shell only searches directories listed in <code>$PATH</code>, and the current directory is deliberately not one of them — otherwise a malicious file named <code>ls</code> in a shared folder would run instead of the real one."},
+{q:"Which are sensible first steps when a disk fills up?",
+ o:[{t:"<code>df -h</code> to see which filesystem is full",c:1},
+    {t:"<code>du -sh *</code> inside it to find the big directories",c:1},
+    {t:"Check <code>/var/log</code>, a frequent culprit",c:1},
+    {t:"Delete files from <code>/etc</code> to free space"}],
+ e:"<code>df</code> answers 'which mount point', <code>du</code> answers 'what inside it'. <code>/etc</code> holds configuration measured in kilobytes — deleting from it frees nothing and breaks the system."},
+{q:"Which habits genuinely make you faster on the command line?",
+ o:[{t:"Tab completion for every path",c:1},
+    {t:"Ctrl+R to search backwards through your history",c:1},
+    {t:"Reading the error message before searching the web",c:1},
+    {t:"Memorising every flag before you start using a command"}],
+ e:"Nobody memorises flags up front — you look them up, use them, and they stick through repetition. Linux error messages are unusually precise: they normally name the file, the operation and the reason."}
+]}
+];
+
+/* ---------- quiz state & rendering ---------- */
+const Q = {tier:0, i:0, picked:new Set(), checked:false};
+const qKey = () => Q.tier + ":" + Q.i;
+const qItem = () => QUIZ[Q.tier].items[Q.i];
+
+function renderQuizNav(){
+  const box = $("modlist"); box.innerHTML = "";
+  QUIZ.forEach((t,i)=>{
+    const done = t.items.filter((_,j)=>S.qDone[i+":"+j]).length;
+    const b = document.createElement("button");
+    b.className="mod"; b.setAttribute("aria-current", i===Q.tier);
+    b.innerHTML = '<span class="n">'+String(i+1).padStart(2,"0")+'</span><span>'+t.tier+'</span>'+
+      '<span class="done">'+done+"/"+t.items.length+"</span>";
+    b.onclick = ()=>{ Q.tier=i; Q.i=0; Q.picked.clear(); Q.checked=false; renderQuiz(); save(); };
+    box.appendChild(b);
+  });
+  $("s-solved").textContent = Object.keys(S.qDone).length;
+  $("s-acc").textContent = S.qTries ? Math.round(S.qHits/S.qTries*100)+"%" : "—";
+  $("s-streak").textContent = "—";
+}
+function renderQuiz(){
+  const it = qItem(), t = QUIZ[Q.tier];
+  $("quizview").innerHTML =
+    '<div class="brief"><div class="meta"><span>'+esc(t.tier)+"</span>"+
+      '<span class="idx">Question '+(Q.i+1)+" / "+t.items.length+"</span>"+
+      "<span>select all that apply</span>"+
+      (S.qDone[qKey()] ? '<span style="color:var(--lime)">answered</span>' : "")+
+    "</div><h1>"+it.q+"</h1></div>"+
+    '<div class="qopts" id="qopts"></div>'+
+    '<div class="actions" style="margin-top:16px">'+
+      '<button class="nextbtn" id="q-check" style="margin:0">Check answer</button>'+
+      '<button class="ghost" id="q-prev">← Previous</button>'+
+      '<button class="ghost" id="q-next">Skip →</button>'+
+    '</div><div id="qafter"></div>';
+  const box = $("qopts");
+  it.o.forEach((o,i)=>{
+    const b = document.createElement("button");
+    b.className = "qopt"; b.type = "button";
+    b.innerHTML = '<span class="box" aria-hidden="true"></span><span class="txt">'+o.t+"</span>";
+    b.setAttribute("aria-pressed","false");
+    b.onclick = ()=>{
+      if(Q.checked) return;
+      const on = Q.picked.has(i);
+      on ? Q.picked.delete(i) : Q.picked.add(i);
+      b.classList.toggle("on", !on);
+      b.setAttribute("aria-pressed", String(!on));
+    };
+    box.appendChild(b);
+  });
+  $("q-check").onclick = checkQuiz;
+  $("q-prev").onclick = ()=>quizStep(-1);
+  $("q-next").onclick = ()=>quizStep(1);
+  renderQuizNav();
+}
+function checkQuiz(){
+  if(Q.checked){ quizStep(1); return; }
+  if(!Q.picked.size){
+    $("qafter").innerHTML = '<div class="hintbox"><b>Nothing selected</b>Pick at least one option — more than one can be correct.</div>';
+    return;
+  }
+  const it = qItem();
+  Q.checked = true;
+  let right = true;
+  it.o.forEach((o,i)=>{
+    const el = $("qopts").children[i];
+    const picked = Q.picked.has(i);
+    el.classList.remove("on");
+    if(o.c && picked) el.classList.add("hit");
+    else if(o.c && !picked){ el.classList.add("missed"); right = false; }
+    else if(!o.c && picked){ el.classList.add("wrong"); right = false; }
+  });
+  S.qTries++;
+  if(right){ S.qHits++; S.qDone[qKey()] = true; }
+  $("qafter").innerHTML = '<div class="breakdown" style="border-top-color:'+(right?"var(--lime)":"var(--rose)")+'">'+
+    '<h2 style="color:'+(right?"var(--lime)":"var(--rose)")+'">'+(right?"Correct":"Not quite")+"</h2>"+
+    '<div class="tok"><span class="v" style="font-family:var(--sans)">'+it.e+"</span></div>"+
+    '<button class="nextbtn" id="q-go">Next question →</button></div>';
+  $("q-go").onclick = ()=>quizStep(1);
+  $("q-check").style.display = "none";
+  renderQuizNav(); save();
+}
+function quizStep(d){
+  const t = QUIZ[Q.tier];
+  let i = Q.i + d;
+  if(i >= t.items.length){ if(Q.tier < QUIZ.length-1){ Q.tier++; Q.i=0; } else { quizDone(); return; } }
+  else if(i < 0){ if(Q.tier>0){ Q.tier--; Q.i = QUIZ[Q.tier].items.length-1; } else return; }
+  else Q.i = i;
+  Q.picked.clear(); Q.checked = false;
+  renderQuiz(); save();
+}
+function quizDone(){
+  const total = QUIZ.reduce((n,t)=>n+t.items.length,0);
+  $("quizview").innerHTML = '<div class="breakdown done-card"><h2 style="color:var(--amber)">Quiz complete</h2>'+
+    '<div class="big">'+Object.keys(S.qDone).length+" / "+total+"</div>"+
+    "<p>answered correctly · "+(S.qTries?Math.round(S.qHits/S.qTries*100):0)+"% accuracy</p>"+
+    '<button class="nextbtn" id="q-restart">Start over</button></div>';
+  $("q-restart").onclick = ()=>{ Q.tier=0; Q.i=0; Q.picked.clear(); Q.checked=false; renderQuiz(); };
+  renderQuizNav();
+}
+
+/* ---------- mode switching ---------- */
+function setMode(m){
+  S.mode = m;
+  const drill = m === "drill";
+  ["guide","brief","after"].forEach(id=>$(id).style.display = drill ? "" : "none");
+  document.querySelector(".term").style.display = drill ? "" : "none";
+  $("quizview").style.display = drill ? "none" : "";
+  $("m-drill").setAttribute("aria-pressed", String(drill));
+  $("m-quiz").setAttribute("aria-pressed", String(!drill));
+  $("sectlabel").textContent = drill ? "Modules" : "Quiz sections";
+  $("distro").style.opacity = drill ? "1" : ".35";
+  if(drill) renderTask(); else renderQuiz();
+  save();
+}
+
+/* =================== boot =================== */
+(async function(){
+  const seen = await load();
+  renderDistro(); renderSheet("");
+  $("m-drill").onclick = ()=>setMode("drill");
+  $("m-quiz").onclick  = ()=>setMode("quiz");
+  setMode(S.mode || "drill");
+  const tb = document.createElement("button");
+  tb.className = "refbtn"; tb.textContent = "Tutorial";
+  tb.style.borderColor = "var(--amber)"; tb.style.color = "var(--amber)"; tb.style.marginLeft = "8px";
+  tb.onclick = startTour;
+  $("openref").after(tb);
+  if(!seen) setTimeout(startTour, 400);
+})();
+
+</script>
+</body>
+</html>
