@@ -148,7 +148,11 @@ const NEAR_MISS = {
  "1:2": [["mkdir -p /kurs/v36/lab1"],           // at the root, not in home
          ["mkdir -p ~/kurs/v36"]],              // stopped one level short
  "1:3": [["mkdir -p ~/kurs/v36/lab1", "touch a.txt b.txt c.txt"],   // left in home
-         ["mkdir -p ~/kurs/v36/lab1", "touch ~/kurs/v36/lab1/a.txt"]],
+         ["mkdir -p ~/kurs/v36/lab1", "touch ~/kurs/v36/lab1/a.txt"],
+         // mkdir makes directories, not empty files
+         ["mkdir -p ~/kurs/v36/lab1/a.txt ~/kurs/v36/lab1/b.txt ~/kurs/v36/lab1/c.txt"],
+         // right idea, wrong names
+         ["mkdir -p ~/kurs/v36/lab1", "cd ~/kurs/v36/lab1", "touch 1.txt 2.txt 3.txt"]],
  "1:4": [["cp ~/notes.txt ~/kurs/first.txt"]],  // right name, but nothing to copy from lab1
  "1:5": [["cat /etc/hostname"]],
  "1:6": [["whoami"]],                           // username only, not uid/gid/groups

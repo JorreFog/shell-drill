@@ -5101,6 +5101,9 @@ function makeLabCtx(K, hist){
     said:   rx => hist.some(h => rx.test(h.out) || rx.test(h.err||"")),
     exists: p => !!node(p),
     isDir:  p => { const n = node(p); return !!n && n.t === "d"; },
+    // a task that asks for a file must not be satisfied by a directory of
+    // the same name — mkdir a.txt is not touch a.txt
+    isFile: p => { const n = node(p); return !!n && n.t === "f"; },
     read:   p => { const n = node(p); return n && n.t === "f" ? n.c : null; },
     mode:   p => { const n = node(p); return n ? n.mode : null; },
     owner:  p => { const n = node(p); return n ? n.owner : null; },
@@ -5130,10 +5133,10 @@ function buildCourse(){
    check:c => c.isDir("/home/analyst/kurs/v36/lab1")},
   {q:"Inside <code>~/kurs/v36/lab1</code>, create three empty files: <code>a.txt</code>, <code>b.txt</code> and <code>c.txt</code>.",
    hint:"cd into the directory first, or give touch the full paths — it takes more than one filename at a time.",
-   check:c => ["a","b","c"].every(n => c.exists("/home/analyst/kurs/v36/lab1/"+n+".txt"))},
+   check:c => ["a","b","c"].every(n => c.isFile("/home/analyst/kurs/v36/lab1/"+n+".txt"))},
   {q:"Copy <code>a.txt</code> into <code>~/kurs</code> and give the copy the name <code>first.txt</code>.",
    hint:"Either cp then mv, or cp straight to the new path.",
-   check:c => c.exists("/home/analyst/kurs/first.txt")},
+   check:c => c.isFile("/home/analyst/kurs/first.txt")},
   {q:"Read <code>/etc/os-release</code> and find out which distribution this machine runs.",
    hint:"cat, or grep for the PRETTY_NAME line.",
    check:c => c.said(/Arch Linux/)},
@@ -5250,7 +5253,7 @@ function buildCourse(){
    hint:"journalctl filtered to one unit.",
    check:c => c.said(/Address already in use/)},
   {q:"Generate an ed25519 SSH key pair.", hint:"The key generator with a type option.",
-   check:c => c.exists("/home/analyst/.ssh/id_ed25519.pub")},
+   check:c => c.isFile("/home/analyst/.ssh/id_ed25519.pub")},
   {q:"Set <code>~/.ssh</code> to the mode SSH insists on.", hint:"Full access for you, nothing for anyone else.",
    check:c => c.mode("/home/analyst/.ssh") === 0o700},
   {q:"Schedule <code>/home/analyst/backup.sh</code> to run every day at 02:00. <code>crontab -e</code> opens an editor here.",
@@ -5305,10 +5308,10 @@ function buildCourse(){
                catch(e){ return false; } }},
   {q:"Extract that archive into <code>/tmp</code> and prove the contents came back by reading <code>app.conf</code>.",
    hint:"cd there first, then extract. The compression flag must match the archive.",
-   check:c => c.said(/port=8080/) && c.exists("/tmp/projects/webshop/app.conf")},
+   check:c => c.said(/port=8080/) && c.isFile("/tmp/projects/webshop/app.conf")},
   {q:"Sync <code>~/projects/</code> to <code>/tmp/bak</code> with rsync in archive mode, verbose.",
    hint:"Create the destination first. -a is archive mode, -v is verbose.",
-   check:c => c.exists("/tmp/bak/webshop/app.conf") || c.exists("/tmp/bak/projects/webshop/app.conf")},
+   check:c => c.isFile("/tmp/bak/webshop/app.conf") || c.isFile("/tmp/bak/projects/webshop/app.conf")},
   {q:"Compute the SHA-256 checksum of your archive.", hint:"The algorithm name plus 'sum'.",
    check:c => c.hist.some(h => /sha256sum/.test(h.cmd) && /backup\.tar\.gz/.test(h.cmd) &&
      /[0-9a-f]{64}/.test(h.out))},
@@ -5372,7 +5375,7 @@ function buildCourse(){
    check:c => c.said(/Python 3\./)},
   {q:"Write <code>~/py/hello.py</code> that prints one line, then run it. Use <code>edit ~/py/hello.py</code> to open the editor.",
    hint:"mkdir -p ~/py first. Then edit, write your code, Save, and run it with python3.",
-   check:c => c.exists("/home/analyst/py/hello.py") &&
+   check:c => c.isFile("/home/analyst/py/hello.py") &&
      c.hist.some(h => /python3?\s+.*hello\.py/.test(h.cmd) && h.code===0 && h.out.trim().length>0)}],
  check:[
   ["What is the difference between logging and auditing?",
@@ -5510,7 +5513,7 @@ function buildCourse(){
    check:c => c.mode("/home/analyst/reports") === 0o700},
   {q:"Save the output of <code>ls -la /etc</code> into <code>~/etc-listing.txt</code>, then confirm how many lines it has.",
    hint:"Redirect with >, then wc -l the file.",
-   check:c => c.exists("/home/analyst/etc-listing.txt") &&
+   check:c => c.isFile("/home/analyst/etc-listing.txt") &&
      c.hist.some(h => /wc\s+-l/.test(h.cmd) && /etc-listing/.test(h.cmd))},
   {q:"Write <code>~/py/sammanfatta.py</code> that reads <code>/var/log/access.log</code> and prints how many lines it contains.",
    hint:"Open the file, loop, count. Or read it and count the lines in the result.",
@@ -5660,8 +5663,14 @@ async function csubmit(raw){
 
   if(/^(tasks|lab)$/i.test(input)){
     CS.hist.pop();
-    COURSE[CS.lec].tasks.forEach((t,ti)=>
-      cline((S.lab[ckey(CS.lec,ti)] ? "[x] " : "[ ] ") + esc(t.q.replace(/<[^>]+>/g,"")), "note"));
+    COURSE[CS.lec].tasks.forEach((t,ti)=>{
+      const done = !!S.lab[ckey(CS.lec,ti)];
+      cline((done ? "[x] " : "[ ] ") + (ti+1) + ". " + esc(t.q.replace(/<[^>]+>/g,"")), done ? "ok" : "note");
+      // an unfinished task says what it is still waiting for, so a near miss
+      // does not just sit there silently
+      if(!done) cline("        still waiting — " + esc(t.hint), "note");
+    });
+    cline("A task ticks when the machine shows the result, not when the command looks right.", "note");
     return;
   }
   if(/^reset$/i.test(input)){
@@ -5839,6 +5848,7 @@ function renderCourse(){
 }
 
 /* ===== END simulated machine ===== */
+
 
 
 

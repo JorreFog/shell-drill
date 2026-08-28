@@ -135,8 +135,14 @@ async function csubmit(raw){
 
   if(/^(tasks|lab)$/i.test(input)){
     CS.hist.pop();
-    COURSE[CS.lec].tasks.forEach((t,ti)=>
-      cline((S.lab[ckey(CS.lec,ti)] ? "[x] " : "[ ] ") + esc(t.q.replace(/<[^>]+>/g,"")), "note"));
+    COURSE[CS.lec].tasks.forEach((t,ti)=>{
+      const done = !!S.lab[ckey(CS.lec,ti)];
+      cline((done ? "[x] " : "[ ] ") + (ti+1) + ". " + esc(t.q.replace(/<[^>]+>/g,"")), done ? "ok" : "note");
+      // an unfinished task says what it is still waiting for, so a near miss
+      // does not just sit there silently
+      if(!done) cline("        still waiting — " + esc(t.hint), "note");
+    });
+    cline("A task ticks when the machine shows the result, not when the command looks right.", "note");
     return;
   }
   if(/^reset$/i.test(input)){
