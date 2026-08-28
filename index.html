@@ -341,6 +341,50 @@ aside{position:sticky;top:20px}
 .cprog b{color:var(--lime);font-weight:500}
 .hint-oh{font-family:var(--sans);font-size:13px;color:var(--dim);padding:11px 13px;
   border-left:2px solid var(--cyan);background:rgba(92,207,230,.05);margin:0}
+
+/* ---------- course lab ---------- */
+.cw .cbrief{font-family:var(--sans);font-size:13.5px;color:var(--bone);opacity:.85;margin:10px 0 0;
+  padding-left:11px;border-left:2px solid var(--amber)}
+.ltasks{list-style:none;margin:0;padding:0;counter-reset:none}
+.ltask{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;margin-bottom:8px;
+  border:1px solid var(--line);background:var(--panel-2)}
+.ltask.done{border-color:var(--lime);background:rgba(167,217,108,.07)}
+.ltask .lnum{flex:0 0 22px;height:22px;line-height:20px;text-align:center;font-size:12px;
+  border:1px solid var(--line);color:var(--dim)}
+.ltask.done .lnum{border-color:var(--lime);color:var(--lime)}
+.ltask .lbody{flex:1;min-width:0}
+.ltask .ltext{font-family:var(--sans);font-size:14px;line-height:1.55;display:block}
+.ltask.done .ltext{color:var(--dim)}
+.ltask .ltext code{font-family:var(--mono);font-size:12.5px;background:rgba(92,207,230,.1);
+  color:var(--cyan);padding:1px 5px}
+.ltask .lstat{flex:0 0 auto;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--lime)}
+.lhint{margin-top:7px;background:none;border:0;border-bottom:1px dotted var(--dim);color:var(--dim);
+  font-family:var(--mono);font-size:11.5px;cursor:pointer;padding:0}
+.lhint:hover{color:var(--amber);border-color:var(--amber)}
+.lhinttext{display:block;margin-top:7px;font-family:var(--sans);font-size:13px;color:var(--amber);
+  padding-left:10px;border-left:2px solid rgba(255,180,84,.4)}
+/* an author display rule beats the hidden attribute, so restore it explicitly */
+.lhinttext[hidden]{display:none}
+.cprog{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:14px 0 0}
+.cprog b{color:var(--lime);font-weight:500}
+.cprog .allgood{color:var(--lime)}
+.labterm{margin-bottom:16px;position:relative}
+.labterm .screen{min-height:230px;max-height:44vh}
+.tbtn{margin-left:auto;background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  font-family:var(--mono);font-size:11px;padding:3px 9px;cursor:pointer}
+.tbtn:hover{color:var(--bone);border-color:#3B5063}
+.editor{position:absolute;inset:0;background:var(--panel);border:1px solid var(--amber);
+  display:flex;flex-direction:column;z-index:5}
+.edhead{padding:9px 13px;border-bottom:1px solid var(--line);font-size:12px;color:var(--dim);
+  display:flex;gap:12px;align-items:center}
+.edhead b{color:var(--amber);font-weight:500}
+.edhead .edhint{margin-left:auto;font-size:11px}
+#ed-body{flex:1;width:100%;background:var(--void);color:var(--bone);border:0;resize:none;
+  font-family:var(--mono);font-size:13.5px;line-height:1.6;padding:13px;outline:none;tab-size:4}
+.edfoot{padding:9px 13px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center}
+.cnav{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
+.cnav .tbtn{margin-left:0;padding:9px 15px;font-size:12px}
+/* ---------- end course lab ---------- */
 </style>
 </head>
 <body>
@@ -2021,394 +2065,2983 @@ const QUIZ = [
 ]}
 ];
 
-/* =================== course plan ===================
-   Mirrors the schedule for weeks 36-43. Each teaching session gets a short
-   lab you can run on any Linux box or VM, plus self-check questions whose
-   answers stay hidden until you open them. */
-const COURSE = [
-{wk:36, date:"Mon 31 Aug", type:"lecture", n:1,
- title:"Introduktion, Linux grunder, CLI, användare",
+/* ===== BEGIN simulated machine — generated, see src/vm-*.js ===== */
+/* =================== simulated machine ===================
+   A small but real Linux: a virtual filesystem with owners, groups and
+   permission bits, and a shell that parses pipes, redirection, quoting
+   and globs. Commands operate on actual state, so a lab task can be
+   verified by inspecting the machine afterwards rather than by matching
+   the text the student typed. */
+function makeVM(){
+  const HOME = "/home/analyst";
+  const T0 = 1756598400; // fixed clock keeps output reproducible
+
+  const dnode = (mode, owner, group) => ({t:"d", mode, owner:owner||"root", group:group||"root", mt:T0, ch:{}});
+  const fnode = (c, mode, owner, group) => ({t:"f", mode:mode==null?0o644:mode, owner:owner||"root", group:group||"root", mt:T0, c:c||""});
+  const lnode = (tgt, owner, group) => ({t:"l", mode:0o777, owner:owner||"root", group:group||"root", mt:T0, tgt});
+
+  const vm = {
+    user:"analyst", host:"workstation-07", cwd:HOME, HOME,
+    root: dnode(0o755),
+    groups:{analyst:["analyst","sudo","users"], root:["root"]},
+    users:{root:{uid:0,gid:0,home:"/root",shell:"/bin/bash"},
+           analyst:{uid:1000,gid:1000,home:HOME,shell:"/bin/bash"}},
+    nextUid:1001, nextGid:1001,
+    asRoot:false, hist:[], env:{HOME, USER:"analyst", SHELL:"/bin/bash", PATH:"/usr/local/bin:/usr/bin:/bin"},
+    units:{}, sockets:[], procs:[], cron:[], iface:{}, selinux:"Enforcing", firewall:[], keys:{},
+    lastStatus:0
+  };
+
+  /* ---------- path handling ---------- */
+  const norm = p => {
+    const abs = p.startsWith("/");
+    const out = [];
+    for(const part of p.split("/")){
+      if(!part || part===".") continue;
+      if(part===".."){ if(out.length) out.pop(); continue; }
+      out.push(part);
+    }
+    return (abs?"/":"") + out.join("/");
+  };
+  const expand = p => {
+    if(p==="~") return vm.HOME;
+    if(p.startsWith("~/")) return vm.HOME + p.slice(1);
+    return p;
+  };
+  const abspath = p => {
+    p = expand(String(p));
+    return norm(p.startsWith("/") ? p : vm.cwd + "/" + p);
+  };
+  const parts = p => abspath(p).split("/").filter(Boolean);
+
+  // walk to a node; follows symlinks on intermediate components and, unless
+  // nofollow, on the final one too
+  function lookup(p, nofollow){
+    const seg = parts(p);
+    let node = vm.root, path = "";
+    for(let i=0;i<seg.length;i++){
+      if(node.t==="l"){ const r = lookup(node.tgt, false); if(!r.node) return {err:"ENOENT"}; node = r.node; }
+      if(node.t!=="d") return {err:"ENOTDIR", path};
+      if(!canExec(node)) return {err:"EACCES", path};
+      const child = node.ch[seg[i]];
+      if(!child) return {err:"ENOENT", path:path+"/"+seg[i], parent:node, name:seg[i], last:i===seg.length-1};
+      path += "/"+seg[i];
+      node = child;
+      if(node.t==="l" && !(nofollow && i===seg.length-1)){
+        const r = lookup(node.tgt.startsWith("/") ? node.tgt : path.replace(/\/[^/]*$/,"")+"/"+node.tgt, false);
+        if(!r.node) return {err:"ENOENT", path, dangling:true};
+        node = r.node;
+      }
+    }
+    return {node, path: abspath(p)};
+  }
+  const parentOf = p => { const a = abspath(p); return a.replace(/\/[^/]*$/,"") || "/"; };
+  const baseOf = p => abspath(p).split("/").filter(Boolean).pop() || "/";
+
+  /* ---------- permissions ---------- */
+  const inGroup = g => (vm.groups[vm.user]||[]).includes(g);
+  function permBits(n){
+    if(vm.asRoot || vm.user==="root") return 7;
+    if(n.owner===vm.user) return (n.mode>>6)&7;
+    if(inGroup(n.group)) return (n.mode>>3)&7;
+    return n.mode&7;
+  }
+  const canRead  = n => (permBits(n)&4)!==0;
+  const canWrite = n => (permBits(n)&2)!==0;
+  const canExec  = n => (permBits(n)&1)!==0;
+
+  /* ---------- creation helpers used by seeding ---------- */
+  function mkdirp(p, mode, owner, group){
+    const seg = parts(p); let node = vm.root, cur="";
+    for(const s of seg){
+      cur += "/"+s;
+      if(!node.ch[s]) node.ch[s] = dnode(mode==null?0o755:mode, owner, group);
+      node = node.ch[s];
+    }
+    return node;
+  }
+  function put(p, content, mode, owner, group){
+    const d = mkdirp(parentOf(p), 0o755, owner, group);
+    d.ch[baseOf(p)] = fnode(content, mode, owner, group);
+    return d.ch[baseOf(p)];
+  }
+  vm.mkdirp = mkdirp; vm.put = put; vm.lookup = lookup; vm.abspath = abspath;
+  vm.exists = p => !!lookup(p).node;
+  vm.read = p => { const r = lookup(p); return r.node && r.node.t==="f" ? r.node.c : null; };
+  vm.stat = p => lookup(p).node || null;
+
+  /* ---------- formatting ---------- */
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function modeStr(n){
+    const t = n.t==="d" ? "d" : n.t==="l" ? "l" : "-";
+    const rwx = b => ((b&4)?"r":"-")+((b&2)?"w":"-")+((b&1)?"x":"-");
+    let s = t + rwx((n.mode>>6)&7) + rwx((n.mode>>3)&7) + rwx(n.mode&7);
+    if(n.mode & 0o4000) s = s.slice(0,3) + (s[3]==="x"?"s":"S") + s.slice(4);
+    if(n.mode & 0o2000) s = s.slice(0,6) + (s[6]==="x"?"s":"S") + s.slice(7);
+    return s;
+  }
+  const sizeOf = n => n.t==="d" ? 4096 : n.t==="l" ? n.tgt.length : n.c.length;
+  function dateStr(mt){ const d = new Date(mt*1000);
+    return MON[d.getUTCMonth()]+" "+String(d.getUTCDate()).padStart(2," ")+" "+
+      String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0"); }
+  function human(b){
+    if(b<1024) return b+"";
+    const u = ["K","M","G","T"]; let i=-1, v=b;
+    while(v>=1024 && i<3){ v/=1024; i++; }
+    return (v<10 ? v.toFixed(1) : Math.round(v)) + u[i];
+  }
+
+  /* ---------- tokenizer: quotes, pipes, redirection, operators ---------- */
+  function tokenize(src){
+    const out = []; let i=0, cur="", q=null, had=false;
+    const push = ()=>{ if(cur!=="" || had) out.push({v:cur, q}); cur=""; had=false; q=null; };
+    while(i<src.length){
+      const c = src[i];
+      if(q){ if(c===q){ q=null; had=true; } else cur+=c; i++; continue; }
+      if(c==='"' || c==="'"){ q=c; had=true; i++; continue; }
+      if(c==="\\" && i+1<src.length){ cur+=src[i+1]; had=true; i+=2; continue; }
+      if(/\s/.test(c)){ push(); i++; continue; }
+      const three = src.slice(i,i+3), two = src.slice(i,i+2);
+      if(three==="2>&1"||two==="2>"){ push(); out.push({op: two==="2>"&&three!=="2>&"?"2>":"2>"}); i+=2; continue; }
+      if(two===">>"||two==="&&"||two==="||"){ push(); out.push({op:two}); i+=2; continue; }
+      if(c==="|"||c===">"||c==="<"||c===";"){ push(); out.push({op:c}); i++; continue; }
+      cur+=c; i++;
+    }
+    push();
+    return out;
+  }
+
+  /* ---------- globbing ---------- */
+  function glob(pat){
+    if(!/[*?[]/.test(pat)) return [pat];
+    const dir = pat.includes("/") ? pat.replace(/\/[^/]*$/,"") || "/" : ".";
+    const base = pat.includes("/") ? pat.split("/").pop() : pat;
+    const r = lookup(dir);
+    if(!r.node || r.node.t!=="d") return [pat];
+    const rx = new RegExp("^" + base.replace(/[.+^${}()|\\]/g,"\\$&")
+      .replace(/\*/g,"[^/]*").replace(/\?/g,"[^/]") + "$");
+    const hits = Object.keys(r.node.ch).filter(n => rx.test(n) && (base.startsWith(".") || !n.startsWith(".")))
+      .sort().map(n => dir==="." ? n : (dir==="/" ? "/"+n : dir+"/"+n));
+    return hits.length ? hits : [pat];
+  }
+
+  /* ---------- argument parsing ---------- */
+  function splitFlags(argv){
+    const flags = new Set(), long = {}, ops = [];
+    let noMore = false;
+    for(let i=0;i<argv.length;i++){
+      const a = argv[i];
+      if(noMore){ ops.push(a); continue; }
+      if(a==="--"){ noMore=true; continue; }
+      if(a.startsWith("--") && a.length>2){
+        const [k,v] = a.slice(2).split("="); long[k] = v==null?true:v; continue;
+      }
+      if(a.startsWith("-") && a.length>1 && !/^-\d+$/.test(a)){
+        for(const ch of a.slice(1)) flags.add(ch); continue;
+      }
+      ops.push(a);
+    }
+    return {flags, long, ops};
+  }
+  // value-taking flags (-n 20) need the operand pulled out
+  function flagValue(argv, letter){
+    for(let i=0;i<argv.length;i++){
+      const a = argv[i];
+      if(!a.startsWith("-")||a.startsWith("--")) continue;
+      const idx = a.indexOf(letter);
+      if(idx>0){
+        const rest = a.slice(idx+1);
+        if(rest) return {val:rest, consume:[i]};
+        if(argv[i+1]!=null) return {val:argv[i+1], consume:[i+1]};
+      }
+    }
+    return null;
+  }
+
+  const E = {
+    noent: p => "cannot access '"+p+"': No such file or directory",
+    noentOpen: p => p+": No such file or directory",
+    isdir: p => p+": Is a directory",
+    notdir: p => p+": Not a directory",
+    denied: p => p+": Permission denied",
+    notempty: p => "failed to remove '"+p+"': Directory not empty"
+  };
+
+  return {vm, tokenize, splitFlags, flagValue, glob, lookup, abspath, parentOf, baseOf,
+          modeStr, sizeOf, dateStr, human, permBits, canRead, canWrite, canExec,
+          dnode, fnode, lnode, mkdirp, put, norm, E, T0, inGroup};
+}
+
+/* Commands and the shell executor. K is the object returned by makeVM(). */
+function attachShell(K){
+  const {vm, tokenize, splitFlags, flagValue, glob, lookup, abspath, parentOf, baseOf,
+         modeStr, sizeOf, dateStr, human, canRead, canWrite, dnode, fnode, lnode, E} = K;
+
+  const ok  = (out)      => ({out: out==null?"":out, err:"", code:0});
+  const bad = (err,code) => ({out:"", err, code:code==null?1:code});
+  const lines = s => s==="" ? [] : s.replace(/\n$/,"").split("\n");
+  const join  = a => a.length ? a.join("\n")+"\n" : "";
+
+  /* resolve a path for reading, producing the usual shell error text */
+  function readFile(p, cmd){
+    const r = lookup(p);
+    if(!r.node) return {err: cmd+": "+E.noentOpen(p)};
+    if(r.node.t==="d") return {err: cmd+": "+E.isdir(p)};
+    if(!canRead(r.node)) return {err: cmd+": "+E.denied(p)};
+    return {c: r.node.c};
+  }
+  /* gather input either from operands or from stdin */
+  function inputs(ops, stdin, cmd){
+    if(!ops.length) return {items:[{name:"", c:stdin}], errs:[]};
+    const items=[], errs=[];
+    for(const p of ops){
+      const r = readFile(p, cmd);
+      if(r.err) errs.push(r.err); else items.push({name:p, c:r.c});
+    }
+    return {items, errs};
+  }
+
+  const C = {};
+
+  /* ---------------- navigation & listing ---------------- */
+  C.pwd = () => ok(vm.cwd+"\n");
+
+  C.cd = (argv) => {
+    const t = argv[0];
+    let target;
+    if(!t || t==="~") target = vm.HOME;
+    else if(t==="-"){ target = vm.oldpwd || vm.HOME; }
+    else target = t;
+    const r = lookup(target);
+    if(!r.node) return bad("cd: "+target+": No such file or directory");
+    if(r.node.t!=="d") return bad("cd: "+target+": Not a directory");
+    if(!K.canExec(r.node)) return bad("cd: "+target+": Permission denied");
+    vm.oldpwd = vm.cwd; vm.cwd = r.path;
+    return t==="-" ? ok(vm.cwd+"\n") : ok("");
+  };
+
+  C.ls = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    const all = flags.has("a"), lng = flags.has("l"), hum = flags.has("h"), dirSelf = flags.has("d");
+    const targets = ops.length ? ops : ["."];
+    const chunks = [], errs = [];
+    for(const t of targets){
+      // ls shows a symlink itself rather than its target, unless the link
+      // points at a directory whose contents were asked for
+      let r = lookup(t, true);
+      if(r.node && r.node.t==="l" && !dirSelf){
+        const deref = lookup(t, false);
+        if(deref.node && deref.node.t==="d") r = deref;
+      }
+      if(!r.node){ errs.push("ls: "+E.noent(t)); continue; }
+      let entries;
+      if(r.node.t==="d" && !dirSelf){
+        if(!canRead(r.node)){ errs.push("ls: "+E.denied(t)); continue; }
+        const names = Object.keys(r.node.ch).sort();
+        entries = (all ? [".",".."] : []).concat(names.filter(n=>all||!n.startsWith(".")))
+          .map(n => ({n, node: n==="." ? r.node : n===".." ? (lookup(parentOf(r.path)).node||r.node) : r.node.ch[n]}));
+      } else {
+        entries = [{n:t, node:r.node}];
+      }
+      let body;
+      if(lng){
+        const rows = entries.map(e=>{
+          const n = e.node;
+          const nm = n.t==="l" ? e.n+" -> "+n.tgt : e.n;
+          return [modeStr(n), "1", n.owner, n.group,
+                  hum ? human(sizeOf(n)) : String(sizeOf(n)), dateStr(n.mt), nm];
+        });
+        const w = [0,1,2,3,4].map(i => Math.max(...rows.map(r=>r[i].length), 0));
+        body = rows.map(r =>
+          r[0].padEnd(w[0]) + " " + r[1].padStart(w[1]) + " " + r[2].padEnd(w[2]) + " " +
+          r[3].padEnd(w[3]) + " " + r[4].padStart(w[4]) + " " + r[5] + " " + r[6]);
+        if(r.node.t==="d" && !dirSelf) body.unshift("total "+entries.length*4);
+      } else {
+        body = entries.map(e => e.n);
+      }
+      chunks.push({t, body});
+    }
+    let out = "";
+    if(chunks.length>1) out = chunks.map(c => c.t+":\n"+join(c.body)).join("\n");
+    else if(chunks.length) out = join(chunks[0].body);
+    return {out, err: errs.join("\n")+(errs.length?"\n":""), code: errs.length?2:0};
+  };
+
+  C.tree = (argv) => {
+    const root = argv[0] || ".";
+    const r = lookup(root);
+    if(!r.node) return bad("tree: "+root+": No such file or directory");
+    const out = [root]; let nd=0, nf=0;
+    (function walk(node, prefix){
+      const names = Object.keys(node.ch||{}).filter(n=>!n.startsWith(".")).sort();
+      names.forEach((n,i)=>{
+        const last = i===names.length-1, child = node.ch[n];
+        out.push(prefix + (last?"`-- ":"|-- ") + n);
+        if(child.t==="d"){ nd++; walk(child, prefix + (last?"    ":"|   ")); } else nf++;
+      });
+    })(r.node, "");
+    out.push("", nd+" directories, "+nf+" files");
+    return ok(join(out));
+  };
+
+  /* ---------------- creating & removing ---------------- */
+  C.mkdir = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    if(!ops.length) return bad("mkdir: missing operand");
+    const errs = [];
+    for(const p of ops){
+      if(flags.has("p")){ K.mkdirp(p, 0o755, vm.user, vm.user); continue; }
+      const par = lookup(parentOf(p));
+      if(!par.node){ errs.push("mkdir: cannot create directory '"+p+"': No such file or directory"); continue; }
+      if(!canWrite(par.node)){ errs.push("mkdir: cannot create directory '"+p+"': Permission denied"); continue; }
+      if(par.node.ch[baseOf(p)]){ errs.push("mkdir: cannot create directory '"+p+"': File exists"); continue; }
+      par.node.ch[baseOf(p)] = dnode(0o755, vm.user, vm.user);
+    }
+    return {out:"", err: join(errs), code: errs.length?1:0};
+  };
+
+  C.rmdir = (argv) => {
+    const {ops} = splitFlags(argv);
+    const errs = [];
+    for(const p of ops){
+      const r = lookup(p);
+      if(!r.node){ errs.push("rmdir: failed to remove '"+p+"': No such file or directory"); continue; }
+      if(r.node.t!=="d"){ errs.push("rmdir: failed to remove '"+p+"': Not a directory"); continue; }
+      if(Object.keys(r.node.ch).length){ errs.push("rmdir: "+E.notempty(p)); continue; }
+      delete lookup(parentOf(p)).node.ch[baseOf(p)];
+    }
+    return {out:"", err: join(errs), code: errs.length?1:0};
+  };
+
+  C.touch = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(!ops.length) return bad("touch: missing file operand");
+    const errs = [];
+    for(const p of ops){
+      const r = lookup(p);
+      if(r.node){ r.node.mt = K.T0 + 60; continue; }
+      const par = lookup(parentOf(p));
+      if(!par.node){ errs.push("touch: cannot touch '"+p+"': No such file or directory"); continue; }
+      if(!canWrite(par.node)){ errs.push("touch: cannot touch '"+p+"': Permission denied"); continue; }
+      par.node.ch[baseOf(p)] = fnode("", 0o644, vm.user, vm.user);
+    }
+    return {out:"", err: join(errs), code: errs.length?1:0};
+  };
+
+  function copyNode(n){
+    if(n.t==="d"){ const d = dnode(n.mode, n.owner, n.group);
+      for(const k in n.ch) d.ch[k] = copyNode(n.ch[k]); return d; }
+    if(n.t==="l") return lnode(n.tgt, n.owner, n.group);
+    return fnode(n.c, n.mode, n.owner, n.group);
+  }
+
+  C.cp = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    const rec = flags.has("r")||flags.has("R")||flags.has("a");
+    if(ops.length<2) return bad("cp: missing destination file operand");
+    const dst = ops.pop();
+    const dr = lookup(dst);
+    const intoDir = dr.node && dr.node.t==="d";
+    if(ops.length>1 && !intoDir) return bad("cp: target '"+dst+"' is not a directory");
+    const errs = [];
+    for(const src of ops){
+      const sr = lookup(src);
+      if(!sr.node){ errs.push("cp: cannot stat '"+src+"': No such file or directory"); continue; }
+      if(sr.node.t==="d" && !rec){ errs.push("cp: -r not specified; omitting directory '"+src+"'"); continue; }
+      if(!canRead(sr.node)){ errs.push("cp: cannot open '"+src+"' for reading: Permission denied"); continue; }
+      const targetPath = intoDir ? dst.replace(/\/$/,"")+"/"+baseOf(src) : dst;
+      const par = lookup(parentOf(targetPath));
+      if(!par.node){ errs.push("cp: cannot create regular file '"+targetPath+"': No such file or directory"); continue; }
+      if(!canWrite(par.node)){ errs.push("cp: cannot create regular file '"+targetPath+"': Permission denied"); continue; }
+      const copy = copyNode(sr.node);
+      copy.owner = vm.user; copy.group = vm.user;
+      par.node.ch[baseOf(targetPath)] = copy;
+    }
+    return {out:"", err: join(errs), code: errs.length?1:0};
+  };
+
+  C.mv = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(ops.length<2) return bad("mv: missing destination file operand");
+    const dst = ops.pop();
+    const dr = lookup(dst);
+    const intoDir = dr.node && dr.node.t==="d";
+    const errs = [];
+    for(const src of ops){
+      const sr = lookup(src, true);
+      if(!sr.node){ errs.push("mv: cannot stat '"+src+"': No such file or directory"); continue; }
+      const targetPath = intoDir ? dst.replace(/\/$/,"")+"/"+baseOf(src) : dst;
+      const spar = lookup(parentOf(src)), dpar = lookup(parentOf(targetPath));
+      if(!dpar.node){ errs.push("mv: cannot move '"+src+"' to '"+targetPath+"': No such file or directory"); continue; }
+      if(!canWrite(dpar.node) || !canWrite(spar.node)){ errs.push("mv: cannot move '"+src+"': Permission denied"); continue; }
+      dpar.node.ch[baseOf(targetPath)] = sr.node;
+      delete spar.node.ch[baseOf(src)];
+    }
+    return {out:"", err: join(errs), code: errs.length?1:0};
+  };
+
+  C.rm = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    const rec = flags.has("r")||flags.has("R"), force = flags.has("f");
+    if(!ops.length) return force ? ok("") : bad("rm: missing operand");
+    const errs = [];
+    for(const p of ops){
+      const r = lookup(p, true);
+      if(!r.node){ if(!force) errs.push("rm: cannot remove '"+p+"': No such file or directory"); continue; }
+      if(r.node.t==="d" && !rec){ errs.push("rm: cannot remove '"+p+"': Is a directory"); continue; }
+      const par = lookup(parentOf(p));
+      if(!canWrite(par.node)){ errs.push("rm: cannot remove '"+p+"': Permission denied"); continue; }
+      delete par.node.ch[baseOf(p)];
+    }
+    return {out:"", err: join(errs), code: errs.length?1:0};
+  };
+
+  C.ln = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    if(!flags.has("s")) return bad("ln: hard links are not simulated here — use ln -s");
+    if(ops.length<1) return bad("ln: missing file operand");
+    const [target, nameArg] = ops;
+    const linkPath = nameArg || baseOf(target);
+    const dr = lookup(linkPath);
+    const finalPath = (dr.node && dr.node.t==="d") ? linkPath+"/"+baseOf(target) : linkPath;
+    const par = lookup(parentOf(finalPath));
+    if(!par.node) return bad("ln: failed to create symbolic link '"+finalPath+"': No such file or directory");
+    if(par.node.ch[baseOf(finalPath)]) return bad("ln: failed to create symbolic link '"+finalPath+"': File exists");
+    par.node.ch[baseOf(finalPath)] = lnode(target, vm.user, vm.user);
+    return ok("");
+  };
+
+  /* ---------------- reading ---------------- */
+  C.cat = (argv, stdin) => {
+    const {ops} = splitFlags(argv);
+    if(!ops.length) return ok(stdin);
+    let out="", errs=[];
+    for(const p of ops){ const r = readFile(p, "cat"); if(r.err) errs.push(r.err); else out += r.c; }
+    return {out, err: join(errs), code: errs.length?1:0};
+  };
+  C.less = C.cat; C.more = C.cat;
+
+  C.head = (argv, stdin) => {
+    const fv = flagValue(argv, "n");
+    let n = 10, rest = argv.slice();
+    if(fv){ n = parseInt(fv.val,10); rest = rest.filter((_,i)=>!fv.consume.includes(i)).filter(a=>a!=="-n"); }
+    const numeric = argv.find(a=>/^-\d+$/.test(a));
+    if(numeric){ n = parseInt(numeric.slice(1),10); rest = rest.filter(a=>a!==numeric); }
+    const {ops} = splitFlags(rest.filter(a=>!/^-n$/.test(a)));
+    const {items, errs} = inputs(ops, stdin, "head");
+    const out = items.map(it => join(lines(it.c).slice(0,n))).join("");
+    return {out, err: join(errs), code: errs.length?1:0};
+  };
+
+  C.tail = (argv, stdin) => {
+    const fv = flagValue(argv, "n");
+    let n = 10, rest = argv.slice();
+    if(fv){ n = parseInt(fv.val,10); rest = rest.filter((_,i)=>!fv.consume.includes(i)).filter(a=>a!=="-n"); }
+    const numeric = argv.find(a=>/^-\d+$/.test(a));
+    if(numeric){ n = parseInt(numeric.slice(1),10); rest = rest.filter(a=>a!==numeric); }
+    const {flags, ops} = splitFlags(rest.filter(a=>!/^-n$/.test(a)));
+    const {items, errs} = inputs(ops, stdin, "tail");
+    let out = items.map(it => join(lines(it.c).slice(-n))).join("");
+    if(flags.has("f")||flags.has("F")) out += "[follow mode: in a real shell this keeps running — Ctrl+C to stop]\n";
+    return {out, err: join(errs), code: errs.length?1:0};
+  };
+
+  C.wc = (argv, stdin) => {
+    const {flags, ops} = splitFlags(argv);
+    const {items, errs} = inputs(ops, stdin, "wc");
+    const only = flags.has("l")||flags.has("w")||flags.has("c");
+    const rows = items.map(it=>{
+      const l = lines(it.c).length, w = it.c.split(/\s+/).filter(Boolean).length, c = it.c.length;
+      const cols = [];
+      if(flags.has("l")||!only) cols.push(l);
+      if(flags.has("w")||!only) cols.push(w);
+      if(flags.has("c")||!only) cols.push(c);
+      return cols.join(" ") + (it.name?" "+it.name:"");
+    });
+    return {out: join(rows), err: join(errs), code: errs.length?1:0};
+  };
+
+  /* ---------------- searching ---------------- */
+  function grepFiles(node, path, acc, hidden){
+    if(node.t==="f"){ acc.push({path, c:node.c}); return; }
+    if(node.t!=="d" || !canRead(node)) return;
+    for(const n of Object.keys(node.ch).sort()){
+      if(!hidden && n.startsWith(".")) continue;
+      grepFiles(node.ch[n], path==="/"?"/"+n:path+"/"+n, acc, hidden);
+    }
+  }
+  C.grep = (argv, stdin) => {
+    const {flags, ops} = splitFlags(argv);
+    if(!ops.length) return bad("usage: grep [OPTION]... PATTERN [FILE]...");
+    const pat = ops.shift();
+    const rec = flags.has("r")||flags.has("R");
+    let rx;
+    try{ rx = new RegExp(flags.has("F") ? pat.replace(/[.*+?^${}()|[\]\\]/g,"\\$&") : pat, flags.has("i")?"i":""); }
+    catch(e){ return bad("grep: invalid pattern"); }
+    const targets = [];
+    const errs = [];
+    if(!ops.length){ targets.push({path:"", c:stdin}); }
+    else for(const p of ops){
+      const r = lookup(p);
+      if(!r.node){ errs.push("grep: "+p+": No such file or directory"); continue; }
+      if(r.node.t==="d"){
+        if(!rec){ errs.push("grep: "+p+": Is a directory"); continue; }
+        grepFiles(r.node, r.path, targets, false);
+      } else if(!canRead(r.node)) errs.push("grep: "+p+": Permission denied");
+      else targets.push({path:p, c:r.node.c});
+    }
+    const multi = targets.length>1 || rec;
+    const out = [];
+    let count = 0;
+    // -o prints each match on its own line instead of the whole line
+    const rxAll = flags.has("o") ? new RegExp(rx.source, rx.flags.includes("i") ? "gi" : "g") : null;
+    for(const t of targets){
+      const ls = lines(t.c);
+      ls.forEach((l,i)=>{
+        const hit = rx.test(l);
+        if(flags.has("v") ? hit : !hit) return;
+        count++;
+        if(flags.has("c")) return;
+        let s = "";
+        if(multi && t.path) s += t.path+":";
+        if(flags.has("n")) s += (i+1)+":";
+        if(rxAll){ const ms = l.match(rxAll) || []; ms.forEach(m => out.push(s + m)); return; }
+        out.push(s + l);
+      });
+    }
+    if(flags.has("c")) return {out: count+"\n", err: join(errs), code: count?0:1};
+    return {out: join(out), err: join(errs), code: out.length?0:1};
+  };
+
+  C.find = (argv) => {
+    const start = (argv[0] && !argv[0].startsWith("-")) ? argv[0] : ".";
+    const r = lookup(start);
+    if(!r.node) return bad("find: '"+start+"': No such file or directory");
+    const opts = argv.slice(argv[0]===start?1:0);
+    const get = k => { const i = opts.indexOf(k); return i>=0 ? opts[i+1] : null; };
+    const nameP = get("-name"), typeP = get("-type"), permP = get("-perm"), sizeP = get("-size");
+    const maxd = get("-maxdepth") ? parseInt(get("-maxdepth"),10) : Infinity;
+    const del = opts.includes("-delete");
+    const nameRx = nameP ? new RegExp("^"+nameP.replace(/[.+^${}()|\\]/g,"\\$&")
+      .replace(/\*/g,"[^/]*").replace(/\?/g,"[^/]")+"$") : null;
+    const hits = [];
+    (function walk(node, path, depth){
+      const base = path.split("/").pop() || path;
+      let match = true;
+      if(nameRx && !nameRx.test(base)) match = false;
+      if(typeP==="f" && node.t!=="f") match = false;
+      if(typeP==="d" && node.t!=="d") match = false;
+      if(typeP==="l" && node.t!=="l") match = false;
+      if(permP){
+        const want = parseInt(permP.replace(/^-/,""),8);
+        match = match && (permP.startsWith("-") ? (node.mode & want)===want : node.mode===want);
+      }
+      if(match) hits.push({path, node});
+      if(node.t==="d" && depth<maxd && K.canExec(node))
+        for(const n of Object.keys(node.ch).sort())
+          walk(node.ch[n], path==="/"?"/"+n:path+"/"+n, depth+1);
+    })(r.node, start==="/"?"":start, 0);
+    if(del){
+      for(const h of hits.slice().reverse()){
+        if(h.path===start) continue;
+        const par = lookup(parentOf(h.path));
+        if(par.node) delete par.node.ch[baseOf(h.path)];
+      }
+      return ok("");
+    }
+    const execIdx = opts.indexOf("-exec");
+    if(execIdx>=0){
+      const cmdParts = opts.slice(execIdx+1).filter(a=>a!==";"&&a!=="\\;"&&a!=="+"&&a!=="{}");
+      const results = hits.filter(h=>h.path!==start).map(h => runSimple(cmdParts.concat([h.path]), ""));
+      return ok(results.map(r=>r.out).join(""));
+    }
+    return ok(join(hits.map(h=>h.path||".")));
+  };
+
+  C.which = (argv) => {
+    const known = Object.keys(C);
+    const out = [], errs = [];
+    for(const a of argv){
+      if(known.includes(a)) out.push("/usr/bin/"+a);
+      else errs.push("which: no "+a+" in ("+vm.env.PATH+")");
+    }
+    return {out: join(out), err: join(errs), code: errs.length?1:0};
+  };
+  C.type = C.which; C.command = (argv) => C.which(argv.filter(a=>a!=="-v"));
+
+  /* ---------------- text processing ---------------- */
+  C.echo = (argv) => {
+    const noNl = argv[0]==="-n";
+    const parts = (noNl?argv.slice(1):argv).map(a =>
+      a.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (m,k) => vm.env[k]!=null ? vm.env[k] : ""));
+    return ok(parts.join(" ") + (noNl?"":"\n"));
+  };
+
+  C.sort = (argv, stdin) => {
+    const {flags, ops} = splitFlags(argv);
+    const {items, errs} = inputs(ops, stdin, "sort");
+    let ls = items.flatMap(it => lines(it.c));
+    if(flags.has("n")) ls.sort((a,b)=>parseFloat(a)-parseFloat(b) || a.localeCompare(b));
+    else ls.sort((a,b)=>a.localeCompare(b));
+    if(flags.has("r")) ls.reverse();
+    if(flags.has("u")) ls = ls.filter((l,i)=>i===0||l!==ls[i-1]);
+    return {out: join(ls), err: join(errs), code: errs.length?1:0};
+  };
+
+  C.uniq = (argv, stdin) => {
+    const {flags, ops} = splitFlags(argv);
+    const {items, errs} = inputs(ops, stdin, "uniq");
+    const ls = items.flatMap(it => lines(it.c));
+    const out = [];
+    for(const l of ls){
+      if(out.length && out[out.length-1].v===l){ out[out.length-1].n++; continue; }
+      out.push({v:l, n:1});
+    }
+    let res = out;
+    if(flags.has("d")) res = res.filter(r=>r.n>1);
+    if(flags.has("u")) res = res.filter(r=>r.n===1);
+    return {out: join(res.map(r => flags.has("c") ? String(r.n).padStart(7)+" "+r.v : r.v)),
+            err: join(errs), code:0};
+  };
+
+  C.cut = (argv, stdin) => {
+    const dv = flagValue(argv, "d"), fvv = flagValue(argv, "f");
+    const delim = dv ? dv.val : "\t";
+    const fieldSpec = fvv ? fvv.val : null;
+    if(!fieldSpec) return bad("cut: you must specify a list of fields (-f)");
+    const wanted = fieldSpec.split(",").flatMap(s=>{
+      if(s.includes("-")){ const [a,b]=s.split("-").map(Number); const r=[]; for(let i=a;i<=b;i++) r.push(i); return r; }
+      return [Number(s)];
+    });
+    const consumed = new Set([...(dv?dv.consume:[]), ...(fvv?fvv.consume:[])]);
+    const rest = argv.filter((a,i)=>!consumed.has(i) && !/^-[df]/.test(a));
+    const {ops} = splitFlags(rest);
+    const {items, errs} = inputs(ops, stdin, "cut");
+    const out = items.flatMap(it => lines(it.c).map(l =>
+      wanted.map(i => l.split(delim)[i-1] ?? "").join(delim)));
+    return {out: join(out), err: join(errs), code: errs.length?1:0};
+  };
+
+  C.awk = (argv, stdin) => {
+    let fs = null, rest = argv.slice();
+    const fv = flagValue(argv, "F");
+    if(fv){ fs = fv.val; rest = rest.filter((a,i)=>!fv.consume.includes(i) && !/^-F/.test(a)); }
+    const prog = rest.shift() || "";
+    const {ops} = splitFlags(rest);
+    const {items, errs} = inputs(ops, stdin, "awk");
+    const m = prog.match(/^\s*(?:\/([^/]*)\/\s*)?\{\s*print\s*(.*?)\s*\}\s*$/);
+    if(!m) return bad("awk: only '{print ...}' programs are simulated here");
+    const filter = m[1] ? new RegExp(m[1]) : null;
+    const expr = m[2] || "$0";
+    const out = [];
+    for(const it of items) for(const l of lines(it.c)){
+      if(filter && !filter.test(l)) continue;
+      const f = fs==null ? l.trim().split(/\s+/) : l.split(fs);
+      out.push(expr.split(",").map(part=>{
+        part = part.trim();
+        if(part==="$0") return l;
+        const dm = part.match(/^\$(\d+)$/);
+        if(dm) return f[Number(dm[1])-1] ?? "";
+        if(part==="NF") return String(f.length);
+        return part.replace(/^["']|["']$/g,"");
+      }).join(" "));
+    }
+    return {out: join(out), err: join(errs), code:0};
+  };
+
+  C.sed = (argv, stdin) => {
+    const inPlace = argv.includes("-i");
+    const rest = argv.filter(a=>a!=="-i");
+    const prog = rest.shift() || "";
+    const m = prog.match(/^s(.)(.*?)\1(.*?)\1([gi]*)$/);
+    if(!m) return bad("sed: only s/old/new/ substitution is simulated here");
+    const rx = new RegExp(m[2], (m[4].includes("g")?"g":"") + (m[4].includes("i")?"i":""));
+    const {ops} = splitFlags(rest);
+    const {items, errs} = inputs(ops, stdin, "sed");
+    if(inPlace && ops.length){
+      for(const p of ops){ const r = lookup(p); if(r.node && r.node.t==="f") r.node.c = r.node.c.replace(rx, m[3]); }
+      return {out:"", err: join(errs), code:0};
+    }
+    const out = items.map(it => it.c.replace(rx, m[3])).join("");
+    return {out, err: join(errs), code:0};
+  };
+
+  C.tee = (argv, stdin) => {
+    const {flags, ops} = splitFlags(argv);
+    for(const p of ops){
+      const par = lookup(parentOf(p));
+      if(!par.node) continue;
+      const ex = par.node.ch[baseOf(p)];
+      if(ex && ex.t==="f") ex.c = flags.has("a") ? ex.c + stdin : stdin;
+      else par.node.ch[baseOf(p)] = fnode(stdin, 0o644, vm.user, vm.user);
+    }
+    return ok(stdin);
+  };
+
+  C.xargs = (argv, stdin) => {
+    const args = lines(stdin).filter(Boolean);
+    if(!argv.length) return ok(args.join(" ")+"\n");
+    const r = runSimple(argv.concat(args), "");
+    return r;
+  };
+
+  /* ---------------- permissions & identity ---------------- */
+  function applySymbolic(node, spec){
+    const m = spec.match(/^([ugoa]*)([+-=])([rwxst]*)$/);
+    if(!m) return false;
+    const who = m[1] || "a", op = m[2];
+    let bits = 0;
+    if(m[3].includes("r")) bits |= 4;
+    if(m[3].includes("w")) bits |= 2;
+    if(m[3].includes("x")) bits |= 1;
+    const shifts = [];
+    if(who.includes("u")||who.includes("a")) shifts.push(6);
+    if(who.includes("g")||who.includes("a")) shifts.push(3);
+    if(who.includes("o")||who.includes("a")) shifts.push(0);
+    for(const s of shifts){
+      if(op==="+") node.mode |= bits<<s;
+      else if(op==="-") node.mode &= ~(bits<<s);
+      else node.mode = (node.mode & ~(7<<s)) | (bits<<s);
+    }
+    if(m[3].includes("s")){ if(who.includes("u")) node.mode |= 0o4000; if(who.includes("g")) node.mode |= 0o2000; }
+    return true;
+  }
+  C.chmod = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    if(ops.length<2) return bad("chmod: missing operand");
+    const spec = ops.shift();
+    const errs = [];
+    const apply = (node) => {
+      if(/^[0-7]{3,4}$/.test(spec)) node.mode = parseInt(spec,8);
+      else if(!applySymbolic(node, spec)) return false;
+      return true;
+    };
+    for(const p of ops){
+      const r = lookup(p);
+      if(!r.node){ errs.push("chmod: cannot access '"+p+"': No such file or directory"); continue; }
+      if(r.node.owner!==vm.user && !vm.asRoot && vm.user!=="root"){
+        errs.push("chmod: changing permissions of '"+p+"': Operation not permitted"); continue; }
+      if(!apply(r.node)){ errs.push("chmod: invalid mode: '"+spec+"'"); continue; }
+      if(flags.has("R")) (function rec(n){ if(n.t!=="d") return;
+        for(const k in n.ch){ apply(n.ch[k]); rec(n.ch[k]); } })(r.node);
+    }
+    return {out:"", err: join(errs), code: errs.length?1:0};
+  };
+
+  C.chown = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    if(ops.length<2) return bad("chown: missing operand");
+    const spec = ops.shift();
+    const [o,g] = spec.split(":");
+    if(!vm.asRoot && vm.user!=="root") return bad("chown: changing ownership of '"+ops[0]+"': Operation not permitted");
+    const errs = [];
+    for(const p of ops){
+      const r = lookup(p);
+      if(!r.node){ errs.push("chown: cannot access '"+p+"': No such file or directory"); continue; }
+      const set = n => { if(o) n.owner = o; if(g!=null && g!=="") n.group = g; };
+      set(r.node);
+      if(flags.has("R")) (function rec(n){ if(n.t!=="d") return; for(const k in n.ch){ set(n.ch[k]); rec(n.ch[k]); } })(r.node);
+    }
+    return {out:"", err: join(errs), code: errs.length?1:0};
+  };
+
+  C.chgrp = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(ops.length<2) return bad("chgrp: missing operand");
+    return C.chown([":"+ops[0]].concat(ops.slice(1)));
+  };
+
+  C.whoami = () => ok((vm.asRoot?"root":vm.user)+"\n");
+  C.groups = () => ok((vm.groups[vm.user]||[]).join(" ")+"\n");
+  C.id = () => {
+    const u = vm.asRoot ? "root" : vm.user;
+    const info = vm.users[u] || {uid:1000,gid:1000};
+    const gs = (vm.groups[u]||[u]).map((g,i)=>(i===0?info.gid:1000+i)+"("+g+")").join(",");
+    return ok("uid="+info.uid+"("+u+") gid="+info.gid+"("+u+") groups="+gs+"\n");
+  };
+  C.useradd = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    if(!vm.asRoot && vm.user!=="root") return bad("useradd: Permission denied.");
+    const name = ops[0];
+    if(!name) return bad("useradd: missing operand");
+    if(vm.users[name]) return bad("useradd: user '"+name+"' already exists");
+    vm.users[name] = {uid: vm.nextUid, gid: vm.nextGid, home:"/home/"+name, shell:"/bin/bash"};
+    vm.groups[name] = [name];
+    const pw = lookup("/etc/passwd").node;
+    if(pw) pw.c += name+":x:"+vm.nextUid+":"+vm.nextGid+"::/home/"+name+":/bin/bash\n";
+    vm.nextUid++; vm.nextGid++;
+    if(flags.has("m")) K.mkdirp("/home/"+name, 0o755, name, name);
+    return ok("");
+  };
+  C.adduser = C.useradd;
+  C.groupadd = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(!vm.asRoot && vm.user!=="root") return bad("groupadd: Permission denied.");
+    const g = ops[0];
+    if(!g) return bad("groupadd: missing operand");
+    if(vm.allGroups && vm.allGroups.includes(g)) return bad("groupadd: group '"+g+"' already exists");
+    vm.allGroups = (vm.allGroups||[]).concat([g]);
+    const gf = lookup("/etc/group").node;
+    if(gf) gf.c += g+":x:"+vm.nextGid+":\n";
+    vm.nextGid++;
+    return ok("");
+  };
+  C.usermod = (argv) => {
+    const {ops, flags} = splitFlags(argv);
+    if(!vm.asRoot && vm.user!=="root") return bad("usermod: Permission denied.");
+    const fv = flagValue(argv, "G");
+    const user = ops[ops.length-1];
+    if(!vm.users[user]) return bad("usermod: user '"+user+"' does not exist");
+    if(fv) for(const g of fv.val.split(",")){
+      vm.groups[user] = (vm.groups[user]||[user]).concat(g).filter((v,i,a)=>a.indexOf(v)===i);
+    }
+    return ok("");
+  };
+  C.passwd = (argv) => {
+    const who = argv.filter(a=>!a.startsWith("-"))[0] || vm.user;
+    if(who!==vm.user && !vm.asRoot && vm.user!=="root") return bad("passwd: You may not view or modify password information for "+who+".");
+    return ok("Changing password for "+who+".\nNew password: \nRetype new password: \npasswd: password updated successfully\n");
+  };
+  C.getenforce = () => ok(vm.selinux+"\n");
+  C.sestatus = () => ok("SELinux status:                 enabled\nCurrent mode:                   "+
+    vm.selinux.toLowerCase()+"\nPolicy from config file:        targeted\n");
+  C.umask = () => ok("0022\n");
+
+  /* ---------------- system ---------------- */
+  C.uname = (argv) => {
+    const {flags} = splitFlags(argv);
+    const rel = "6.9.7-arch1-1";
+    if(flags.has("a")) return ok("Linux "+vm.host+" "+rel+" #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux\n");
+    if(flags.has("r")) return ok(rel+"\n");
+    return ok("Linux\n");
+  };
+  C.hostname = () => ok(vm.host+"\n");
+  C.date = () => ok("Thu Aug 31 09:00:00 UTC 2026\n");
+  C.uptime = () => ok(" 09:00:00 up 3 days,  2:14,  1 user,  load average: 0.08, 0.12, 0.09\n");
+  C.free = (argv) => {
+    const h = splitFlags(argv).flags.has("h");
+    return ok(h
+      ? "               total        used        free      shared  buff/cache   available\nMem:            15Gi       3.1Gi       8.4Gi       412Mi       4.1Gi        11Gi\nSwap:          4.0Gi          0B       4.0Gi\n"
+      : "               total        used        free      shared  buff/cache   available\nMem:        16116432     3251200     8812340      421900     4052892    11544120\nSwap:        4194300           0     4194300\n");
+  };
+  C.df = (argv) => {
+    const h = splitFlags(argv).flags.has("h");
+    return ok(h
+      ? "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda2       234G   89G  133G  41% /\n/dev/sda1       511M   62M  450M  13% /boot\ntmpfs           7.7G  412M  7.3G   6% /dev/shm\n"
+      : "Filesystem     1K-blocks      Used Available Use% Mounted on\n/dev/sda2      245117440  93323264 139312128  41% /\n/dev/sda1         523248     63488    459760  13% /boot\n");
+  };
+  C.du = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    const targets = ops.length?ops:["."];
+    const out = [];
+    for(const p of ops.length?ops:["."]){
+      const r = lookup(p);
+      if(!r.node){ return bad("du: cannot access '"+p+"': No such file or directory"); }
+      const size = (function sz(n){ if(n.t!=="d") return Math.max(4, Math.ceil(sizeOf(n)/1024)*1);
+        let t = 4; for(const k in n.ch) t += sz(n.ch[k]); return t; })(r.node);
+      out.push((flags.has("h") ? human(size*1024) : String(size)) + "\t" + p);
+    }
+    return ok(join(out));
+  };
+  C.lsblk = () => ok("NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS\nsda      8:0    0 238.5G  0 disk\n|-sda1   8:1    0   512M  0 part /boot\n`-sda2   8:2    0   238G  0 part /\n");
+  C.lscpu = () => ok("Architecture:            x86_64\nCPU(s):                  8\nModel name:              Intel(R) Core(TM) i7-1165G7\nThread(s) per core:      2\nCore(s) per socket:      4\n");
+  C.ps = (argv) => {
+    const rows = vm.procs.map(p => String(p.pid).padStart(5)+" "+p.user.padEnd(8)+" "+p.cpu.padStart(4)+" "+p.cmd);
+    return ok("  PID USER      %CPU COMMAND\n"+rows.join("\n")+"\n");
+  };
+  C.kill = (argv) => {
+    const pid = Number(argv.filter(a=>!a.startsWith("-")).pop());
+    const i = vm.procs.findIndex(p=>p.pid===pid);
+    if(i<0) return bad("kill: ("+pid+") - No such process");
+    vm.procs.splice(i,1); return ok("");
+  };
+  C.pkill = (argv) => {
+    const pat = argv.filter(a=>!a.startsWith("-")).join(" ");
+    const before = vm.procs.length;
+    vm.procs = vm.procs.filter(p => !p.cmd.includes(pat));
+    return before===vm.procs.length ? {out:"",err:"",code:1} : ok("");
+  };
+  C.pgrep = (argv) => {
+    const pat = argv.filter(a=>!a.startsWith("-")).join(" ");
+    const hits = vm.procs.filter(p=>p.cmd.includes(pat));
+    return {out: join(hits.map(p=>p.pid+" "+p.cmd)), err:"", code: hits.length?0:1};
+  };
+  C.history = () => ok(join(vm.hist.map((h,i)=>String(i+1).padStart(5)+"  "+h)));
+  C.clear = () => ({out:"", err:"", code:0, clear:true});
+
+  C.systemctl = (argv) => {
+    const {flags, long, ops} = splitFlags(argv);
+    const sub = ops[0], name = (ops[1]||"").replace(/\.service$/,"");
+    const u = n => vm.units[n];
+    if(!sub || sub==="list-units"){
+      if(long["failed"]) {
+        const f = Object.entries(vm.units).filter(([,v])=>v.state==="failed");
+        return ok(f.length ? join(f.map(([n])=>n+".service loaded failed failed")) : "0 loaded units listed.\n");
+      }
+      return ok(join(Object.entries(vm.units).map(([n,v])=>n+".service loaded "+v.state)));
+    }
+    if(sub==="status"){
+      if(!u(name)) return {out:"Unit "+name+".service could not be found.\n", err:"", code:4};
+      const v = u(name);
+      return {out:"* "+name+".service - "+v.desc+"\n     Loaded: loaded (/lib/systemd/system/"+name+".service; "+
+        (v.enabled?"enabled":"disabled")+")\n     Active: "+(v.state==="running"?"active (running)":"inactive (dead)")+
+        "\n   Main PID: "+(v.state==="running"?v.pid:"-")+"\n", err:"", code: v.state==="running"?0:3};
+    }
+    if(!u(name) && ["start","stop","restart","enable","disable"].includes(sub))
+      return bad("Failed to "+sub+" "+name+".service: Unit "+name+".service not found.");
+    if(sub==="start"||sub==="restart"){ u(name).state="running"; return ok(""); }
+    if(sub==="stop"){ u(name).state="dead"; return ok(""); }
+    if(sub==="enable"){ u(name).enabled=true; if(long["now"]) u(name).state="running"; return ok(""); }
+    if(sub==="disable"){ u(name).enabled=false; return ok(""); }
+    if(sub==="is-enabled") return {out:(u(name)&&u(name).enabled?"enabled":"disabled")+"\n", err:"", code:0};
+    if(sub==="is-active") return {out:(u(name)&&u(name).state==="running"?"active":"inactive")+"\n", err:"", code:0};
+    if(sub==="get-default") return ok("graphical.target\n");
+    return bad("systemctl: unknown command '"+sub+"'");
+  };
+
+  C.journalctl = (argv) => {
+    const {flags, long} = splitFlags(argv);
+    const uv = flagValue(argv, "u"), nv = flagValue(argv, "n"), pv = flagValue(argv, "p");
+    let ls = vm.journal.slice();
+    if(uv) ls = ls.filter(l => l.unit === uv.val.replace(/\.service$/,""));
+    if(pv){ const rank = {emerg:0,alert:1,crit:2,err:3,warning:4,notice:5,info:6,debug:7};
+      const want = isNaN(+pv.val) ? rank[pv.val] : +pv.val;
+      ls = ls.filter(l => (rank[l.pri]!=null?rank[l.pri]:6) <= want); }
+    if(nv) ls = ls.slice(-parseInt(nv.val,10));
+    let out = join(ls.map(l => l.time+" "+vm.host+" "+l.unit+": "+l.msg));
+    if(flags.has("f")) out += "[follow mode: in a real shell this keeps running — Ctrl+C to stop]\n";
+    return ok(out);
+  };
+
+  const CRONFILE = "/var/spool/cron/analyst";
+  C.crontab = (argv) => {
+    const {flags} = splitFlags(argv);
+    if(flags.has("l")){
+      const c = (lookup(CRONFILE).node||{}).c;
+      return c ? ok(c) : {out:"", err:"no crontab for "+vm.user+"\n", code:1};
+    }
+    if(flags.has("e")){
+      K.mkdirp("/var/spool/cron", 0o755, "root", "root");
+      if(!lookup(CRONFILE).node) K.put(CRONFILE, "# m h dom mon dow  command\n", 0o600, vm.user, vm.user);
+      return {out:"", err:"", code:0, editor: CRONFILE};
+    }
+    return bad("crontab: usage error");
+  };
+
+  /* A real editor is impossible in a text terminal, so `edit` hands the path
+     back to the page, which opens a small editor pane bound to this file. */
+  C.edit = (argv) => {
+    const p = argv.filter(a=>!a.startsWith("-"))[0];
+    if(!p) return bad("edit: which file? try: edit ~/py/hello.py");
+    const abs = K.abspath(p);
+    const r = lookup(abs);
+    if(r.node && r.node.t === "d") return bad("edit: "+p+": Is a directory");
+    if(!r.node){
+      const par = lookup(parentOf(abs));
+      if(!par.node) return bad("edit: "+p+": No such file or directory — create the directory first with mkdir -p");
+      if(!canWrite(par.node)) return bad("edit: "+p+": Permission denied");
+      par.node.ch[baseOf(abs)] = fnode("", 0o644, vm.user, vm.user);
+    } else if(!canWrite(r.node)) return bad("edit: "+p+": Permission denied");
+    return {out:"", err:"", code:0, editor: abs};
+  };
+  C.nano = C.edit; C.vim = C.edit; C.vi = C.edit;
+
+  /* ---------------- networking ---------------- */
+  C.ip = (argv) => {
+    const sub = (argv[0]||"").replace(/^-/,"");
+    if(/^a/.test(sub)) return ok(Object.entries(vm.iface).map(([n,v],i)=>
+      (i+1)+": "+n+": <"+v.flags+"> mtu 1500 state "+v.state+"\n    inet "+v.addr+" scope global "+n).join("\n")+"\n");
+    if(/^r/.test(sub)) return ok("default via "+vm.gateway+" dev eth0 proto dhcp metric 100\n"+
+      vm.subnet+" dev eth0 proto kernel scope link src "+vm.iface.eth0.addr.split("/")[0]+"\n");
+    if(/^l/.test(sub)) return ok(Object.keys(vm.iface).join("\n")+"\n");
+    return bad("Usage: ip [ address | route | link ]");
+  };
+  C.ifconfig = () => C.ip(["a"]);
+  C.ss = (argv) => {
+    const {flags} = splitFlags(argv);
+    const rows = vm.sockets
+      .filter(s => (!flags.has("t")&&!flags.has("u")) || (flags.has("t")&&s.proto==="tcp") || (flags.has("u")&&s.proto==="udp"))
+      .filter(s => !flags.has("l") || s.state==="LISTEN");
+    const showPid = flags.has("p") && (vm.asRoot||vm.user==="root");
+    return ok("Netid State  Local Address:Port   Peer Address:Port"+(flags.has("p")?"  Process":"")+"\n"+
+      rows.map(s=>s.proto.padEnd(6)+s.state.padEnd(7)+(s.addr+":"+s.port).padEnd(21)+"*:*"+
+        (flags.has("p")?("  "+(showPid?'users:(("'+s.proc+'",pid='+s.pid+'))':"")):"")).join("\n")+"\n");
+  };
+  C.netstat = C.ss;
+  C.ping = (argv) => {
+    const cv = flagValue(argv, "c");
+    const host = argv.filter(a=>!a.startsWith("-") && a!==(cv&&cv.val)).pop();
+    if(!host) return bad("ping: usage error: Destination address required");
+    const n = cv ? Math.min(parseInt(cv.val,10), 10) : 4;
+    const known = vm.dns[host] || (/^\d+\.\d+\.\d+\.\d+$/.test(host) ? host : null);
+    if(!known) return {out:"", err:"ping: "+host+": Name or service not known\n", code:2};
+    const rows = [];
+    for(let i=0;i<n;i++) rows.push("64 bytes from "+known+": icmp_seq="+(i+1)+" ttl=56 time="+(11+i*0.4).toFixed(1)+" ms");
+    return ok("PING "+host+" ("+known+") 56(84) bytes of data.\n"+rows.join("\n")+
+      "\n\n--- "+host+" ping statistics ---\n"+n+" packets transmitted, "+n+" received, 0% packet loss\n");
+  };
+  C.dig = (argv) => {
+    const host = argv.filter(a=>!a.startsWith("+")&&!a.startsWith("-"))[0];
+    const ip = vm.dns[host];
+    if(argv.includes("+short")) return ip ? ok(ip+"\n") : ok("");
+    if(!ip) return ok(";; ->>HEADER<<- opcode: QUERY, status: NXDOMAIN\n");
+    return ok(";; ANSWER SECTION:\n"+host+".\t\t300\tIN\tA\t"+ip+"\n");
+  };
+  C.host = (argv) => { const ip = vm.dns[argv[0]];
+    return ip ? ok(argv[0]+" has address "+ip+"\n") : {out:"", err:"Host "+argv[0]+" not found\n", code:1}; };
+  C.nslookup = C.host;
+  C.curl = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    const url = ops[0]||"";
+    const site = vm.web[url.replace(/^https?:\/\//,"").replace(/\/$/,"")];
+    if(!site) return {out:"", err:"curl: (6) Could not resolve host\n", code:6};
+    if(flags.has("I")) return ok("HTTP/1.1 200 OK\r\nServer: "+site.server+"\r\nContent-Type: text/html\r\nContent-Length: "+site.body.length+"\r\n\r\n");
+    return ok(site.body+"\n");
+  };
+  C.wget = (argv) => {
+    const url = argv.filter(a=>!a.startsWith("-"))[0]||"";
+    const name = url.split("/").pop() || "index.html";
+    const site = vm.web[url.replace(/^https?:\/\//,"").replace(/\/$/,"")];
+    if(!site) return {out:"", err:"wget: unable to resolve host address\n", code:4};
+    K.put(vm.cwd+"/"+name, site.body, 0o644, vm.user, vm.user);
+    return ok("'"+name+"' saved ["+site.body.length+"]\n");
+  };
+  C.nc = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    const [h,p] = ops;
+    const open = (vm.remote[h]||[]).includes(Number(p));
+    if(!flags.has("z")) return bad("nc: only -z (scan) is simulated here");
+    return open ? ok("Connection to "+h+" "+p+" port [tcp/*] succeeded!\n")
+                : {out:"", err:"nc: connect to "+h+" port "+p+" (tcp) failed: Connection refused\n", code:1};
+  };
+  C.traceroute = (argv) => {
+    const h = argv.filter(a=>!a.startsWith("-"))[0];
+    const ip = vm.dns[h];
+    if(!ip) return bad("traceroute: unknown host "+h);
+    return ok("traceroute to "+h+" ("+ip+"), 30 hops max\n 1  "+vm.gateway+"  0.9 ms\n 2  10.44.0.1  8.2 ms\n 3  "+ip+"  12.4 ms\n");
+  };
+  C.ssh = (argv) => ok("[ssh is not simulated — this machine is the one you are practising on]\n");
+  C["ssh-keygen"] = (argv) => {
+    const tv = flagValue(argv, "t");
+    const type = tv ? tv.val : "rsa";
+    const path = vm.HOME+"/.ssh/id_"+type;
+    K.mkdirp(vm.HOME+"/.ssh", 0o700, vm.user, vm.user);
+    K.put(path, "PRIVATE KEY ("+type+")\n", 0o600, vm.user, vm.user);
+    K.put(path+".pub", "ssh-"+type+" AAAAC3Nza"+type+" "+vm.user+"@"+vm.host+"\n", 0o644, vm.user, vm.user);
+    return ok("Generating public/private "+type+" key pair.\nYour identification has been saved in "+path+
+      "\nYour public key has been saved in "+path+".pub\n");
+  };
+
+  /* ---------------- archives & integrity ---------------- */
+  function hash(s){ let h = 0x811c9dc5;
+    for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193)>>>0; }
+    return h.toString(16).padStart(8,"0").repeat(8).slice(0,64); }
+  C.sha256sum = (argv, stdin) => {
+    const {ops} = splitFlags(argv);
+    const {items, errs} = inputs(ops, stdin, "sha256sum");
+    return {out: join(items.map(it => hash(it.c)+"  "+(it.name||"-"))), err: join(errs), code: errs.length?1:0};
+  };
+  C.md5sum = C.sha256sum;
+
+  C.tar = (argv) => {
+    const spec = argv.find(a=>/^-?[cxtvzjJf]+$/.test(a) && /[cxt]/.test(a)) || "";
+    const letters = spec.replace(/^-/,"");
+    const fIdx = argv.indexOf(spec);
+    const rest = argv.slice(fIdx+1).filter(a=>!a.startsWith("-"));
+    const archive = rest[0];
+    const members = rest.slice(1);
+    const create = letters.includes("c"), extract = letters.includes("x"), list = letters.includes("t");
+    const verbose = letters.includes("v");
+    if(!letters.includes("f")) return bad("tar: Refusing to read archive contents from terminal");
+    if(letters.indexOf("f") !== letters.length-1)
+      return bad("tar: "+(archive||"")+": Cannot open: No such file or directory\ntar: Error is not recoverable: exiting now");
+    const wantZ = letters.includes("z"), wantJ = letters.includes("j"), wantX = letters.includes("J");
+    if(create){
+      if(!members.length) return bad("tar: Cowardly refusing to create an empty archive");
+      const collected = [];
+      for(const m of members){
+        const r = lookup(m);
+        if(!r.node) return bad("tar: "+m+": Cannot stat: No such file or directory");
+        (function walk(n, p){
+          if(n.t==="d"){ collected.push({p:p+"/", d:true});
+            for(const k of Object.keys(n.ch).sort()) walk(n.ch[k], p+"/"+k); }
+          else collected.push({p, c:n.c, mode:n.mode});
+        })(r.node, m.replace(/\/$/,""));
+      }
+      const fmt = wantJ ? "bzip2" : wantX ? "xz" : wantZ ? "gzip" : "tar";
+      K.put(archive, JSON.stringify({fmt, files:collected}), 0o644, vm.user, vm.user);
+      return ok(verbose ? join(collected.map(f=>f.p)) : "");
+    }
+    const ar = lookup(archive);
+    if(!ar.node) return bad("tar: "+archive+": Cannot open: No such file or directory");
+    let data; try{ data = JSON.parse(ar.node.c); }catch(e){ return bad("tar: This does not look like a tar archive"); }
+    const asked = wantJ ? "bzip2" : wantX ? "xz" : wantZ ? "gzip" : null;
+    if(asked && data.fmt !== asked){
+      const tool = asked==="bzip2" ? "bzip2" : asked==="xz" ? "xz" : "gzip";
+      return bad(tool+": (stdin) is not a "+asked+" file\ntar: Child returned status "+(asked==="xz"?1:2));
+    }
+    if(list) return ok(join(data.files.map(f=>f.p)));
+    for(const f of data.files){
+      if(f.d) K.mkdirp(f.p, 0o755, vm.user, vm.user);
+      else K.put(f.p, f.c, f.mode, vm.user, vm.user);
+    }
+    return ok(verbose ? join(data.files.map(f=>f.p)) : "");
+  };
+
+  C.rsync = (argv) => {
+    const {flags, long, ops} = splitFlags(argv);
+    if(ops.length<2) return bad("rsync: missing destination");
+    const [src, dst] = ops;
+    const sr = lookup(src.replace(/\/$/,""));
+    if(!sr.node) return bad("rsync: link_stat \""+src+"\" failed: No such file or directory (2)");
+    const dry = long["dry-run"] || flags.has("n");
+    const transferred = [];
+    const deleted = [];
+    const dstNode = lookup(dst).node;
+    (function walk(n, rel){
+      if(n.t==="d"){ for(const k of Object.keys(n.ch).sort()) walk(n.ch[k], rel?rel+"/"+k:k); }
+      else transferred.push(rel);
+    })(sr.node, "");
+    if(long["delete"] && dstNode && dstNode.t==="d"){
+      const srcNames = new Set(transferred);
+      (function walk(n, rel){
+        if(n.t==="d"){ for(const k of Object.keys(n.ch).sort()) walk(n.ch[k], rel?rel+"/"+k:k); }
+        else if(!srcNames.has(rel)) deleted.push(rel);
+      })(dstNode, "");
+    }
+    if(!dry){
+      const base = dst.replace(/\/$/,"") + (src.endsWith("/") ? "" : "/"+baseOf(src));
+      for(const rel of transferred){
+        const r = lookup(src.replace(/\/$/,"")+"/"+rel) ;
+        K.put(base+"/"+rel, r.node ? r.node.c : "", 0o644, vm.user, vm.user);
+      }
+      if(long["delete"]) for(const rel of deleted){
+        const p = dst.replace(/\/$/,"")+"/"+rel, par = lookup(parentOf(p));
+        if(par.node) delete par.node.ch[baseOf(p)];
+      }
+    }
+    return ok("sending incremental file list\n"+
+      transferred.map(t=>t).join("\n")+(transferred.length?"\n":"")+
+      deleted.map(d=>"deleting "+d).join("\n")+(deleted.length?"\n":"")+
+      "\nsent "+(transferred.length*120+180)+" bytes  received 35 bytes\n"+
+      (dry?"(DRY RUN — nothing was actually transferred)\n":""));
+  };
+
+  /* ---------------- git (enough for the backup/versioning week) --------- */
+  C.git = (argv) => {
+    const sub = argv[0];
+    const repo = () => { let d = vm.cwd;
+      while(true){ if(lookup(d+"/.git").node) return d; if(d==="/") return null; d = parentOf(d); } };
+    if(sub==="init"){ K.mkdirp(vm.cwd+"/.git", 0o755, vm.user, vm.user);
+      vm.git = {branch:"main", staged:[], commits:[]};
+      return ok("Initialized empty Git repository in "+vm.cwd+"/.git/\n"); }
+    if(!repo()) return bad("fatal: not a git repository (or any of the parent directories): .git");
+    vm.git = vm.git || {branch:"main", staged:[], commits:[]};
+    if(sub==="add"){ const files = argv.slice(1);
+      const expanded = files.includes(".") ? Object.keys(lookup(vm.cwd).node.ch).filter(n=>n!==".git") : files;
+      vm.git.staged = vm.git.staged.concat(expanded).filter((v,i,a)=>a.indexOf(v)===i);
+      return ok(""); }
+    if(sub==="commit"){
+      const mi = argv.indexOf("-m");
+      if(mi<0) return bad("Aborting commit due to empty commit message.");
+      if(!vm.git.staged.length) return {out:"nothing to commit, working tree clean\n", err:"", code:1};
+      const msg = argv[mi+1]||"";
+      vm.git.commits.push({msg, files: vm.git.staged.slice(), id: (1000+vm.git.commits.length).toString(16)+"a3f"});
+      const n = vm.git.staged.length; vm.git.staged = [];
+      return ok("["+vm.git.branch+" "+vm.git.commits[vm.git.commits.length-1].id+"] "+msg+"\n "+n+" file"+(n===1?"":"s")+" changed\n"); }
+    if(sub==="status") return ok("On branch "+vm.git.branch+"\n"+
+      (vm.git.staged.length ? "Changes to be committed:\n"+vm.git.staged.map(f=>"\tnew file:   "+f).join("\n")+"\n"
+                            : "nothing to commit, working tree clean\n"));
+    if(sub==="log"){
+      if(!vm.git.commits.length) return bad("fatal: your current branch 'main' does not have any commits yet");
+      const one = argv.includes("--oneline");
+      return ok(join(vm.git.commits.slice().reverse().map(c =>
+        one ? c.id+" "+c.msg : "commit "+c.id+"\nAuthor: "+vm.user+"\n\n    "+c.msg+"\n"))); }
+    if(sub==="branch"){ const n = argv[1];
+      if(!n) return ok("* "+vm.git.branch+"\n");
+      vm.git.branches = (vm.git.branches||["main"]).concat(n); return ok(""); }
+    if(sub==="checkout"||sub==="switch"){ vm.git.branch = argv[argv.length-1]; return ok("Switched to branch '"+vm.git.branch+"'\n"); }
+    return bad("git: '"+sub+"' is not simulated here");
+  };
+
+  C.man = (argv) => {
+    const n = argv[0];
+    if(!n) return bad("What manual page do you want?");
+    if(!C[n]) return bad("No manual entry for "+n);
+    return ok(n.toUpperCase()+"(1)\n\nNAME\n       "+n+" — see the Cheatsheet drawer for a full description.\n\n"+
+      "SYNOPSIS\n       "+n+" [OPTION]... [FILE]...\n");
+  };
+  C.help = () => ok("This is a simulated machine. Available commands:\n\n"+
+    Object.keys(C).sort().join("  ")+"\n\nType 'tasks' to see what the current lab asks for.\n");
+
+  /* ---------------- shell execution ---------------- */
+  function runSimple(argv, stdin){
+    if(!argv.length) return ok("");
+    let cmd = argv[0], args = argv.slice(1);
+    let elevated = false;
+    if(cmd==="sudo"){
+      if(!args.length) return bad("usage: sudo command");
+      if(args[0]==="-i"||args[0]==="-s") return ok("[you are now root — this trainer keeps you as "+vm.user+"; prefix commands with sudo instead]\n");
+      elevated = true; cmd = args[0]; args = args.slice(1);
+    }
+    if(cmd==="su") return ok("[su is not simulated — use sudo <command>]\n");
+    const fn = C[cmd];
+    if(!fn) return {out:"", err:"bash: "+cmd+": command not found\n", code:127};
+    const wasRoot = vm.asRoot;
+    if(elevated) vm.asRoot = true;
+    let r;
+    try{ r = fn(args, stdin||""); }
+    catch(e){ r = bad(cmd+": "+e.message); }
+    vm.asRoot = wasRoot;
+    return r;
+  }
+
+  /* one pipeline: cmd | cmd > file */
+  function runPipeline(tokens){
+    const stages = [[]];
+    let redir = null, redirAppend = false, errToOut = false, errRedir = null;
+    for(let i=0;i<tokens.length;i++){
+      const t = tokens[i];
+      if(t.op==="|"){ stages.push([]); continue; }
+      if(t.op===">"||t.op===">>"){ redir = tokens[++i]; redirAppend = t.op===">>"; continue; }
+      if(t.op==="2>"){ const nxt = tokens[i+1];
+        if(nxt && nxt.op===undefined && nxt.v==="&1"){ errToOut = true; i++; }
+        else { errRedir = tokens[++i]; }
+        continue; }
+      if(t.v==="2>&1"){ errToOut = true; continue; }
+      stages[stages.length-1].push(t);
+    }
+    let stdin = "", out = "", err = "", code = 0, clear = false, editor = null;
+    for(const stage of stages){
+      const argv = stage.flatMap(t => t.q ? [t.v] : glob(t.v));
+      const r = runSimple(argv, stdin);
+      stdin = r.out; out = r.out; err = r.err || ""; code = r.code;
+      clear = clear || !!r.clear; editor = r.editor || editor;
+      if(err && stages.length>1) { /* stderr does not flow down a pipe */ }
+    }
+    if(errToOut){ out = out + err; err = ""; }
+    if(errRedir){
+      const p = errRedir.v;
+      if(p!=="/dev/null"){ const par = lookup(parentOf(p));
+        if(par.node) par.node.ch[baseOf(p)] = fnode(err, 0o644, vm.user, vm.user); }
+      err = "";
+    }
+    if(redir){
+      const p = redir.v;
+      if(p==="/dev/null"){ out = ""; }
+      else{
+        const par = lookup(parentOf(p));
+        if(!par.node) return {out:"", err:"bash: "+p+": No such file or directory\n", code:1};
+        if(!canWrite(par.node)) return {out:"", err:"bash: "+p+": Permission denied\n", code:1};
+        const ex = par.node.ch[baseOf(p)];
+        if(ex && ex.t==="f") ex.c = redirAppend ? ex.c + out : out;
+        else par.node.ch[baseOf(p)] = fnode(out, 0o644, vm.user, vm.user);
+        out = "";
+      }
+    }
+    return {out, err, code, clear, editor};
+  }
+
+  function run(input){
+    const src = String(input).trim();
+    if(!src) return {out:"", err:"", code:0};
+    vm.hist.push(src);
+    const toks = tokenize(src);
+    // split on && and ; keeping short-circuit semantics
+    const groups = [[]]; const seps = [];
+    for(const t of toks){
+      if(t.op==="&&"||t.op===";"||t.op==="||"){ groups.push([]); seps.push(t.op); continue; }
+      groups[groups.length-1].push(t);
+    }
+    let out="", err="", code=0, clear=false, editor=null;
+    for(let i=0;i<groups.length;i++){
+      if(i>0){
+        const s = seps[i-1];
+        if(s==="&&" && code!==0) break;
+        if(s==="||" && code===0) break;
+      }
+      if(!groups[i].length) continue;
+      const r = runPipeline(groups[i]);
+      out += r.out; err += r.err; code = r.code; clear = clear || r.clear; editor = r.editor || editor;
+    }
+    vm.lastStatus = code;
+    return {out, err, code, clear, editor};
+  }
+
+  K.C = C; K.run = run; K.runSimple = runSimple;
+  return K;
+}
+
+/* Populate a fresh machine. Everything a lab might inspect lives here, so the
+   same box supports every week without being reseeded per lecture. */
+function seedVM(K){
+  const {vm, mkdirp, put} = K;
+  const H = vm.HOME;
+
+  for(const d of ["/bin","/boot","/dev","/etc","/home","/opt","/proc","/root","/run","/srv",
+                  "/tmp","/usr/bin","/usr/local/bin","/usr/share","/var/log","/var/www","/var/backups"])
+    mkdirp(d, 0o755);
+  mkdirp("/root", 0o700, "root", "root");
+  mkdirp(H, 0o755, "analyst", "analyst");
+  // mkdirp only sets the mode when it creates the node, so fix these up directly
+  K.lookup("/tmp").node.mode = 0o1777;      // world-writable, like a real /tmp
+  K.lookup("/root").node.mode = 0o700;
+  K.lookup(H).node.mode = 0o755;
+
+  /* ---- /etc ---- */
+  put("/etc/hostname", vm.host+"\n");
+  put("/etc/os-release",
+    'NAME="Arch Linux"\nPRETTY_NAME="Arch Linux"\nID=arch\nBUILD_ID=rolling\n'+
+    'HOME_URL="https://archlinux.org/"\nLOGO=archlinux-logo\n');
+  put("/etc/passwd",
+    "root:x:0:0::/root:/bin/bash\n"+
+    "daemon:x:1:1::/usr/sbin:/usr/sbin/nologin\n"+
+    "bin:x:2:2::/bin:/usr/sbin/nologin\n"+
+    "www-data:x:33:33::/var/www:/usr/sbin/nologin\n"+
+    "sshd:x:74:74::/var/empty:/usr/sbin/nologin\n"+
+    "analyst:x:1000:1000::/home/analyst:/bin/bash\n");
+  put("/etc/group",
+    "root:x:0:\nsudo:x:27:analyst\nwww-data:x:33:\nusers:x:100:analyst\nanalyst:x:1000:\n");
+  put("/etc/shadow", "root:!:19000:0:99999:7:::\nanalyst:$6$rounds$abc:19000:0:99999:7:::\n", 0o640, "root", "shadow");
+  put("/etc/hosts", "127.0.0.1\tlocalhost\n127.0.1.1\t"+vm.host+"\n::1\t\tlocalhost\n");
+  put("/etc/resolv.conf", "nameserver 10.0.0.1\nnameserver 1.1.1.1\n");
+  put("/etc/fstab",
+    "UUID=8f3c-21ab  /       ext4  rw,relatime  0 1\n"+
+    "UUID=1a2b-33cd  /boot   vfat  rw,noatime   0 2\n");
+  mkdirp("/etc/ssh", 0o755);
+  put("/etc/ssh/sshd_config",
+    "Port 22\nPermitRootLogin no\nPasswordAuthentication yes\nPubkeyAuthentication yes\n"+
+    "PermitEmptyPasswords no\nX11Forwarding no\nClientAliveInterval 300\n");
+  mkdirp("/etc/systemd/system", 0o755);
+  put("/etc/logrotate.conf", "weekly\nrotate 4\ncreate\ncompress\ninclude /etc/logrotate.d\n");
+  mkdirp("/etc/audit", 0o755);
+  put("/etc/audit/audit.rules", "-w /etc/passwd -p wa -k identity\n-w /etc/shadow -p wa -k identity\n-a always,exit -F arch=b64 -S execve -k exec\n");
+
+  /* ---- home ---- */
+  put(H+"/notes.txt", "remember to check the backup job\ncheck disk usage on /var\n", 0o644, "analyst", "analyst");
+  put(H+"/.bashrc", "alias ll='ls -la'\nexport EDITOR=nano\nPS1='\\u@\\h:\\w\\$ '\n", 0o644, "analyst", "analyst");
+  put(H+"/.profile", "# ~/.profile\n", 0o644, "analyst", "analyst");
+  mkdirp(H+"/projects", 0o755, "analyst", "analyst");
+  mkdirp(H+"/projects/webshop", 0o755, "analyst", "analyst");
+  put(H+"/projects/webshop/index.html", "<h1>webshop</h1>\n", 0o644, "analyst", "analyst");
+  put(H+"/projects/webshop/app.conf", "port=8080\ndebug=false\n", 0o644, "analyst", "analyst");
+  put(H+"/projects/README.md", "# projects\nOne directory per assignment.\n", 0o644, "analyst", "analyst");
+  mkdirp(H+"/reports", 0o755, "analyst", "analyst");
+  put(H+"/reports/report.txt", "quarterly report\nall systems nominal\n", 0o644, "analyst", "analyst");
+  put(H+"/reports/old.conf", "legacy=true\n", 0o644, "analyst", "analyst");
+  put(H+"/deploy.sh", "#!/bin/bash\necho deploying\n", 0o644, "analyst", "analyst");
+  put(H+"/id_rsa", "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEA\n-----END OPENSSH PRIVATE KEY-----\n", 0o644, "analyst", "analyst");
+  mkdirp(H+"/logs", 0o755, "analyst", "analyst");
+  mkdirp(H+"/cache", 0o755, "analyst", "analyst");
+  put(H+"/cache/tmp1.tmp", "junk\n", 0o644, "analyst", "analyst");
+  put(H+"/cache/tmp2.tmp", "junk\n", 0o644, "analyst", "analyst");
+  put(H+"/cache/keep.txt", "keep me\n", 0o644, "analyst", "analyst");
+  put(H+"/temp.log", "temporary\n", 0o644, "analyst", "analyst");
+  mkdirp(H+"/scratch", 0o755, "analyst", "analyst");
+
+  /* ---- logs ---- */
+  const acc = [];
+  const ips = ["10.0.0.24","91.240.118.44","10.0.0.31","203.0.113.9","10.0.0.24","91.240.118.44",
+               "10.0.0.24","198.51.100.7","10.0.0.31","91.240.118.44"];
+  const paths = ["/index.html","/login","/admin","/api/v1/users","/static/app.css","/missing","/admin","/login"];
+  for(let i=0;i<40;i++){
+    const ip = ips[i%ips.length], p = paths[i%paths.length];
+    const code = p==="/missing" ? 404 : (p==="/admin" && i%3===0) ? 403 : 200;
+    acc.push(ip+' - - [31/Aug/2026:09:'+String(10+(i%50)).padStart(2,"0")+':02 +0000] "GET '+p+' HTTP/1.1" '+code+" "+(200+i*7));
+  }
+  put("/var/log/access.log", acc.join("\n")+"\n", 0o644, "root", "root");
+
+  const auth = [];
+  for(let i=0;i<12;i++)
+    auth.push("Aug 31 09:"+String(20+i).padStart(2,"0")+":02 "+vm.host+
+      " sshd[41"+(10+i)+"]: Failed password for invalid user admin from 91.240.118.44 port 55"+(200+i)+" ssh2");
+  auth.push("Aug 31 09:33:40 "+vm.host+" sshd[4130]: Accepted publickey for analyst from 10.0.0.24 port 51022 ssh2");
+  auth.push("Aug 31 09:34:01 "+vm.host+" sudo:  analyst : TTY=pts/0 ; PWD=/home/analyst ; USER=root ; COMMAND=/usr/bin/systemctl restart nginx");
+  auth.push("Aug 31 09:41:12 "+vm.host+" sshd[4155]: Failed password for root from 203.0.113.9 port 44210 ssh2");
+  put("/var/log/auth.log", auth.join("\n")+"\n", 0o640, "root", "adm");
+
+  put("/var/log/syslog",
+    ["Aug 31 09:00:01 "+vm.host+" systemd[1]: Started Daily apt upgrade and clean activities.",
+     "Aug 31 09:04:22 "+vm.host+" kernel: [ 3021.114] EXT4-fs (sda2): mounted filesystem",
+     "Aug 31 09:12:10 "+vm.host+" nginx[1180]: 10.0.0.24 GET /index.html 200",
+     "Aug 31 09:18:44 "+vm.host+" cron[912]: (analyst) CMD (/home/analyst/backup.sh)",
+     "Aug 31 09:22:03 "+vm.host+" systemd[1]: nginx.service: Failed with result 'exit-code'.",
+     "Aug 31 09:22:04 "+vm.host+" nginx[1180]: emerg: bind() to 0.0.0.0:80 failed (98: Address already in use)"
+    ].join("\n")+"\n", 0o644, "root", "root");
+  put("/var/log/app.log",
+    ["2026-08-31 09:00:12 INFO  starting worker pool",
+     "2026-08-31 09:00:13 ERROR failed to connect to database",
+     "2026-08-31 09:00:18 warn  retrying connection",
+     "2026-08-31 09:00:21 INFO  connected",
+     "2026-08-31 09:03:02 Error timeout talking to cache",
+     "2026-08-31 09:07:55 INFO  job finished",
+     "2026-08-31 09:09:31 ERROR disk write failed"].join("\n")+"\n", 0o644, "root", "root");
+  put("/var/log/hosts.txt",
+    ["web01","db01","web01","cache01","web01","db01","web02"].join("\n")+"\n", 0o644, "root", "root");
+  put(H+"/hosts.txt", ["web01","db01","web01","cache01","web01","db01","web02"].join("\n")+"\n", 0o644, "analyst", "analyst");
+  put(H+"/urls.txt", "http://example.com/a\nhttp://example.com/b\nhttps://example.com/c\n", 0o644, "analyst", "analyst");
+
+  put("/var/www/index.html", "<h1>It works</h1>\n", 0o644, "root", "root");
+
+  /* ---- suid binaries, for the permissions week ---- */
+  const bins = {passwd:0o4755, sudo:0o4755, ping:0o755, ls:0o755, cat:0o755, grep:0o755,
+                mount:0o4755, find:0o755, bash:0o755, systemctl:0o755};
+  for(const b in bins) put("/usr/bin/"+b, "#!ELF\n", bins[b], "root", "root");
+  put("/opt/legacy-helper", "#!ELF\n", 0o4755, "root", "root"); // the suspicious one
+
+  /* ---- services, processes, sockets, network ---- */
+  vm.units = {
+    sshd:   {desc:"OpenSSH Daemon", state:"running", enabled:true,  pid:742},
+    nginx:  {desc:"nginx web server", state:"dead",  enabled:false, pid:0},
+    cron:   {desc:"Periodic Command Scheduler", state:"running", enabled:true, pid:912},
+    docker: {desc:"Docker Application Container Engine", state:"dead", enabled:false, pid:0},
+    postgresql:{desc:"PostgreSQL database server", state:"dead", enabled:false, pid:0},
+    "systemd-journald":{desc:"Journal Service", state:"running", enabled:true, pid:301},
+    bluetooth:{desc:"Bluetooth service", state:"failed", enabled:false, pid:0}
+  };
+  vm.procs = [
+    {pid:1,    user:"root",    cpu:"0.0", cmd:"/sbin/init"},
+    {pid:301,  user:"root",    cpu:"0.1", cmd:"/usr/lib/systemd/systemd-journald"},
+    {pid:742,  user:"root",    cpu:"0.0", cmd:"/usr/sbin/sshd -D"},
+    {pid:912,  user:"root",    cpu:"0.0", cmd:"/usr/sbin/cron -f"},
+    {pid:1180, user:"www-data",cpu:"1.2", cmd:"nginx: worker process"},
+    {pid:2044, user:"analyst", cpu:"0.3", cmd:"-bash"},
+    {pid:4821, user:"analyst", cpu:"98.7",cmd:"node server.js"},
+    {pid:5310, user:"analyst", cpu:"0.0", cmd:"ps"}
+  ];
+  vm.sockets = [
+    {proto:"tcp", state:"LISTEN", addr:"0.0.0.0", port:22,   proc:"sshd",     pid:742},
+    {proto:"tcp", state:"LISTEN", addr:"0.0.0.0", port:80,   proc:"nginx",    pid:1180},
+    {proto:"tcp", state:"LISTEN", addr:"127.0.0.1",port:5432,proc:"postgres", pid:1502},
+    {proto:"tcp", state:"LISTEN", addr:"0.0.0.0", port:3000, proc:"node",     pid:4821},
+    {proto:"udp", state:"UNCONN", addr:"0.0.0.0", port:68,   proc:"dhclient", pid:688},
+    {proto:"udp", state:"UNCONN", addr:"127.0.0.1",port:53,  proc:"systemd-resolve", pid:410}
+  ];
+  vm.iface = {
+    lo:   {flags:"LOOPBACK,UP,LOWER_UP", state:"UNKNOWN", addr:"127.0.0.1/8"},
+    eth0: {flags:"BROADCAST,MULTICAST,UP,LOWER_UP", state:"UP", addr:"10.0.0.24/24"}
+  };
+  vm.gateway = "10.0.0.1";
+  vm.subnet  = "10.0.0.0/24";
+  vm.dns = {"example.com":"93.184.216.34", "archlinux.org":"95.217.163.246",
+            "10.0.0.1":"10.0.0.1", "10.0.0.5":"10.0.0.5", "localhost":"127.0.0.1"};
+  vm.remote = {"10.0.0.5":[22,80], "10.0.0.1":[53,80], "localhost":[22,80,3000]};
+  vm.web = {"example.com":{server:"ECS", body:"<h1>Example Domain</h1>"},
+            "localhost":{server:"nginx/1.27.0", body:"<h1>It works</h1>"}};
+  vm.journal = [
+    {time:"Aug 31 09:00:01", unit:"systemd", pri:"info",    msg:"Startup finished in 4.812s."},
+    {time:"Aug 31 09:00:04", unit:"sshd",    pri:"info",    msg:"Server listening on 0.0.0.0 port 22."},
+    {time:"Aug 31 09:12:10", unit:"nginx",   pri:"info",    msg:"10.0.0.24 GET /index.html 200"},
+    {time:"Aug 31 09:20:02", unit:"sshd",    pri:"warning", msg:"Failed password for invalid user admin from 91.240.118.44"},
+    {time:"Aug 31 09:22:03", unit:"nginx",   pri:"err",     msg:"bind() to 0.0.0.0:80 failed (98: Address already in use)"},
+    {time:"Aug 31 09:22:04", unit:"systemd", pri:"err",     msg:"nginx.service: Failed with result 'exit-code'."},
+    {time:"Aug 31 09:25:44", unit:"bluetooth",pri:"err",    msg:"Failed to start Bluetooth service."},
+    {time:"Aug 31 09:31:12", unit:"cron",    pri:"info",    msg:"(analyst) CMD (/home/analyst/backup.sh)"},
+    {time:"Aug 31 09:41:12", unit:"sshd",    pri:"warning", msg:"Failed password for root from 203.0.113.9"},
+    {time:"Aug 31 09:44:20", unit:"kernel",  pri:"crit",    msg:"EXT4-fs error (device sda2): ext4_find_entry"}
+  ];
+  vm.cron = [];
+  vm.allGroups = ["root","sudo","www-data","users","analyst","adm","shadow"];
+  return K;
+}
+
+/* A small Python, scoped to what lectures 10-12 teach: types, arithmetic,
+   strings and f-strings, lists/dicts/sets, if/loops, functions, and file I/O
+   backed by the simulated filesystem. Not a general Python — but what it does
+   support, it does honestly, including int/float distinction and real errors. */
+function attachPython(K){
+  const {vm, lookup, parentOf, baseOf, fnode} = K;
+
+  class PyFloat { constructor(v){ this.v = v; } }
+  class PyTuple { constructor(a){ this.a = a; } }
+  class PyFunc  { constructor(name, params, defaults, body, closure){
+    Object.assign(this, {name, params, defaults, body, closure}); } }
+  class PyFile  { constructor(path, mode){ this.path = path; this.mode = mode; this.buf = ""; this.closed = false; } }
+  class PyErr extends Error { constructor(type, msg){ super(msg); this.pytype = type; this.pymsg = msg; } }
+  const err = (t,m) => { throw new PyErr(t,m); };
+
+  const isInt   = v => typeof v === "number";
+  const isFloat = v => v instanceof PyFloat;
+  const isNum   = v => isInt(v) || isFloat(v);
+  const num     = v => isFloat(v) ? v.v : v;
+  const isStr   = v => typeof v === "string";
+
+  function typeName(v){
+    if(v === null) return "NoneType";
+    if(typeof v === "boolean") return "bool";
+    if(isInt(v)) return "int";
+    if(isFloat(v)) return "float";
+    if(isStr(v)) return "str";
+    if(Array.isArray(v)) return "list";
+    if(v instanceof Map) return "dict";
+    if(v instanceof Set) return "set";
+    if(v instanceof PyTuple) return "tuple";
+    if(v instanceof PyFunc) return "function";
+    if(v instanceof PyFile) return "TextIOWrapper";
+    return "object";
+  }
+
+  function repr(v){
+    if(v === null) return "None";
+    if(typeof v === "boolean") return v ? "True" : "False";
+    if(isFloat(v)) return Number.isInteger(v.v) ? v.v.toFixed(1) : String(v.v);
+    if(isInt(v)) return String(v);
+    if(isStr(v)) return "'" + v + "'";
+    if(Array.isArray(v)) return "[" + v.map(repr).join(", ") + "]";
+    if(v instanceof PyTuple) return "(" + v.a.map(repr).join(", ") + (v.a.length===1?",":"") + ")";
+    if(v instanceof Set) return v.size ? "{" + [...v].map(repr).join(", ") + "}" : "set()";
+    if(v instanceof Map) return "{" + [...v].map(([k,val])=>repr(k)+": "+repr(val)).join(", ") + "}";
+    if(v instanceof PyFunc) return "<function " + v.name + ">";
+    return String(v);
+  }
+  function str(v){
+    if(isStr(v)) return v;
+    return repr(v);
+  }
+  function truthy(v){
+    if(v === null || v === false) return false;
+    if(v === true) return true;
+    if(isNum(v)) return num(v) !== 0;
+    if(isStr(v)) return v.length > 0;
+    if(Array.isArray(v)) return v.length > 0;
+    if(v instanceof Map || v instanceof Set) return v.size > 0;
+    if(v instanceof PyTuple) return v.a.length > 0;
+    return true;
+  }
+  function eqVal(a,b){
+    if(isNum(a) && isNum(b)) return num(a) === num(b);
+    if(Array.isArray(a) && Array.isArray(b))
+      return a.length===b.length && a.every((x,i)=>eqVal(x,b[i]));
+    return a === b;
+  }
+
+  /* ---------------- lexer ---------------- */
+  const KEYWORDS = new Set(["if","elif","else","for","while","def","return","in","not","and","or",
+    "True","False","None","break","continue","pass","import","from","with","as","try","except",
+    "finally","raise","is","del","lambda","global"]);
+
+  function lex(src){
+    const toks = [];
+    const linesArr = src.replace(/\r/g,"").split("\n");
+    const stack = [0];
+    let paren = 0;
+    for(let ln=0; ln<linesArr.length; ln++){
+      let line = linesArr[ln];
+      const stripped = line.replace(/#.*$/,"");
+      if(!stripped.trim()){ continue; }
+      let indent = 0;
+      while(indent < stripped.length && stripped[indent]===" ") indent++;
+      if(stripped[indent]==="\t") err("IndentationError","tabs are not supported here — use spaces");
+      const body = stripped.slice(indent);
+      if(paren === 0){
+        if(indent > stack[stack.length-1]){ stack.push(indent); toks.push({t:"INDENT", ln}); }
+        else while(indent < stack[stack.length-1]){ stack.pop(); toks.push({t:"DEDENT", ln}); }
+        if(indent !== stack[stack.length-1] && indent > stack[stack.length-1])
+          err("IndentationError","unexpected indent on line "+(ln+1));
+      }
+      let i = 0;
+      while(i < body.length){
+        const c = body[i];
+        if(c===" "){ i++; continue; }
+        // strings, including f-strings
+        const fpre = (c==="f"||c==="F") && (body[i+1]==='"'||body[i+1]==="'");
+        if(c==='"'||c==="'"||fpre){
+          const start = fpre ? i+1 : i;
+          const q = body[start];
+          let j = start+1, s = "";
+          while(j < body.length && body[j]!==q){
+            if(body[j]==="\\" && j+1<body.length){
+              const n = body[j+1];
+              s += n==="n" ? "\n" : n==="t" ? "\t" : n;
+              j += 2; continue;
+            }
+            s += body[j++];
+          }
+          if(j >= body.length) err("SyntaxError","unterminated string literal on line "+(ln+1));
+          toks.push({t: fpre?"FSTR":"STR", v:s, ln});
+          i = j+1; continue;
+        }
+        if(/[0-9]/.test(c)){
+          let j=i, s="";
+          while(j<body.length && /[0-9._]/.test(body[j])) s += body[j++];
+          s = s.replace(/_/g,"");
+          toks.push({t:"NUM", v: s.includes(".") ? new PyFloat(parseFloat(s)) : parseInt(s,10), ln});
+          i = j; continue;
+        }
+        if(/[A-Za-z_]/.test(c)){
+          let j=i, s="";
+          while(j<body.length && /[A-Za-z0-9_]/.test(body[j])) s += body[j++];
+          toks.push({t: KEYWORDS.has(s)?"KW":"NAME", v:s, ln});
+          i = j; continue;
+        }
+        const three = body.slice(i,i+3), two = body.slice(i,i+2);
+        if(["//=","**="].includes(three)){ toks.push({t:"OP", v:three, ln}); i+=3; continue; }
+        if(["==","!=","<=",">=","//","**","+=","-=","*=","/="].includes(two)){
+          toks.push({t:"OP", v:two, ln}); i+=2; continue; }
+        if("+-*/%<>=(),:[]{}.".includes(c)){
+          if("([{".includes(c)) paren++;
+          if(")]}".includes(c)) paren--;
+          toks.push({t:"OP", v:c, ln}); i++; continue;
+        }
+        err("SyntaxError","unexpected character '"+c+"' on line "+(ln+1));
+      }
+      if(paren===0) toks.push({t:"NL", ln});
+    }
+    while(stack.length>1){ stack.pop(); toks.push({t:"DEDENT", ln:linesArr.length}); }
+    toks.push({t:"EOF", ln:linesArr.length});
+    return toks;
+  }
+
+  /* ---------------- parser ---------------- */
+  function parse(toks){
+    let p = 0;
+    const peek = (k=0) => toks[p+k];
+    const at = (t,v) => peek().t===t && (v===undefined || peek().v===v);
+    const eat = (t,v) => { if(!at(t,v)) err("SyntaxError","expected "+(v||t)+" but found '"+
+      (peek().v!==undefined?peek().v:peek().t)+"' on line "+(peek().ln+1)); return toks[p++]; };
+    const opt = (t,v) => at(t,v) ? (p++, true) : false;
+
+    function block(){
+      // either an inline statement after ':' or an indented suite
+      if(at("NL")){
+        eat("NL"); eat("INDENT");
+        const body = [];
+        while(!at("DEDENT") && !at("EOF")) body.push(statement());
+        opt("DEDENT");
+        return body;
+      }
+      return [statement()];
+    }
+
+    function statement(){
+      while(at("NL")) p++;
+      const tk = peek();
+      if(tk.t==="KW"){
+        switch(tk.v){
+          case "if": {
+            p++; const test = expr(); eat("OP",":");
+            const then = block();
+            const clauses = [{test, body:then}];
+            let orelse = [];
+            while(at("KW","elif")){ p++; const t2 = expr(); eat("OP",":"); clauses.push({test:t2, body:block()}); }
+            if(at("KW","else")){ p++; eat("OP",":"); orelse = block(); }
+            return {k:"if", clauses, orelse};
+          }
+          case "while": { p++; const test = expr(); eat("OP",":"); return {k:"while", test, body:block()}; }
+          case "for": {
+            p++; const names = [eat("NAME").v];
+            while(opt("OP",",")) names.push(eat("NAME").v);
+            eat("KW","in"); const iter = expr(); eat("OP",":");
+            return {k:"for", names, iter, body:block()};
+          }
+          case "def": {
+            p++; const name = eat("NAME").v; eat("OP","(");
+            const params = [], defaults = {};
+            while(!at("OP",")")){
+              const pn = eat("NAME").v;
+              if(opt("OP","=")) defaults[pn] = expr();
+              params.push(pn);
+              if(!opt("OP",",")) break;
+            }
+            eat("OP",")"); eat("OP",":");
+            return {k:"def", name, params, defaults, body:block()};
+          }
+          case "return": { p++; const v = (at("NL")||at("EOF")) ? null : expr(); opt("NL"); return {k:"return", v}; }
+          case "break": p++; opt("NL"); return {k:"break"};
+          case "continue": p++; opt("NL"); return {k:"continue"};
+          case "pass": p++; opt("NL"); return {k:"pass"};
+          case "import": case "from": { while(!at("NL")&&!at("EOF")) p++; opt("NL"); return {k:"pass"}; }
+          case "with": {
+            p++; const ctx = expr(); eat("KW","as"); const name = eat("NAME").v; eat("OP",":");
+            return {k:"with", ctx, name, body:block()};
+          }
+          case "try": {
+            p++; eat("OP",":"); const body = block();
+            const handlers = [];
+            while(at("KW","except")){
+              p++;
+              let type = null, alias = null;
+              if(!at("OP",":")){ type = eat("NAME").v; if(opt("KW","as")) alias = eat("NAME").v; }
+              eat("OP",":");
+              handlers.push({type, alias, body:block()});
+            }
+            let orelse = [];
+            if(at("KW","finally")){ p++; eat("OP",":"); orelse = block(); }
+            return {k:"try", body, handlers, final:orelse};
+          }
+          case "raise": {
+            p++; const e = (at("NL")||at("EOF")) ? null : expr(); opt("NL"); return {k:"raise", e};
+          }
+        }
+      }
+      // assignment or bare expression
+      const start = p;
+      const target = expr();
+      if(at("OP","=")){
+        p++; const value = expr(); opt("NL");
+        return {k:"assign", target, value};
+      }
+      const aug = ["+=","-=","*=","/=","//=","**="].find(o => at("OP",o));
+      if(aug){ p++; const value = expr(); opt("NL"); return {k:"aug", target, op:aug.slice(0,-1), value}; }
+      opt("NL");
+      return {k:"expr", e:target};
+    }
+
+    /* expression precedence, loosest first */
+    function expr(){ return orExpr(); }
+    function orExpr(){ let l = andExpr();
+      while(at("KW","or")){ p++; l = {k:"or", l, r:andExpr()}; } return l; }
+    function andExpr(){ let l = notExpr();
+      while(at("KW","and")){ p++; l = {k:"and", l, r:notExpr()}; } return l; }
+    function notExpr(){ if(at("KW","not")){ p++; return {k:"not", e:notExpr()}; } return compare(); }
+    function compare(){
+      let l = arith();
+      for(;;){
+        let op = null;
+        if(at("OP","==")||at("OP","!=")||at("OP","<")||at("OP",">")||at("OP","<=")||at("OP",">=")) op = eat("OP").v;
+        else if(at("KW","in")){ p++; op = "in"; }
+        else if(at("KW","not") && peek(1).t==="KW" && peek(1).v==="in"){ p+=2; op = "not in"; }
+        else if(at("KW","is")){ p++; if(at("KW","not")){ p++; op = "is not"; } else op = "is"; }
+        else break;
+        l = {k:"cmp", op, l, r:arith()};
+      }
+      return l;
+    }
+    function arith(){ let l = term();
+      while(at("OP","+")||at("OP","-")){ const op = eat("OP").v; l = {k:"bin", op, l, r:term()}; } return l; }
+    function term(){ let l = unary();
+      while(at("OP","*")||at("OP","/")||at("OP","//")||at("OP","%")){ const op = eat("OP").v; l = {k:"bin", op, l, r:unary()}; }
+      return l; }
+    function unary(){ if(at("OP","-")){ p++; return {k:"neg", e:unary()}; }
+      if(at("OP","+")){ p++; return unary(); } return power(); }
+    function power(){ const b = postfix();
+      if(at("OP","**")){ p++; return {k:"bin", op:"**", l:b, r:unary()}; } return b; }
+
+    function postfix(){
+      let e = atom();
+      for(;;){
+        if(at("OP","(")){
+          p++; const args = [];
+          while(!at("OP",")")){ args.push(expr()); if(!opt("OP",",")) break; }
+          eat("OP",")");
+          e = {k:"call", fn:e, args};
+        } else if(at("OP","[")){
+          p++;
+          let lo = at("OP",":") ? null : expr();
+          if(opt("OP",":")){
+            const hi = at("OP","]") ? null : expr();
+            eat("OP","]");
+            e = {k:"slice", obj:e, lo, hi};
+          } else { eat("OP","]"); e = {k:"index", obj:e, i:lo}; }
+        } else if(at("OP",".")){
+          p++; const name = eat("NAME").v;
+          e = {k:"attr", obj:e, name};
+        } else break;
+      }
+      return e;
+    }
+
+    function atom(){
+      const tk = peek();
+      if(tk.t==="NUM"){ p++; return {k:"const", v:tk.v}; }
+      if(tk.t==="STR"){ p++; return {k:"const", v:tk.v}; }
+      if(tk.t==="FSTR"){ p++; return {k:"fstr", v:tk.v}; }
+      if(tk.t==="NAME"){ p++; return {k:"name", v:tk.v}; }
+      if(tk.t==="KW"){
+        if(tk.v==="True"){ p++; return {k:"const", v:true}; }
+        if(tk.v==="False"){ p++; return {k:"const", v:false}; }
+        if(tk.v==="None"){ p++; return {k:"const", v:null}; }
+        if(tk.v==="not"){ return notExpr(); }
+      }
+      if(at("OP","(")){
+        p++;
+        if(at("OP",")")){ p++; return {k:"tuple", items:[]}; }
+        const first = expr();
+        if(at("OP",",")){
+          const items = [first];
+          while(opt("OP",",")){ if(at("OP",")")) break; items.push(expr()); }
+          eat("OP",")"); return {k:"tuple", items};
+        }
+        eat("OP",")"); return first;
+      }
+      if(at("OP","[")){
+        p++; const items = [];
+        while(!at("OP","]")){ items.push(expr()); if(!opt("OP",",")) break; }
+        eat("OP","]"); return {k:"list", items};
+      }
+      if(at("OP","{")){
+        p++;
+        const pairs = [], items = [];
+        let isDict = null;
+        while(!at("OP","}")){
+          const kx = expr();
+          if(opt("OP",":")){ isDict = true; pairs.push([kx, expr()]); }
+          else { isDict = isDict===null ? false : isDict; items.push(kx); }
+          if(!opt("OP",",")) break;
+        }
+        eat("OP","}");
+        return isDict === false ? {k:"set", items} : {k:"dict", pairs};
+      }
+      err("SyntaxError","unexpected '"+(tk.v!==undefined?tk.v:tk.t)+"' on line "+(tk.ln+1));
+    }
+
+    const prog = [];
+    while(!at("EOF")){ if(at("NL")||at("INDENT")||at("DEDENT")){ p++; continue; } prog.push(statement()); }
+    return prog;
+  }
+
+  /* ---------------- evaluator ---------------- */
+  const BREAK = {sig:"break"}, CONT = {sig:"continue"};
+  class Ret { constructor(v){ this.v = v; } }
+
+  function run(src, opts){
+    const out = [];
+    const stdin = (opts && opts.stdin ? opts.stdin.split("\n") : []);
+    let stdinPos = 0;
+    const globals = new Map();
+
+    const write = s => {
+      out.push(s);
+      if(out.join("").length > 200000) err("RuntimeError","too much output — is a loop not terminating?");
+    };
+
+    /* ---- builtins ---- */
+    const BUILTINS = {
+      print: (args, kw) => {
+        const sep = kw && kw.sep !== undefined ? kw.sep : " ";
+        write(args.map(str).join(sep) + ((kw && kw.end !== undefined) ? kw.end : "\n"));
+        return null;
+      },
+      len: a => {
+        const v = a[0];
+        if(isStr(v)) return v.length;
+        if(Array.isArray(v)) return v.length;
+        if(v instanceof Map || v instanceof Set) return v.size;
+        if(v instanceof PyTuple) return v.a.length;
+        err("TypeError","object of type '"+typeName(v)+"' has no len()");
+      },
+      int: a => {
+        const v = a[0];
+        if(v === undefined) return 0;
+        if(isStr(v)){
+          const t = v.trim();
+          if(!/^[+-]?\d+$/.test(t)) err("ValueError","invalid literal for int() with base 10: '"+v+"'");
+          return parseInt(t,10);
+        }
+        if(isFloat(v)) return Math.trunc(v.v);
+        if(typeof v === "boolean") return v?1:0;
+        if(isInt(v)) return v;
+        err("TypeError","int() argument must be a string or a number, not '"+typeName(v)+"'");
+      },
+      float: a => {
+        const v = a[0];
+        if(isStr(v)){ const n = parseFloat(v); if(isNaN(n)) err("ValueError","could not convert string to float: '"+v+"'"); return new PyFloat(n); }
+        return new PyFloat(num(v));
+      },
+      str: a => a.length ? str(a[0]) : "",
+      bool: a => truthy(a[0]),
+      type: a => ({__type: typeName(a[0])}),
+      list: a => { const v = a[0];
+        if(v === undefined) return [];
+        if(Array.isArray(v)) return v.slice();
+        if(isStr(v)) return v.split("");
+        if(v instanceof Set) return [...v];
+        if(v instanceof Map) return [...v.keys()];
+        if(v instanceof PyTuple) return v.a.slice();
+        err("TypeError","'"+typeName(v)+"' object is not iterable"); },
+      set: a => { const v = a[0];
+        if(v === undefined) return new Set();
+        return new Set(BUILTINS.list([v])); },
+      dict: a => a[0] instanceof Map ? new Map(a[0]) : new Map(),
+      tuple: a => new PyTuple(BUILTINS.list(a)),
+      range: a => {
+        const [x,y,z] = a.map(num);
+        const start = y===undefined ? 0 : x, stop = y===undefined ? x : y, step = z===undefined ? 1 : z;
+        const r = [];
+        if(step === 0) err("ValueError","range() arg 3 must not be zero");
+        for(let i=start; step>0 ? i<stop : i>stop; i+=step){ r.push(i);
+          if(r.length > 100000) err("RuntimeError","range too large"); }
+        return r;
+      },
+      sum: a => { const l = BUILTINS.list([a[0]]);
+        let anyF = false, t = 0;
+        for(const x of l){ if(!isNum(x)) err("TypeError","unsupported operand type(s) for +: 'int' and '"+typeName(x)+"'");
+          if(isFloat(x)) anyF = true; t += num(x); }
+        return anyF ? new PyFloat(t) : t; },
+      min: a => { const l = a.length===1 ? BUILTINS.list([a[0]]) : a; return l.reduce((m,x)=> num(x)<num(m)?x:m); },
+      max: a => { const l = a.length===1 ? BUILTINS.list([a[0]]) : a; return l.reduce((m,x)=> num(x)>num(m)?x:m); },
+      abs: a => isFloat(a[0]) ? new PyFloat(Math.abs(a[0].v)) : Math.abs(a[0]),
+      round: a => { const d = a[1]===undefined ? 0 : num(a[1]);
+        const r = Math.round(num(a[0]) * Math.pow(10,d)) / Math.pow(10,d);
+        return d===0 ? Math.round(num(a[0])) : new PyFloat(r); },
+      sorted: a => { const l = BUILTINS.list([a[0]]).slice();
+        l.sort((x,y)=> isNum(x)&&isNum(y) ? num(x)-num(y) : String(x)<String(y)?-1:String(x)>String(y)?1:0);
+        return l; },
+      reversed: a => BUILTINS.list([a[0]]).slice().reverse(),
+      enumerate: a => BUILTINS.list([a[0]]).map((v,i)=> new PyTuple([i,v])),
+      zip: a => { const ls = a.map(x=>BUILTINS.list([x]));
+        const n = Math.min(...ls.map(l=>l.length));
+        const r = []; for(let i=0;i<n;i++) r.push(new PyTuple(ls.map(l=>l[i]))); return r; },
+      input: a => {
+        if(a.length) write(str(a[0]));
+        if(stdinPos >= stdin.length) err("EOFError","EOF when reading a line — this lab has no input queued");
+        return stdin[stdinPos++];
+      },
+      open: a => {
+        const path = str(a[0]), mode = a[1] ? str(a[1]) : "r";
+        const abs = K.abspath(path);
+        const r = lookup(abs);
+        if(mode.startsWith("r")){
+          if(!r.node) err("FileNotFoundError","[Errno 2] No such file or directory: '"+path+"'");
+          if(r.node.t === "d") err("IsADirectoryError","[Errno 21] Is a directory: '"+path+"'");
+          if(!K.canRead(r.node)) err("PermissionError","[Errno 13] Permission denied: '"+path+"'");
+          const f = new PyFile(abs, mode); f.buf = r.node.c; return f;
+        }
+        const par = lookup(parentOf(abs));
+        if(!par.node) err("FileNotFoundError","[Errno 2] No such file or directory: '"+path+"'");
+        const ex = par.node.ch[baseOf(abs)];
+        const f = new PyFile(abs, mode);
+        if(mode.startsWith("a") && ex && ex.t === "f") f.buf = ex.c;
+        else if(!ex) par.node.ch[baseOf(abs)] = fnode("", 0o644, vm.user, vm.user);
+        else if(mode.startsWith("w")) ex.c = "";
+        return f;
+      }
+    };
+
+    function flushFile(f){
+      if(f.mode.startsWith("r")) return;
+      const r = lookup(f.path);
+      if(r.node && r.node.t === "f") r.node.c = f.buf;
+    }
+
+    /* ---- attribute access / methods ---- */
+    function getAttr(obj, name){
+      if(isStr(obj)){
+        const S = {
+          upper: () => obj.toUpperCase(), lower: () => obj.toLowerCase(),
+          strip: a => a && a[0] ? obj.replace(new RegExp("^["+a[0]+"]+|["+a[0]+"]+$","g"),"") : obj.trim(),
+          lstrip: () => obj.replace(/^\s+/,""), rstrip: () => obj.replace(/\s+$/,""),
+          split: a => a && a[0] !== undefined ? obj.split(str(a[0])) : obj.trim().split(/\s+/).filter(x=>x!==""),
+          replace: a => obj.split(str(a[0])).join(str(a[1])),
+          startswith: a => obj.startsWith(str(a[0])), endswith: a => obj.endsWith(str(a[0])),
+          find: a => obj.indexOf(str(a[0])), count: a => obj.split(str(a[0])).length-1,
+          join: a => BUILTINS.list([a[0]]).map(str).join(obj),
+          title: () => obj.replace(/\w\S*/g, w=>w[0].toUpperCase()+w.slice(1).toLowerCase()),
+          capitalize: () => obj.charAt(0).toUpperCase()+obj.slice(1).toLowerCase(),
+          isdigit: () => /^\d+$/.test(obj), isalpha: () => /^[A-Za-z]+$/.test(obj)
+        };
+        if(S[name]) return {__method:S[name]};
+        err("AttributeError","'str' object has no attribute '"+name+"'");
+      }
+      if(Array.isArray(obj)){
+        const L = {
+          append: a => { obj.push(a[0]); return null; },
+          insert: a => { obj.splice(num(a[0]),0,a[1]); return null; },
+          remove: a => { const i = obj.findIndex(x=>eqVal(x,a[0]));
+            if(i<0) err("ValueError","list.remove(x): x not in list"); obj.splice(i,1); return null; },
+          pop: a => { if(!obj.length) err("IndexError","pop from empty list");
+            return a && a.length ? obj.splice(num(a[0]),1)[0] : obj.pop(); },
+          sort: () => { obj.sort((x,y)=> isNum(x)&&isNum(y) ? num(x)-num(y)
+            : String(x)<String(y)?-1:String(x)>String(y)?1:0); return null; },
+          reverse: () => { obj.reverse(); return null; },
+          index: a => { const i = obj.findIndex(x=>eqVal(x,a[0]));
+            if(i<0) err("ValueError",repr(a[0])+" is not in list"); return i; },
+          count: a => obj.filter(x=>eqVal(x,a[0])).length,
+          clear: () => { obj.length = 0; return null; },
+          extend: a => { obj.push(...BUILTINS.list([a[0]])); return null; }
+        };
+        if(L[name]) return {__method:L[name]};
+        err("AttributeError","'list' object has no attribute '"+name+"'");
+      }
+      if(obj instanceof Map){
+        const D = {
+          get: a => obj.has(a[0]) ? obj.get(a[0]) : (a.length>1 ? a[1] : null),
+          keys: () => [...obj.keys()], values: () => [...obj.values()],
+          items: () => [...obj].map(([k,v]) => new PyTuple([k,v])),
+          pop: a => { if(!obj.has(a[0])){ if(a.length>1) return a[1]; err("KeyError",repr(a[0])); }
+            const v = obj.get(a[0]); obj.delete(a[0]); return v; },
+          update: a => { for(const [k,v] of a[0]) obj.set(k,v); return null; },
+          clear: () => { obj.clear(); return null; }
+        };
+        if(D[name]) return {__method:D[name]};
+        err("AttributeError","'dict' object has no attribute '"+name+"'");
+      }
+      if(obj instanceof Set){
+        const St = {
+          add: a => { obj.add(a[0]); return null; },
+          remove: a => { if(!obj.has(a[0])) err("KeyError",repr(a[0])); obj.delete(a[0]); return null; },
+          discard: a => { obj.delete(a[0]); return null; },
+          union: a => new Set([...obj, ...BUILTINS.list([a[0]])]),
+          intersection: a => { const o = new Set(BUILTINS.list([a[0]])); return new Set([...obj].filter(x=>o.has(x))); },
+          difference: a => { const o = new Set(BUILTINS.list([a[0]])); return new Set([...obj].filter(x=>!o.has(x))); }
+        };
+        if(St[name]) return {__method:St[name]};
+        err("AttributeError","'set' object has no attribute '"+name+"'");
+      }
+      if(obj instanceof PyFile){
+        const F = {
+          read: () => obj.buf,
+          readlines: () => obj.buf.split("\n").filter((l,i,a)=>!(i===a.length-1&&l==="")).map(l=>l+"\n"),
+          readline: () => { const i = obj.buf.indexOf("\n"); const l = i<0?obj.buf:obj.buf.slice(0,i+1);
+            obj.buf = i<0?"":obj.buf.slice(i+1); return l; },
+          write: a => { const s = str(a[0]); obj.buf += s; flushFile(obj); return s.length; },
+          writelines: a => { for(const l of BUILTINS.list([a[0]])) obj.buf += str(l); flushFile(obj); return null; },
+          close: () => { flushFile(obj); obj.closed = true; return null; }
+        };
+        if(F[name]) return {__method:F[name]};
+        err("AttributeError","'TextIOWrapper' object has no attribute '"+name+"'");
+      }
+      if(obj && obj.__type !== undefined && name === "__name__") return obj.__type;
+      err("AttributeError","'"+typeName(obj)+"' object has no attribute '"+name+"'");
+    }
+
+    function iterate(v){
+      if(Array.isArray(v)) return v;
+      if(isStr(v)) return v.split("");
+      if(v instanceof Set) return [...v];
+      if(v instanceof Map) return [...v.keys()];
+      if(v instanceof PyTuple) return v.a;
+      if(v instanceof PyFile) return v.buf.split("\n").filter((l,i,a)=>!(i===a.length-1&&l==="")).map(l=>l+"\n");
+      err("TypeError","'"+typeName(v)+"' object is not iterable");
+    }
+
+    function binop(op, a, b){
+      if(op === "+"){
+        if(isStr(a) && isStr(b)) return a + b;
+        if(isStr(a) !== isStr(b) && (isNum(a)||isNum(b)) && (isStr(a)||isStr(b)))
+          err("TypeError", isStr(a) ? 'can only concatenate str (not "'+typeName(b)+'") to str'
+                                    : "unsupported operand type(s) for +: '"+typeName(a)+"' and '"+typeName(b)+"'");
+        if(Array.isArray(a) && Array.isArray(b)) return a.concat(b);
+        if(isNum(a) && isNum(b)) return (isFloat(a)||isFloat(b)) ? new PyFloat(num(a)+num(b)) : a+b;
+        err("TypeError","unsupported operand type(s) for +: '"+typeName(a)+"' and '"+typeName(b)+"'");
+      }
+      if(op === "*"){
+        if(isStr(a) && isInt(b)) return a.repeat(Math.max(0,b));
+        if(isInt(a) && isStr(b)) return b.repeat(Math.max(0,a));
+        if(Array.isArray(a) && isInt(b)){ const r=[]; for(let i=0;i<b;i++) r.push(...a); return r; }
+      }
+      if(!isNum(a) || !isNum(b))
+        err("TypeError","unsupported operand type(s) for "+op+": '"+typeName(a)+"' and '"+typeName(b)+"'");
+      const x = num(a), y = num(b), anyF = isFloat(a)||isFloat(b);
+      switch(op){
+        case "-": return anyF ? new PyFloat(x-y) : x-y;
+        case "*": return anyF ? new PyFloat(x*y) : x*y;
+        case "/": if(y===0) err("ZeroDivisionError","division by zero"); return new PyFloat(x/y);
+        case "//": if(y===0) err("ZeroDivisionError","integer division or modulo by zero");
+          return anyF ? new PyFloat(Math.floor(x/y)) : Math.floor(x/y);
+        case "%": if(y===0) err("ZeroDivisionError","integer division or modulo by zero");
+          { const m = ((x%y)+y)%y; return anyF ? new PyFloat(m) : m; }
+        case "**": return anyF ? new PyFloat(Math.pow(x,y)) : Math.pow(x,y);
+      }
+      err("SyntaxError","unknown operator "+op);
+    }
+
+    function compareOp(op, a, b){
+      if(op === "in" || op === "not in"){
+        let found;
+        if(isStr(b)) found = b.includes(str(a));
+        else if(Array.isArray(b)) found = b.some(x=>eqVal(x,a));
+        else if(b instanceof Set) found = b.has(a);
+        else if(b instanceof Map) found = b.has(a);
+        else if(b instanceof PyTuple) found = b.a.some(x=>eqVal(x,a));
+        else err("TypeError","argument of type '"+typeName(b)+"' is not iterable");
+        return op === "in" ? found : !found;
+      }
+      if(op === "is") return a === b || (a===null&&b===null);
+      if(op === "is not") return !(a === b || (a===null&&b===null));
+      if(op === "==") return eqVal(a,b);
+      if(op === "!=") return !eqVal(a,b);
+      if(isStr(a) && isStr(b)){
+        if(op === "<") return a < b; if(op === ">") return a > b;
+        if(op === "<=") return a <= b; return a >= b;
+      }
+      if(!isNum(a) || !isNum(b))
+        err("TypeError","'"+op+"' not supported between instances of '"+typeName(a)+"' and '"+typeName(b)+"'");
+      const x = num(a), y = num(b);
+      if(op === "<") return x < y; if(op === ">") return x > y;
+      if(op === "<=") return x <= y; return x >= y;
+    }
+
+    function lookupName(scope, n){
+      if(scope.has(n)) return scope.get(n);
+      if(globals.has(n)) return globals.get(n);
+      if(BUILTINS[n]) return {__builtin:n};
+      err("NameError","name '"+n+"' is not defined");
+    }
+
+    function evalNode(n, scope){
+      switch(n.k){
+        case "const": return n.v;
+        case "name": return lookupName(scope, n.v);
+        case "fstr": {
+          return n.v.replace(/\{([^{}]*)\}/g, (m, code) => {
+            const spec = code.split(":");
+            const exprSrc = spec[0];
+            const toks = lex(exprSrc);
+            const ast = parse(toks);
+            const v = evalNode(ast[0].e !== undefined ? ast[0].e : ast[0].value, scope);
+            if(spec[1] && /^\.\d+f$/.test(spec[1])) return num(v).toFixed(parseInt(spec[1].slice(1),10));
+            return str(v);
+          });
+        }
+        case "list": return n.items.map(i=>evalNode(i,scope));
+        case "tuple": return new PyTuple(n.items.map(i=>evalNode(i,scope)));
+        case "set": return new Set(n.items.map(i=>evalNode(i,scope)));
+        case "dict": { const m = new Map();
+          for(const [k,v] of n.pairs) m.set(evalNode(k,scope), evalNode(v,scope)); return m; }
+        case "neg": { const v = evalNode(n.e,scope);
+          if(!isNum(v)) err("TypeError","bad operand type for unary -: '"+typeName(v)+"'");
+          return isFloat(v) ? new PyFloat(-v.v) : -v; }
+        case "not": return !truthy(evalNode(n.e,scope));
+        case "and": { const l = evalNode(n.l,scope); return truthy(l) ? evalNode(n.r,scope) : l; }
+        case "or": { const l = evalNode(n.l,scope); return truthy(l) ? l : evalNode(n.r,scope); }
+        case "bin": return binop(n.op, evalNode(n.l,scope), evalNode(n.r,scope));
+        case "cmp": return compareOp(n.op, evalNode(n.l,scope), evalNode(n.r,scope));
+        case "attr": return getAttr(evalNode(n.obj,scope), n.name);
+        case "index": {
+          const o = evalNode(n.obj,scope), i = evalNode(n.i,scope);
+          if(o instanceof Map){ if(!o.has(i)) err("KeyError",repr(i)); return o.get(i); }
+          if(isStr(o)){ const idx = num(i)<0 ? o.length+num(i) : num(i);
+            if(idx<0||idx>=o.length) err("IndexError","string index out of range"); return o[idx]; }
+          const arr = Array.isArray(o) ? o : o instanceof PyTuple ? o.a : null;
+          if(!arr) err("TypeError","'"+typeName(o)+"' object is not subscriptable");
+          const idx = num(i)<0 ? arr.length+num(i) : num(i);
+          if(idx<0||idx>=arr.length) err("IndexError","list index out of range");
+          return arr[idx];
+        }
+        case "slice": {
+          const o = evalNode(n.obj,scope);
+          const seq = isStr(o) ? o : Array.isArray(o) ? o : o instanceof PyTuple ? o.a : null;
+          if(seq === null) err("TypeError","'"+typeName(o)+"' object is not subscriptable");
+          const L = seq.length;
+          let lo = n.lo===null?0:num(evalNode(n.lo,scope)), hi = n.hi===null?L:num(evalNode(n.hi,scope));
+          if(lo<0) lo += L; if(hi<0) hi += L;
+          return isStr(o) ? o.slice(lo,hi) : seq.slice(lo,hi);
+        }
+        case "call": {
+          const args = n.args.map(a=>evalNode(a,scope));
+          const fnNode = n.fn;
+          if(fnNode.k === "attr"){
+            const m = getAttr(evalNode(fnNode.obj,scope), fnNode.name);
+            if(m && m.__method) return m.__method(args);
+            err("TypeError","'"+typeName(m)+"' object is not callable");
+          }
+          const f = evalNode(fnNode, scope);
+          if(f && f.__builtin) return BUILTINS[f.__builtin](args);
+          if(f instanceof PyFunc) return callFunc(f, args);
+          err("TypeError","'"+typeName(f)+"' object is not callable");
+        }
+      }
+      err("SyntaxError","cannot evaluate node "+n.k);
+    }
+
+    function callFunc(f, args){
+      const local = new Map(f.closure);
+      f.params.forEach((pn,i)=>{
+        if(i < args.length) local.set(pn, args[i]);
+        else if(f.defaults[pn] !== undefined) local.set(pn, evalNode(f.defaults[pn], local));
+        else err("TypeError",f.name+"() missing required positional argument: '"+pn+"'");
+      });
+      if(args.length > f.params.length)
+        err("TypeError",f.name+"() takes "+f.params.length+" positional arguments but "+args.length+" were given");
+      const r = execBlock(f.body, local);
+      return r instanceof Ret ? r.v : null;
+    }
+
+    function assign(target, value, scope){
+      if(target.k === "name"){ scope.set(target.v, value); return; }
+      if(target.k === "index"){
+        const o = evalNode(target.obj,scope), i = evalNode(target.i,scope);
+        if(o instanceof Map){ o.set(i,value); return; }
+        if(Array.isArray(o)){ const idx = num(i)<0 ? o.length+num(i) : num(i);
+          if(idx<0||idx>=o.length) err("IndexError","list assignment index out of range");
+          o[idx] = value; return; }
+        err("TypeError","'"+typeName(o)+"' object does not support item assignment");
+      }
+      if(target.k === "tuple"){
+        const vals = iterate(value);
+        target.items.forEach((t,i)=>assign(t, vals[i], scope));
+        return;
+      }
+      err("SyntaxError","cannot assign to this expression");
+    }
+
+    let steps = 0;
+    function execBlock(body, scope){
+      for(const st of body){
+        if(++steps > 400000) err("RuntimeError","this program ran too long — check your loop condition");
+        const r = execStmt(st, scope);
+        if(r) return r;
+      }
+      return null;
+    }
+
+    function execStmt(st, scope){
+      switch(st.k){
+        case "pass": return null;
+        case "expr": evalNode(st.e, scope); return null;
+        case "assign": assign(st.target, evalNode(st.value, scope), scope); return null;
+        case "aug": {
+          const cur = evalNode(st.target, scope);
+          assign(st.target, binop(st.op, cur, evalNode(st.value, scope)), scope);
+          return null;
+        }
+        case "if": {
+          for(const c of st.clauses)
+            if(truthy(evalNode(c.test, scope))) return execBlock(c.body, scope);
+          return execBlock(st.orelse, scope);
+        }
+        case "while": {
+          let guard = 0;
+          while(truthy(evalNode(st.test, scope))){
+            if(++guard > 100000) err("RuntimeError","this while loop did not terminate");
+            const r = execBlock(st.body, scope);
+            if(r === BREAK) break;
+            if(r && r !== CONT) return r;
+          }
+          return null;
+        }
+        case "for": {
+          for(const item of iterate(evalNode(st.iter, scope))){
+            if(st.names.length === 1) scope.set(st.names[0], item);
+            else { const vals = iterate(item); st.names.forEach((nm,i)=>scope.set(nm, vals[i])); }
+            const r = execBlock(st.body, scope);
+            if(r === BREAK) break;
+            if(r && r !== CONT) return r;
+          }
+          return null;
+        }
+        case "def": scope.set(st.name, new PyFunc(st.name, st.params, st.defaults, st.body, scope)); return null;
+        case "return": return new Ret(st.v ? evalNode(st.v, scope) : null);
+        case "break": return BREAK;
+        case "continue": return CONT;
+        case "with": {
+          const ctx = evalNode(st.ctx, scope);
+          scope.set(st.name, ctx);
+          try { return execBlock(st.body, scope); }
+          finally { if(ctx instanceof PyFile){ flushFile(ctx); ctx.closed = true; } }
+        }
+        case "try": {
+          try { const r = execBlock(st.body, scope); if(r) return r; }
+          catch(e){
+            if(!(e instanceof PyErr)) throw e;
+            for(const h of st.handlers){
+              if(h.type === null || h.type === e.pytype ||
+                 (h.type === "Exception") || (h.type === "OSError" && /Error$/.test(e.pytype))){
+                if(h.alias) scope.set(h.alias, e.pymsg);
+                const r = execBlock(h.body, scope);
+                if(r) return r;
+                return execBlock(st.final, scope);
+              }
+            }
+            execBlock(st.final, scope);
+            throw e;
+          }
+          return execBlock(st.final, scope);
+        }
+        case "raise": {
+          const v = st.e ? evalNode(st.e, scope) : null;
+          if(v && v.__call) err("Exception", str(v));
+          err("Exception", v === null ? "" : str(v));
+        }
+      }
+      err("SyntaxError","unknown statement "+st.k);
+    }
+
+    try {
+      const ast = parse(lex(src));
+      execBlock(ast, globals);
+      return {out: out.join(""), err:"", code:0};
+    } catch(e){
+      if(e instanceof PyErr){
+        const body = out.join("");
+        return {out: body, err: "Traceback (most recent call last):\n  File \"<stdin>\"\n"+
+                e.pytype+(e.pymsg?": "+e.pymsg:""), code:1};
+      }
+      if(e && e.message && /Maximum call stack/.test(e.message))
+        return {out: out.join(""), err:"RecursionError: maximum recursion depth exceeded", code:1};
+      throw e;
+    }
+  }
+
+  /* ---- wire python3 into the shell ---- */
+  K.C.python3 = (argv, stdin) => {
+    const {flags, ops} = K.splitFlags(argv);
+    if(flags.has("V") || argv.includes("--version")) return {out:"Python 3.12.4\n", err:"", code:0};
+    const ci = argv.indexOf("-c");
+    if(ci >= 0) { const r = run(argv[ci+1] || "", {stdin});
+      return {out:r.out, err:r.err?r.err+"\n":"", code:r.code}; }
+    if(!ops.length) return {out:"", err:"python3: an interactive prompt is not available here — write a .py file and run it\n", code:1};
+    const p = ops[0];
+    const r = lookup(p);
+    if(!r.node) return {out:"", err:"python3: can't open file '"+K.abspath(p)+"': [Errno 2] No such file or directory\n", code:2};
+    if(r.node.t === "d") return {out:"", err:"python3: '"+p+"' is a directory\n", code:2};
+    const res = run(r.node.c, {stdin});
+    return {out:res.out, err:res.err?res.err+"\n":"", code:res.code};
+  };
+  K.C.python = K.C.python3;
+  K.C.pip = () => ({out:"", err:"pip: no network in this trainer — the standard library is all you need here\n", code:1});
+  K.py = run;
+  return K;
+}
+
+/* One lab per lecture. Every task carries a check() that inspects the machine
+   afterwards, so a task completes because the student actually did it — not
+   because they typed a matching string. */
+/* The context every check() receives: the machine plus what has been run in it. */
+function makeLabCtx(K, hist){
+  const node = p => K.lookup(p).node;
+  return {
+    K, hist,
+    ran:    rx => hist.some(h => rx.test(h.cmd)),
+    said:   rx => hist.some(h => rx.test(h.out) || rx.test(h.err||"")),
+    exists: p => !!node(p),
+    isDir:  p => { const n = node(p); return !!n && n.t === "d"; },
+    read:   p => { const n = node(p); return n && n.t === "f" ? n.c : null; },
+    mode:   p => { const n = node(p); return n ? n.mode : null; },
+    owner:  p => { const n = node(p); return n ? n.owner : null; },
+    group:  p => { const n = node(p); return n ? n.group : null; },
+    unit:   n => K.vm.units[n],
+    git:    () => K.vm.git,
+    // run a student's script and hand back its output
+    py:     p => { const r = K.run("python3 " + p); return {out: r.out || "", err: r.err || "", code: r.code}; }
+  };
+}
+
+function buildCourse(){
+  return [
+{wk:36, n:1, date:"Mon 31 Aug", title:"Introduktion, Linux grunder, CLI, användare",
  topics:"Projektförberedelser, Linux intro, filsystem, kommandoraden, användare",
- lab:[
-  "Print your working directory, then list your home directory in long format including dotfiles.",
-  "Create the tree <code>~/kurs/v36/lab1</code> in a single command.",
-  "Inside it, create three empty files <code>a.txt</code>, <code>b.txt</code>, <code>c.txt</code> and list them with sizes.",
-  "Copy <code>a.txt</code> to <code>~/kurs/</code>, then rename the copy to <code>first.txt</code>.",
-  "Read <code>/etc/os-release</code> and write down your distribution name and version.",
-  "Show your own username, your UID and GID, and every group you belong to.",
-  "Delete the <code>~/kurs/v36</code> tree, then recreate just <code>lab1</code>."],
+ brief:"Get your bearings: where am I, what is here, and how do I make and move things. Everything below happens on the simulated machine to the right.",
+ tasks:[
+  {q:"Print the directory you are standing in.", hint:"Three letters — print working directory.",
+   check:c => c.ran(/^pwd\s*$/m)},
+  {q:"List your home directory in long format, including hidden files.",
+   hint:"Two options after a single dash: long, and all.",
+   check:c => c.hist.some(h => /^\s*(sudo\s+)?ls\b/.test(h.cmd) && /^[^|]*-[a-z]*l/.test(h.cmd) && /^[^|]*-[a-z]*a/.test(h.cmd))},
+  {q:"Create the directory tree <code>~/kurs/v36/lab1</code> with a single command.",
+   hint:"mkdir needs one option to create missing parents.",
+   check:c => c.isDir("/home/analyst/kurs/v36/lab1")},
+  {q:"Inside <code>lab1</code>, create three empty files: <code>a.txt</code>, <code>b.txt</code> and <code>c.txt</code>.",
+   hint:"touch accepts more than one filename at a time.",
+   check:c => ["a","b","c"].every(n => c.exists("/home/analyst/kurs/v36/lab1/"+n+".txt"))},
+  {q:"Copy <code>a.txt</code> into <code>~/kurs</code> and give the copy the name <code>first.txt</code>.",
+   hint:"Either cp then mv, or cp straight to the new path.",
+   check:c => c.exists("/home/analyst/kurs/first.txt")},
+  {q:"Read <code>/etc/os-release</code> and find out which distribution this machine runs.",
+   hint:"cat, or grep for the PRETTY_NAME line.",
+   check:c => c.said(/Arch Linux/)},
+  {q:"Show your own user ID, group ID and group memberships.",
+   hint:"Two letters.", check:c => c.said(/uid=1000\(analyst\)/)}],
  check:[
-  ["Which option makes <code>mkdir</code> create every missing parent directory?",
-   "<code>-p</code>. <code>mkdir -p a/b/c</code> creates all three levels and stays quiet if they already exist."],
-  ["What is the difference between <code>/home/you/notes.txt</code> and <code>notes.txt</code>?",
-   "The first is absolute — it starts at <code>/</code> and means the same thing from anywhere. The second is relative and is resolved from your current directory."],
-  ["Which file tells you which distribution and version you are on?",
-   "<code>/etc/os-release</code>. <code>uname -r</code> gives you the kernel version, which is a different question."],
-  ["Which command shows your UID, GID and group memberships in one line?",
-   "<code>id</code>. <code>whoami</code> gives only the username."]]},
+  ["Which option makes <code>mkdir</code> create every missing parent?",
+   "<code>-p</code>. Without it, <code>mkdir a/b/c</code> fails as soon as <code>a</code> does not exist."],
+  ["What is the difference between an absolute and a relative path?",
+   "An absolute path starts at <code>/</code> and means the same from anywhere. A relative path is resolved from your current directory."],
+  ["Why does <code>ls</code> hide <code>.bashrc</code> by default?",
+   "A leading dot is the convention for hidden files. It is naming, not security — <code>ls -a</code> shows everything."]]},
 
-{wk:36, date:"Thu 3 Sep", type:"lecture", n:2,
- title:"Nätverk",
+{wk:36, n:2, date:"Thu 3 Sep", title:"Nätverk",
  topics:"Interfaces, adresser, routing, namnuppslagning, portar",
- lab:[
-  "Show the IP addresses configured on every interface.",
-  "Show the routing table and write down your default gateway.",
-  "Send exactly 4 ping packets to your gateway, then 4 to a public host.",
-  "Look up the DNS records for a domain of your choice.",
-  "List every listening TCP and UDP port together with the process that owns it.",
-  "Check whether port 22 is open on another machine on your network, without sending data.",
-  "Trace the network path to a public host and count the hops."],
+ brief:"This machine sits on 10.0.0.0/24 behind a gateway. Find out its address, how it reaches the outside, and what it is listening on.",
+ tasks:[
+  {q:"Show the IP addresses configured on every interface.", hint:"Two characters after the tool name.",
+   check:c => c.said(/10\.0\.0\.24\/24/)},
+  {q:"Show the routing table and find the default gateway.", hint:"Same tool, different object.",
+   check:c => c.said(/default via 10\.0\.0\.1/)},
+  {q:"Send exactly 4 ping packets to the gateway.", hint:"One option sets the count, or it pings forever.",
+   check:c => c.hist.some(h => /^\s*ping\b/.test(h.cmd) && /-c\s*4\b/.test(h.cmd) && /10\.0\.0\.1/.test(h.cmd))},
+  {q:"Look up the A record for <code>example.com</code>.", hint:"dig, host or nslookup all work.",
+   check:c => c.said(/93\.184\.216\.34/)},
+  {q:"List every listening TCP and UDP port <b>with the process that owns it</b>. You will need root for the process column.",
+   hint:"ss with five option letters, and sudo.",
+   check:c => c.said(/users:\(\("sshd"/)},
+  {q:"Check whether TCP port 22 is open on <code>10.0.0.5</code>, without sending data.",
+   hint:"netcat in scan mode, verbose.",
+   check:c => c.said(/succeeded/)}],
  check:[
-  ["What is the difference between <code>ip a</code> and <code>ip r</code>?",
-   "<code>ip a</code> shows addresses on your interfaces. <code>ip r</code> shows the routing table — where traffic is sent, including the <code>default via</code> gateway line."],
-  ["Which modern command replaces <code>netstat</code>?",
-   "<code>ss</code>. The one to memorise is <code>ss -tulpn</code>: listening TCP and UDP sockets, numeric, with the owning process."],
-  ["Why does <code>ss -tulpn</code> often need <code>sudo</code>?",
-   "Without root it can list the sockets but not the process that owns each one — the <code>-p</code> column comes back empty."],
-  ["Your machine has an address and can ping the gateway, but nothing resolves. What is the likely cause?",
-   "DNS. Routing works, name resolution does not — check <code>/etc/resolv.conf</code> and test with <code>dig</code> against a known server."]]},
+  ["What does the <code>default via</code> line in the routing table tell you?",
+   "Where anything not on your local network is sent — your gateway. Without it you can reach neighbours but not the internet."],
+  ["Why does <code>ss -tulpn</code> usually need <code>sudo</code>?",
+   "Without root it lists the sockets but leaves the owning-process column empty."],
+  ["You can ping 10.0.0.1 but names do not resolve. What is broken?",
+   "DNS, not routing. Check <code>/etc/resolv.conf</code>."]]},
 
-{wk:37, date:"Mon 7 Sep", type:"lecture", n:3,
- title:"SELinux, SUID/SGID, permissions, user & group management",
+{wk:37, n:3, date:"Mon 7 Sep", title:"SELinux, SUID/SGID, permissions, user & group management",
  topics:"Rättigheter, ägarskap, specialbitar, konton och grupper",
- lab:[
-  "Create a group called <code>projekt</code>, then a user <code>elev</code> with a home directory, and add <code>elev</code> to the group.",
-  "Create <code>/srv/projekt</code> owned by <code>root:projekt</code> with mode <code>2775</code>.",
-  "Run <code>ls -ld /srv/projekt</code> and explain, in one sentence, what the <code>s</code> in the group field does.",
-  "Create a file as <code>elev</code> inside that directory and confirm which group owns it.",
-  "Set a file to mode <code>600</code> and verify the result with <code>ls -l</code>.",
-  "Find every SUID binary on the system, discarding permission errors.",
-  "Check whether SELinux is enforcing (or, on Debian/Ubuntu, whether AppArmor is active)."],
+ brief:"Permissions are the topic students lose the most marks on. Do every step here and read the ls -l output each time.",
+ tasks:[
+  {q:"Lock down <code>~/id_rsa</code> so only its owner can read and write it.",
+   hint:"Numeric mode: read+write for the owner, nothing for anyone else.",
+   check:c => c.mode("/home/analyst/id_rsa") === 0o600},
+  {q:"Make <code>~/deploy.sh</code> executable without disturbing its other bits.",
+   hint:"Symbolic mode adds a single bit.",
+   check:c => (c.mode("/home/analyst/deploy.sh") & 0o111) !== 0},
+  {q:"Create a group called <code>projekt</code>.", hint:"Creating groups writes to /etc, so it needs root.",
+   check:c => /(^|\n)projekt:/.test(c.read("/etc/group")||"")},
+  {q:"Create the user <code>elev</code> <b>with a home directory</b>.",
+   hint:"One option to useradd creates and populates the home directory.",
+   check:c => c.isDir("/home/elev")},
+  {q:"Create <code>/srv/projekt</code>, give it to <code>root:projekt</code>, and set mode <code>2775</code> so new files inherit the group.",
+   hint:"Three commands: mkdir, chown user:group, chmod. All need root.",
+   check:c => c.isDir("/srv/projekt") && c.group("/srv/projekt")==="projekt" && (c.mode("/srv/projekt") & 0o2777)===0o2775},
+  {q:"Find every SUID binary on the system, discarding the permission errors.",
+   hint:"find from /, by permission bits, with stderr sent to /dev/null.",
+   check:c => c.said(/\/opt\/legacy-helper/)},
+  {q:"Check whether SELinux is enforcing on this machine.", hint:"One word.",
+   check:c => c.said(/Enforcing/)}],
  check:[
-  ["What does <code>2775</code> mean, digit by digit?",
-   "<code>2</code> is the SGID bit, then <code>7</code> rwx for the owner, <code>7</code> rwx for the group, <code>5</code> r-x for others."],
-  ["What does SGID do on a <i>directory</i>?",
-   "New files inside inherit the directory's group instead of the creator's primary group — which is how a shared project directory stays shared."],
-  ["Which command reports whether SELinux is enforcing?",
-   "<code>getenforce</code> for the one-word answer, <code>sestatus</code> for the detail."],
-  ["Why must an SSH private key be mode <code>600</code>?",
-   "SSH refuses to use a key that any other user can read, and fails with a permissions warning instead of connecting."]]},
+  ["What does <code>2775</code> mean digit by digit?",
+   "<code>2</code> sets SGID, then rwx for the owner, rwx for the group, r-x for others."],
+  ["What does SGID do on a directory?",
+   "New files inside inherit the directory's group, which is what keeps a shared project directory shared."],
+  ["<code>/opt/legacy-helper</code> is SUID root. Why is that worth investigating?",
+   "It runs as root no matter who launches it. An unexplained SUID root binary is a standard privilege-escalation route."]]},
 
-{wk:37, date:"Thu 10 Sep", type:"lecture", n:4,
- title:"Networking, Firewalls, Subnetting, Update policy",
- topics:"Subnät, brandväggsregler, uppdateringsrutiner",
- lab:[
-  "For <code>192.168.10.0/26</code>, write down the network address, the broadcast address, the usable host range and the number of usable hosts.",
-  "Do the same for <code>10.0.5.0/22</code>.",
-  "List your current firewall rules (<code>ufw status verbose</code>, <code>firewall-cmd --list-all</code> or <code>nft list ruleset</code>).",
-  "Allow SSH through the firewall, then confirm the rule appears.",
-  "Refresh your package lists and show which packages have updates waiting, without installing them.",
-  "Write two sentences on your update policy: how often, and what you do before a big upgrade."],
+{wk:37, n:4, date:"Thu 10 Sep", title:"Networking, Firewalls, Subnetting, Update policy",
+ topics:"Subnät, brandväggsregler, härdning, uppdateringsrutiner",
+ brief:"Subnetting is arithmetic you must be able to do without a calculator. Work each answer out on paper, then echo it into the terminal to check yourself.",
+ tasks:[
+  {q:"How many <b>usable hosts</b> are in <code>192.168.10.0/26</code>? Answer with <code>echo &lt;number&gt;</code>.",
+   hint:"64 addresses in the block, minus the network and broadcast addresses.",
+   check:c => c.hist.some(h => /^\s*echo\b/.test(h.cmd) && /\b62\b/.test(h.out))},
+  {q:"What is the netmask of a <code>/26</code>? Answer with <code>echo &lt;netmask&gt;</code>.",
+   hint:"Two bits borrowed from the last octet.",
+   check:c => c.hist.some(h => /^\s*echo\b/.test(h.cmd) && /255\.255\.255\.192/.test(h.out))},
+  {q:"What is the broadcast address of <code>192.168.10.64/26</code>? Answer with <code>echo &lt;address&gt;</code>.",
+   hint:"The block runs from .64 to the last address before the next block starts.",
+   check:c => c.hist.some(h => /^\s*echo\b/.test(h.cmd) && /192\.168\.10\.127/.test(h.out))},
+  {q:"Read <code>/etc/ssh/sshd_config</code> and confirm root login over SSH is disabled.",
+   hint:"grep for the relevant directive rather than reading the whole file.",
+   check:c => c.said(/PermitRootLogin no/)},
+  {q:"Harden it further: change <code>PasswordAuthentication yes</code> to <code>no</code> in that file.",
+   hint:"sed can edit in place with -i, and the file belongs to root.",
+   check:c => /PasswordAuthentication no/.test(c.read("/etc/ssh/sshd_config")||"")},
+  {q:"List the listening sockets again and note which are bound to <code>0.0.0.0</code> — those are reachable from the network.",
+   hint:"The same ss command as last week.",
+   check:c => c.said(/0\.0\.0\.0:22/)}],
  check:[
-  ["How many usable hosts does a <code>/26</code> give you, and what is the netmask?",
-   "62 usable hosts (64 addresses minus network and broadcast), netmask <code>255.255.255.192</code>."],
-  ["What is the difference between <code>apt update</code> and <code>apt upgrade</code>?",
-   "<code>update</code> only refreshes the catalogue of what is available. <code>upgrade</code> installs the newer versions. The names are misleading."],
+  ["How many usable hosts in a <code>/26</code>, and why not 64?",
+   "62. The first address identifies the network and the last is the broadcast address, so neither can be given to a host."],
   ["Why is default-deny inbound the normal firewall stance?",
-   "You then only have to reason about what you deliberately opened, rather than trying to enumerate everything an attacker might reach."],
-  ["On Arch, why is <code>pacman -Sy</code> on its own dangerous?",
-   "It refreshes the database without upgrading, so the next install pulls packages built against newer libraries than you have — a partial upgrade. Always <code>-Syu</code>."]]},
+   "You only have to reason about what you deliberately opened, rather than enumerating everything an attacker might try."],
+  ["What is the difference between a service bound to <code>127.0.0.1</code> and one bound to <code>0.0.0.0</code>?",
+   "<code>127.0.0.1</code> only accepts connections from the machine itself. <code>0.0.0.0</code> accepts them from any interface — that is what the network can reach."]]},
 
-{wk:38, date:"Mon 14 Sep", type:"lecture", n:5,
- title:"Boot process, systemd, cron, ssh",
+{wk:38, n:5, date:"Mon 14 Sep", title:"Boot process, systemd, cron, ssh",
  topics:"Uppstart, units, schemalagda jobb, nycklar",
- lab:[
-  "Show the current default boot target, then list any units that have failed.",
-  "Pick a service and show its status, then read its last 50 journal entries.",
-  "Start a service and make it start at every boot, in one command.",
-  "Show how long the last boot took, and which units were slowest.",
-  "Add a cron entry that runs a script every day at 02:00.",
-  "Generate an ed25519 key pair, then set <code>~/.ssh</code> to 700 and the private key to 600.",
-  "Copy your public key to another host and log in without a password."],
+ brief:"systemctl to see state, journalctl to find out why. This pair answers most 'it is broken' questions on a modern system.",
+ tasks:[
+  {q:"Check whether the <code>sshd</code> service is running.", hint:"The systemd control command plus the obvious sub-command.",
+   check:c => c.said(/active \(running\)/)},
+  {q:"List the units that have <b>failed</b>.", hint:"list-units with a long option.",
+   check:c => c.said(/bluetooth/)},
+  {q:"Start the <code>docker</code> service now <b>and</b> make it start at every boot, in one command.",
+   hint:"enable handles boot; one option also starts it immediately.",
+   check:c => c.unit("docker") && c.unit("docker").enabled && c.unit("docker").state==="running"},
+  {q:"nginx will not start. Read its journal and find the line that explains why.",
+   hint:"journalctl filtered to one unit.",
+   check:c => c.said(/Address already in use/)},
+  {q:"Generate an ed25519 SSH key pair.", hint:"The key generator with a type option.",
+   check:c => c.exists("/home/analyst/.ssh/id_ed25519.pub")},
+  {q:"Set <code>~/.ssh</code> to the mode SSH insists on.", hint:"Full access for you, nothing for anyone else.",
+   check:c => c.mode("/home/analyst/.ssh") === 0o700},
+  {q:"Schedule <code>/home/analyst/backup.sh</code> to run every day at 02:00. <code>crontab -e</code> opens an editor here.",
+   hint:"Five schedule fields then the command: minute hour day month weekday.",
+   check:c => /(^|\n)\s*0\s+2\s+\*\s+\*\s+\*\s+\S+backup\.sh/.test(c.read("/var/spool/cron/analyst")||"")}],
  check:[
-  ["What is the difference between <code>systemctl start</code> and <code>systemctl enable</code>?",
-   "<code>start</code> runs it now and forgets. <code>enable</code> makes it start at boot but does not start it now. <code>enable --now</code> does both."],
+  ["What is the difference between <code>start</code> and <code>enable</code>?",
+   "<code>start</code> runs it now. <code>enable</code> makes it start at boot. <code>enable --now</code> does both — and forgetting this is the classic reason a demo dies after a reboot."],
   ["What is the field order in a crontab line?",
-   "minute, hour, day-of-month, month, day-of-week, then the command. So 02:00 daily is <code>0 2 * * *</code>."],
-  ["Which command reads the log for one unit only?",
-   "<code>journalctl -u name</code>. Add <code>-f</code> to follow it live, <code>-b</code> to limit it to this boot."],
-  ["Which permissions does SSH require on <code>~/.ssh</code> and on a private key?",
-   "<code>700</code> on the directory and <code>600</code> on the key. Anything looser and SSH refuses the key."]]},
+   "minute, hour, day-of-month, month, day-of-week, then the command. Daily at 02:00 is <code>0 2 * * *</code>."],
+  ["Which permissions does SSH demand on <code>~/.ssh</code> and a private key?",
+   "<code>700</code> on the directory and <code>600</code> on the key, or it refuses to use them."]]},
 
-{wk:38, date:"Thu 17 Sep", type:"lecture", n:6,
- title:"Logs, database, webserver, intro to security, knocking",
+{wk:38, n:6, date:"Thu 17 Sep", title:"Logs, database, webserver, intro to security",
  topics:"Loggar, tjänster, grundläggande härdning",
- lab:[
-  "Follow your authentication log live, then fail an SSH login from another terminal and watch the line appear.",
-  "Count how many failed password attempts the log contains.",
-  "Extract just the source IP addresses from those failed attempts and count them per address.",
-  "Install and start a webserver, then confirm it answers with <code>curl -I localhost</code>.",
-  "Find which process is listening on port 80.",
-  "Install a database service, start it, and confirm it is running.",
-  "Write one sentence explaining what port knocking is and one on why it is not a substitute for authentication."],
+ brief:"There is a real attack in this machine's auth log. Find it, count it, and identify where it came from.",
+ tasks:[
+  {q:"Show the last 20 lines of <code>/var/log/auth.log</code>. It needs root to read.",
+   hint:"tail with a line count, behind sudo.",
+   check:c => c.said(/Failed password/)},
+  {q:"Count how many failed password attempts the log contains.",
+   hint:"grep can count on its own with one option.",
+   check:c => c.hist.some(h => /grep/.test(h.cmd) && /^\s*13\s*$/m.test(h.out))},
+  {q:"Which single IP address is responsible for most of them? Pull the addresses out and rank them.",
+   hint:"grep -o prints only the matching part, so grep the failures, then grep -o an IP pattern, then sort | uniq -c | sort -rn.",
+   check:c => c.hist.some(h => /uniq/.test(h.cmd) && /91\.240\.118\.44/.test(h.out))},
+  {q:"Start the nginx web server.", hint:"It is currently dead — and starting a service needs root.",
+   check:c => c.unit("nginx") && c.unit("nginx").state==="running"},
+  {q:"Confirm it answers, fetching only the response headers from <code>localhost</code>.",
+   hint:"An uppercase option that means 'head'.",
+   check:c => c.said(/HTTP\/1\.1 200 OK/)},
+  {q:"Find which process is listening on port 80.",
+   hint:"List sockets and filter for the port.",
+   check:c => c.hist.some(h => /:80/.test(h.cmd) || /nginx/.test(h.out)) && c.said(/nginx/)}],
  check:[
   ["Where do SSH authentication failures land?",
-   "<code>/var/log/auth.log</code> on Debian and Ubuntu, <code>/var/log/secure</code> on RHEL and Fedora. On systemd you can also read them with <code>journalctl -u ssh</code>."],
-  ["What does <code>curl -I</code> do that <code>curl</code> alone does not?",
-   "It sends a HEAD request, so you get the status line and headers without downloading the body."],
-  ["Which pipeline counts how often each IP appears in a list?",
-   "<code>sort | uniq -c | sort -rn</code>. <code>uniq</code> only collapses <i>adjacent</i> duplicates, so the first sort is required."],
-  ["Why is port knocking obscurity rather than security?",
-   "It hides the service from casual scanning, but anyone who observes the knock sequence can replay it. It buys quiet, not protection."]]},
+   "<code>/var/log/auth.log</code> on Debian and Ubuntu, <code>/var/log/secure</code> on RHEL. <code>journalctl -u ssh</code> works on systemd too."],
+  ["Why must <code>sort</code> come before <code>uniq -c</code>?",
+   "<code>uniq</code> only collapses adjacent duplicates. Unsorted input gives you nonsense counts."],
+  ["What does <code>curl -I</code> do that plain <code>curl</code> does not?",
+   "Sends a HEAD request — status line and headers, no body."]]},
 
-{wk:39, date:"Mon 21 Sep", type:"lecture", n:7,
- title:"Backup, rsync, git, linuxadministration",
+{wk:39, n:7, date:"Mon 21 Sep", title:"Backup, rsync, git, linuxadministration",
  topics:"Säkerhetskopiering, synkronisering, versionshantering",
- lab:[
-  "Create a gzip-compressed archive of a directory, then extract it into <code>/tmp</code> and confirm the contents match.",
-  "Sync a directory to another path with <code>rsync -av</code>. Run it a second time and note how little it transfers.",
-  "Run the same sync with <code>--delete</code> and <code>--dry-run</code> first, and read what it says it would remove.",
-  "Compute a SHA-256 checksum of your archive and verify it.",
-  "Initialise a git repository, make two commits, create a branch, and view the history one line per commit.",
-  "Write a three-line restore procedure for your backup — the steps you would follow at 3am."],
+ brief:"A backup you have never restored is not a backup. Every task here ends with proving the data came back.",
+ tasks:[
+  {q:"Create a gzip-compressed archive <code>~/backup.tar.gz</code> of the <code>~/projects</code> directory.",
+   hint:"create, gzip, file — and f must come last, immediately before the archive name.",
+   check:c => c.exists("/home/analyst/backup.tar.gz")},
+  {q:"Extract that archive into <code>/tmp</code> and prove the contents came back by reading <code>app.conf</code>.",
+   hint:"cd there first, then extract. The compression flag must match the archive.",
+   check:c => c.said(/port=8080/) && c.exists("/tmp/projects/webshop/app.conf")},
+  {q:"Sync <code>~/projects/</code> to <code>/tmp/bak</code> with rsync in archive mode, verbose.",
+   hint:"Create the destination first. -a is archive mode, -v is verbose.",
+   check:c => c.exists("/tmp/bak/webshop/app.conf") || c.exists("/tmp/bak/projects/webshop/app.conf")},
+  {q:"Compute the SHA-256 checksum of your archive.", hint:"The algorithm name plus 'sum'.",
+   check:c => c.hist.some(h => /sha256sum/.test(h.cmd) && /[0-9a-f]{64}/.test(h.out))},
+  {q:"Turn <code>~/projects</code> into a git repository, stage everything, and make a first commit.",
+   hint:"Three commands: init, add, commit with a message.",
+   check:c => c.git() && c.git().commits.length >= 1},
+  {q:"Show the history, one line per commit.", hint:"log with a long option.",
+   check:c => c.hist.some(h => /git\s+log/.test(h.cmd) && /--oneline/.test(h.cmd) && h.code===0)}],
  check:[
   ["Why run <code>rsync --delete</code> with <code>--dry-run</code> first?",
-   "<code>--delete</code> removes anything on the destination that is missing from the source. One wrong source path and it empties the backup. Dry run shows you the deletions before they happen."],
+   "<code>--delete</code> removes anything on the destination missing from the source. One wrong source path empties the backup."],
   ["What does <code>-a</code> give you in <code>rsync -av</code>?",
-   "Archive mode: recursive, preserving permissions, ownership, timestamps, symlinks. It is the sensible default for backups."],
+   "Archive mode: recursive, preserving permissions, ownership, timestamps and symlinks."],
   ["What is the difference between <code>git add</code> and <code>git commit</code>?",
-   "<code>add</code> stages the changes you want to include; <code>commit</code> records the staged set as a snapshot with a message."],
-  ["A backup you have never restored is what?",
-   "Untested. The restore procedure is the part that matters, so rehearse it at least once."]]},
+   "<code>add</code> stages what you want included; <code>commit</code> records the staged set as a snapshot with a message."]]},
 
-{wk:39, date:"Thu 24 Sep", type:"lecture", n:8,
- title:"Datacenter, moln, hybrid — on-prem och cloudlösningar",
+{wk:39, n:8, date:"Thu 24 Sep", title:"Datacenter, moln, hybrid — on-prem och cloudlösningar",
  topics:"Driftsformer, ansvarsfördelning, kostnad",
- lab:[
-  "Write a four-row table: on-prem, IaaS, PaaS, SaaS. For each, note who manages hardware, OS, runtime and application.",
-  "List three workloads from your project and place each on-prem or in the cloud, with one sentence of reasoning per workload.",
-  "Pick one service and define its RTO and RPO in concrete numbers.",
-  "Sketch a hybrid setup: what stays on-prem, what moves, and how the two halves connect.",
-  "Note one cost that is easy to forget when moving to the cloud."],
+ brief:"A written week. Use the terminal as your notebook: write the answers to files, which is also good practice with redirection.",
+ tasks:[
+  {q:"Create <code>~/cloud/ansvar.txt</code> with four lines — on-prem, IaaS, PaaS, SaaS — each naming who manages the operating system.",
+   hint:"mkdir the directory, then use echo with >> to append a line at a time.",
+   check:c => { const t = c.read("/home/analyst/cloud/ansvar.txt")||"";
+     return /iaas/i.test(t) && /paas/i.test(t) && /saas/i.test(t) && t.trim().split("\n").length >= 4; }},
+  {q:"Create <code>~/cloud/workloads.txt</code> listing three workloads from your project, each line ending in <code>on-prem</code> or <code>cloud</code>.",
+   hint:"Three lines, appended one at a time.",
+   check:c => { const t = c.read("/home/analyst/cloud/workloads.txt")||"";
+     const ls = t.trim().split("\n").filter(Boolean);
+     return ls.length >= 3 && ls.filter(l=>/on-?prem|cloud/i.test(l)).length >= 3; }},
+  {q:"Add a line to <code>~/cloud/rto.txt</code> defining an RTO and an RPO for one service, in concrete numbers.",
+   hint:"Something like: webshop RTO 4h RPO 24h.",
+   check:c => { const t = c.read("/home/analyst/cloud/rto.txt")||"";
+     return /rto/i.test(t) && /rpo/i.test(t) && /\d/.test(t); }},
+  {q:"Read your three files back in one command to check them over.",
+   hint:"cat accepts more than one filename, and a glob saves typing.",
+   check:c => c.hist.some(h => /^\s*cat\b/.test(h.cmd) && /rto/i.test(h.out) && /iaas/i.test(h.out))}],
  check:[
   ["Under IaaS, who patches the operating system?",
-   "You do. The provider is responsible up to the virtual hardware; the OS and everything above it is yours. Under PaaS the provider takes the OS and runtime too."],
+   "You do. The provider stops at the virtual hardware. Under PaaS they take the OS and runtime as well."],
   ["What is the difference between RTO and RPO?",
-   "RTO is how long you may take to get back up. RPO is how much data you may lose, measured in time — which is really a statement about backup frequency."],
-  ["Why does on-prem read as CapEx and cloud as OpEx?",
-   "On-prem is a large purchase up front that you then depreciate. Cloud is a recurring operating cost that scales with use."],
-  ["Name one cost people forget when moving to the cloud.",
-   "Egress traffic. Getting data in is usually free; getting it out, or between regions, is billed and adds up."]]},
+   "RTO is how long you may take to come back. RPO is how much data you may lose — which is a statement about backup frequency."],
+  ["Name one cloud cost people forget.",
+   "Egress. Data in is usually free; data out, or between regions, is billed."]]},
 
-{wk:40, date:"Mon 28 Sep", type:"milestone",
- title:"Redovisning projekt 1",
- topics:"Presentation av det första projektet",
- lab:[
-  "Walk through every requirement in the brief and point at where you meet it.",
-  "Reboot the machine and confirm everything still comes up on its own.",
-  "Have a backup and a restore you can demonstrate, not just describe.",
-  "Make sure each member can explain any part of the solution, not only their own.",
-  "Prepare a two-sentence answer to “what would you do differently?”",
-  "Time the demo once, out loud, start to finish."],
- check:[
-  ["What is the most common avoidable failure in a live demo?",
-   "A service that was started by hand and never enabled, so it is gone after the reboot. Check with <code>systemctl is-enabled</code>."],
-  ["What should you do if something breaks mid-demo?",
-   "Say what you expected, what happened, and where you would look. Diagnosing calmly in front of the examiner reads better than a demo that never wobbles."]]},
-
-{wk:40, date:"Thu 1 Oct", type:"lecture", n:9,
- title:"Logging and Auditing, setting up Python",
+{wk:40, n:9, date:"Thu 1 Oct", title:"Logging and Auditing, setting up Python",
  topics:"Journalen, revision, Python-miljö",
- lab:[
-  "Show all journal entries of priority error or worse from the current boot.",
-  "Show everything logged in the last hour, then everything for one unit yesterday.",
-  "Check whether your journal is persistent across reboots, and where it is stored.",
-  "Look at the logrotate configuration and explain what it does to a log that grows.",
-  "List the active audit rules on the system.",
-  "Confirm your Python version, create a virtual environment, activate it, and list installed packages.",
-  "Write <code>hello.py</code> that prints a line, and run it."],
+ brief:"Finish the logging half, then check the Python toolchain works — everything from here on needs it.",
+ tasks:[
+  {q:"Show journal entries of priority error or worse.", hint:"One option filters by priority.",
+   check:c => c.said(/Address already in use/) && c.hist.some(h=>/journalctl/.test(h.cmd) && /-p/.test(h.cmd))},
+  {q:"Show the last 5 journal entries for the <code>sshd</code> unit.",
+   hint:"Filter by unit and limit the number of lines.",
+   check:c => c.hist.some(h => /journalctl/.test(h.cmd) && /-u\s*sshd/.test(h.cmd) && /-n/.test(h.cmd))},
+  {q:"Read the audit rules in <code>/etc/audit/audit.rules</code> and note which files are watched.",
+   hint:"cat is enough.", check:c => c.said(/-w \/etc\/shadow/)},
+  {q:"Read <code>/etc/logrotate.conf</code> and note how many old copies are kept.",
+   hint:"Look for the rotate line.", check:c => c.said(/rotate 4/)},
+  {q:"Confirm which Python version this machine has.", hint:"A capital V, or the long option.",
+   check:c => c.said(/Python 3\./)},
+  {q:"Write <code>~/py/hello.py</code> that prints one line, then run it. Use <code>edit ~/py/hello.py</code> to open the editor.",
+   hint:"mkdir -p ~/py first. Then edit, write your code, Save, and run it with python3.",
+   check:c => c.exists("/home/analyst/py/hello.py") &&
+     c.hist.some(h => /python3?\s+.*hello\.py/.test(h.cmd) && h.code===0 && h.out.trim().length>0)}],
  check:[
   ["What is the difference between logging and auditing?",
-   "Logging records what the system did, for troubleshooting. Auditing records who did what, for accountability — and is written to be hard to repudiate."],
+   "Logging records what the system did, for troubleshooting. Auditing records who did what, for accountability."],
   ["What does <code>journalctl -b</code> limit you to?",
-   "The current boot. <code>-b -1</code> gives you the previous one, which is where you look after an unexpected reboot."],
-  ["Why use a virtual environment instead of installing packages system-wide?",
-   "It keeps each project's dependencies separate and stops pip from fighting your distribution's package manager over the same files."]]},
+   "The current boot. <code>-b -1</code> is the previous one — where you look after an unexpected reboot."],
+  ["Why use a virtual environment?",
+   "It keeps a project's dependencies separate and stops pip fighting your distribution's package manager."]]},
 
-{wk:41, date:"Mon 5 Oct", type:"lecture", n:10,
- title:"Introduction to Python 1",
+{wk:41, n:10, date:"Mon 5 Oct", title:"Introduction to Python 1",
  topics:"Variabler, typer, aritmetik, boolesk logik, strängar, utskrift",
- lab:[
-  "Create one variable of each type — int, float, str, bool — and print each with its <code>type()</code>.",
-  "Print a sentence with an f-string that includes a name and an age.",
-  "Show the difference between <code>/</code>, <code>//</code> and <code>%</code> on 7 and 2.",
-  "Ask the user for two numbers with <code>input()</code> and print their sum as a number, not as text.",
-  "Take a messy string with spaces around it and apply <code>.strip()</code>, <code>.upper()</code>, <code>.replace()</code> and <code>.split()</code>.",
-  "Print the truth table for <code>and</code>, <code>or</code> and <code>not</code> over True and False."],
+ brief:"Write each script with <code>edit &lt;file&gt;</code>, save it, then run it with <code>python3 &lt;file&gt;</code>. The checks below run your file and read its output.",
+ tasks:[
+  {q:"Write <code>~/py/types.py</code> that creates one int, one float, one str and one bool, and prints each value together with its <code>type(x).__name__</code>.",
+   hint:"print(x, type(x).__name__) — four times, or in a loop.",
+   check:c => { const r = c.py("/home/analyst/py/types.py");
+     return /\bint\b/.test(r.out) && /\bfloat\b/.test(r.out) && /\bstr\b/.test(r.out) && /\bbool\b/.test(r.out); }},
+  {q:"Write <code>~/py/greet.py</code> that stores a name and an age in variables and prints one sentence with an <b>f-string</b> containing both.",
+   hint:'print(f"{name} is {age}")',
+   check:c => { const src = c.read("/home/analyst/py/greet.py")||"";
+     const r = c.py("/home/analyst/py/greet.py");
+     return /f["']/.test(src) && r.out.trim().length > 3 && /\d/.test(r.out); }},
+  {q:"Write <code>~/py/division.py</code> that prints the results of <code>7 / 2</code>, <code>7 // 2</code> and <code>7 % 2</code>, one per line.",
+   hint:"Three print statements. Notice which one gives you a float.",
+   check:c => { const r = c.py("/home/analyst/py/division.py");
+     return /3\.5/.test(r.out) && /(^|\n)\s*3\s*(\n|$)/.test(r.out) && /(^|\n)\s*1\s*(\n|$)/.test(r.out); }},
+  {q:"Write <code>~/py/strings.py</code> that takes the string <code>\"  Hello World  \"</code> and prints it stripped, in upper case, and split into a list of words.",
+   hint:".strip(), .upper() and .split() — they can be chained.",
+   check:c => { const r = c.py("/home/analyst/py/strings.py");
+     return /HELLO WORLD/.test(r.out) && /\['Hello', 'World'\]/.test(r.out); }},
+  {q:"Write <code>~/py/logic.py</code> that prints the result of an <code>and</code>, an <code>or</code> and a <code>not</code> expression.",
+   hint:"print(True and False) and so on — Python prints True and False capitalised.",
+   check:c => { const r = c.py("/home/analyst/py/logic.py");
+     return /True/.test(r.out) && /False/.test(r.out); }}],
  check:[
   ["What type does <code>input()</code> always return?",
-   "<code>str</code>, even when the user types digits. Wrap it in <code>int()</code> or <code>float()</code> before doing arithmetic."],
-  ["What do <code>7 / 2</code>, <code>7 // 2</code> and <code>7 % 2</code> give you?",
-   "<code>3.5</code>, <code>3</code> and <code>1</code> — true division, floor division, remainder."],
-  ["What happens if you evaluate <code>\"5\" + 5</code>?",
-   "A TypeError. Python will not silently mix a string and an int; convert one of them first."],
-  ["What is the difference between <code>=</code> and <code>==</code>?",
-   "<code>=</code> assigns a value to a name. <code>==</code> compares two values and gives you True or False."]]},
+   "<code>str</code>, even when the user types digits. Wrap it in <code>int()</code> before doing arithmetic."],
+  ["Why does <code>4 / 2</code> print <code>2.0</code> rather than <code>2</code>?",
+   "<code>/</code> is true division and always produces a float. <code>//</code> gives you the integer."],
+  ["What happens with <code>\"5\" + 5</code>?",
+   "A TypeError. Python will not silently mix a string and an int — convert one first."]]},
 
-{wk:41, date:"Thu 8 Oct", type:"lecture", n:11,
- title:"Introduction to Python 2",
+{wk:41, n:11, date:"Thu 8 Oct", title:"Introduction to Python 2",
  topics:"Listor, dictionaries, sets, if/then, loopar, funktioner",
- lab:[
-  "Build a list of five usernames. Append one, insert one at the front, remove one, sort the list and print the first three.",
-  "Build a dictionary mapping username to UID. Loop over it and print each pair.",
-  "Look up a username that does not exist, first with <code>[ ]</code> and then with <code>.get()</code>. Note the difference.",
-  "Take a list of IP addresses with duplicates and reduce it to unique values using a set.",
-  "Write a function that takes a score and returns a grade, using if/elif/else.",
-  "Write a function with a default argument, and call it both with and without that argument.",
-  "Loop over <code>range(1, 11)</code> printing only the even numbers."],
+ brief:"The four containers and the three control structures. Everything you write from here uses these.",
+ tasks:[
+  {q:"Write <code>~/py/lista.py</code> that builds a list of five usernames, appends one, sorts it, and prints the sorted list.",
+   hint:".append() then .sort(), then print the list itself.",
+   check:c => { const r = c.py("/home/analyst/py/lista.py");
+     const m = r.out.match(/\[[^\]]*\]/);
+     if(!m) return false;
+     const items = m[0].slice(1,-1).split(",").map(s=>s.trim().replace(/^'|'$/g,""));
+     return items.length >= 6 && items.slice().sort().join()===items.join(); }},
+  {q:"Write <code>~/py/dict.py</code> that builds a dictionary of username to UID, then loops over <code>.items()</code> printing one line per pair.",
+   hint:"for k, v in d.items(): print(k, v)",
+   check:c => { const src = c.read("/home/analyst/py/dict.py")||"";
+     const r = c.py("/home/analyst/py/dict.py");
+     return /\.items\(\)/.test(src) && r.out.trim().split("\n").length >= 2; }},
+  {q:"Write <code>~/py/safe.py</code> that looks up a key which does not exist using <code>.get()</code> with a default, and prints the default instead of crashing.",
+   hint:"d.get('nope', 0) — no KeyError.",
+   check:c => { const src = c.read("/home/analyst/py/safe.py")||"";
+     const r = c.py("/home/analyst/py/safe.py");
+     return /\.get\(/.test(src) && r.code===0 && r.out.trim().length>0; }},
+  {q:"Write <code>~/py/unika.py</code> that reduces a list of IP addresses containing duplicates to unique values with a <code>set</code>, and prints how many are left.",
+   hint:"len(set(ips))",
+   check:c => { const src = c.read("/home/analyst/py/unika.py")||"";
+     const r = c.py("/home/analyst/py/unika.py");
+     return /set\(/.test(src) && /\d/.test(r.out); }},
+  {q:"Write <code>~/py/betyg.py</code> with a function <code>grade(score)</code> using if/elif/else, and print the grade for three different scores.",
+   hint:"def grade(score): ... return — then call it three times.",
+   check:c => { const src = c.read("/home/analyst/py/betyg.py")||"";
+     const r = c.py("/home/analyst/py/betyg.py");
+     return /def\s+grade/.test(src) && /elif/.test(src) && r.out.trim().split("\n").length >= 3; }},
+  {q:"Write <code>~/py/jamna.py</code> that loops over <code>range(1, 11)</code> and prints only the even numbers.",
+   hint:"if i % 2 == 0",
+   check:c => { const r = c.py("/home/analyst/py/jamna.py");
+     return r.out.replace(/\s+/g," ").trim() === "2 4 6 8 10"; }}],
  check:[
   ["When would you choose a set over a list?",
-   "When you only care about membership and uniqueness, not order or duplicates. Membership tests are also much faster on a set."],
+   "When you only care about uniqueness and membership, not order or duplicates."],
   ["Why prefer <code>d.get(key)</code> over <code>d[key]</code>?",
-   "<code>[ ]</code> raises a KeyError on a missing key; <code>.get()</code> returns <code>None</code>, or a default you supply, so the program keeps going."],
-  ["What does a function return if it has no <code>return</code> statement?",
-   "<code>None</code>. That is a common source of confusion when you print the result of a function that only prints."],
-  ["What is the difference between a list and a tuple?",
-   "A list can be changed after creation; a tuple cannot. Use a tuple for a fixed group of values."]]},
+   "<code>[ ]</code> raises KeyError on a missing key; <code>.get()</code> returns None, or a default you supply."],
+  ["What does a function return with no <code>return</code> statement?",
+   "<code>None</code> — a common surprise when you print the result of a function that only prints."]]},
 
-{wk:42, date:"Mon 12 Oct", type:"lecture", n:12,
- title:"Introduction to Python 3 — files",
+{wk:42, n:12, date:"Mon 12 Oct", title:"Introduction to Python 3 — files",
  topics:"Läsa och skriva filer, felhantering",
- lab:[
-  "Write five lines to a file using <code>with open(...) as f</code>.",
-  "Read the file back line by line and print each without the trailing newline.",
-  "Append two more lines and confirm the original five survived.",
-  "Count how many lines in a log file contain the word <code>error</code> — a small grep in Python.",
-  "Read <code>/etc/passwd</code>, split each line on <code>:</code>, and print the username and login shell.",
-  "Open a file that does not exist and handle the error with try/except instead of crashing."],
+ brief:"Files are where Python meets the sysadmin work from the first half of the course. The machine's real log files are here to practise on.",
+ tasks:[
+  {q:"Write <code>~/py/skriv.py</code> that uses <code>with open(...)</code> to write five lines to <code>/tmp/rader.txt</code>.",
+   hint:'with open("/tmp/rader.txt", "w") as f: — then f.write("...\\n") five times, or a loop.',
+   check:c => { c.py("/home/analyst/py/skriv.py");
+     return (c.read("/tmp/rader.txt")||"").trim().split("\n").length >= 5; }},
+  {q:"Write <code>~/py/las.py</code> that reads that file back line by line and prints each line <b>without</b> the trailing newline.",
+   hint:"for line in f: print(line.strip())",
+   check:c => { const src = c.read("/home/analyst/py/las.py")||"";
+     const r = c.py("/home/analyst/py/las.py");
+     return /strip\(\)/.test(src) && !/\n\n/.test(r.out) && r.out.trim().split("\n").length >= 5; }},
+  {q:"Write <code>~/py/rakna.py</code> that counts how many lines in <code>/var/log/app.log</code> contain <code>ERROR</code> and prints just the number. This is grep, in Python.",
+   hint:'if "ERROR" in line: n += 1',
+   check:c => { const r = c.py("/home/analyst/py/rakna.py");
+     return /(^|\D)2(\D|$)/.test(r.out.trim()); }},
+  {q:"Write <code>~/py/passwd.py</code> that reads <code>/etc/passwd</code>, splits each line on <code>:</code>, and prints the username and login shell of every account.",
+   hint:'parts = line.strip().split(":") then print(parts[0], parts[6])',
+   check:c => { const r = c.py("/home/analyst/py/passwd.py");
+     return /analyst/.test(r.out) && /\/bin\/bash/.test(r.out) && /root/.test(r.out); }},
+  {q:"Write <code>~/py/saker.py</code> that tries to open a file which does not exist and handles the error with try/except instead of crashing.",
+   hint:"except FileNotFoundError: — and print something friendly.",
+   check:c => { const src = c.read("/home/analyst/py/saker.py")||"";
+     const r = c.py("/home/analyst/py/saker.py");
+     return /except/.test(src) && r.code===0 && r.out.trim().length>0; }}],
  check:[
   ["Why open files with <code>with</code>?",
-   "It closes the file for you, including when an exception is raised part-way through. Without it a forgotten <code>close()</code> can lose buffered writes."],
-  ["What is the difference between mode <code>\"w\"</code> and mode <code>\"a\"</code>?",
-   "<code>\"w\"</code> truncates the file to empty before writing. <code>\"a\"</code> appends to what is already there. Choosing wrong destroys the file."],
-  ["What does <code>.strip()</code> remove when reading lines?",
-   "Whitespace at both ends, including the trailing newline that every line from a file carries."],
+   "It closes the file for you even if an exception is raised part-way through, so buffered writes are not lost."],
+  ["What is the difference between mode <code>\"w\"</code> and <code>\"a\"</code>?",
+   "<code>\"w\"</code> truncates the file to empty first; <code>\"a\"</code> appends. Choosing wrong destroys the file."],
   ["Which exception does opening a missing file raise?",
-   "<code>FileNotFoundError</code>. Catch that specifically rather than a bare <code>except:</code>, which also swallows typos in your own code."]]},
+   "<code>FileNotFoundError</code>. Catch that specifically rather than a bare <code>except:</code>."]]},
 
-{wk:42, date:"Thu 15 Oct", type:"lecture", n:13,
- title:"Repetition och tentaförberedelse",
+{wk:42, n:13, date:"Thu 15 Oct", title:"Repetition och tentaförberedelse",
  topics:"Genomgång inför tentan — börjar 10:00",
- lab:[
-  "Run the Terminal drill through every module with hints turned off, and note each task you had to reveal.",
-  "Take the full Knowledge quiz and write down which sections scored worst.",
-  "Redo the single lab from weeks 36-42 you found hardest, from memory.",
-  "Write your own one-page cheatsheet from memory, then compare it against the Cheatsheet drawer and fill the gaps.",
-  "Re-read the two topics you have avoided all course. Those are the ones on the exam.",
-  "Do one subnetting calculation and one permissions calculation without looking anything up."],
+ brief:"A mixed set drawn from the whole course, with no hints pointing at a single command. If one of these stalls you, go back to that week's lab.",
+ tasks:[
+  {q:"Find every <code>.conf</code> file anywhere under <code>/home/analyst</code>.",
+   hint:"find, starting at a path, filtered by name. Quote the pattern.",
+   check:c => c.said(/app\.conf/) && c.hist.some(h=>/^\s*find\b/.test(h.cmd))},
+  {q:"Count how many accounts in <code>/etc/passwd</code> use <code>/bin/bash</code> as their shell.",
+   hint:"grep with a counting option, or grep into wc -l.",
+   check:c => c.hist.some(h => /passwd/.test(h.cmd) && /(^|\n)\s*2\s*(\n|$)/.test(h.out))},
+  {q:"Produce a ranked count of the HTTP status codes in <code>/var/log/access.log</code>.",
+   hint:"awk to pull the status column, then sort | uniq -c | sort -rn.",
+   check:c => c.hist.some(h => /uniq/.test(h.cmd) && /200/.test(h.out) && /404/.test(h.out))},
+  {q:"Set <code>~/reports</code> so that only you can enter or read it.",
+   hint:"Numeric mode: everything for the owner, nothing for anyone else.",
+   check:c => c.mode("/home/analyst/reports") === 0o700},
+  {q:"Save the output of <code>ls -la /etc</code> into <code>~/etc-listing.txt</code>, then confirm how many lines it has.",
+   hint:"Redirect with >, then wc -l the file.",
+   check:c => c.exists("/home/analyst/etc-listing.txt") &&
+     c.hist.some(h => /wc\s+-l/.test(h.cmd) && /etc-listing/.test(h.cmd))},
+  {q:"Write <code>~/py/sammanfatta.py</code> that reads <code>/var/log/access.log</code> and prints how many lines it contains.",
+   hint:"Open the file, loop, count. Or read it and count the lines in the result.",
+   check:c => { const r = c.py("/home/analyst/py/sammanfatta.py");
+     return /40/.test(r.out); }}],
  check:[
-  ["What is the single best use of the last few days?",
-   "Practising retrieval, not re-reading. Close the notes and try to produce the command — that is what the exam asks you to do."],
+  ["What is the best use of your last few days?",
+   "Retrieval practice, not re-reading. Close the notes and try to produce the command — that is what the exam asks for."],
   ["Which topics carry the most weight across this course?",
-   "Permissions, systemd, networking basics and the pipes-and-redirection toolkit. They appear in every later week, including the Python file handling."]]},
+   "Permissions, systemd, the networking basics and the pipes-and-redirection toolkit. They reappear in every later week, including the Python file handling."]]}
+]; }
 
-{wk:43, date:"Mon 19 Oct", type:"milestone",
- title:"Tenta",
- topics:"Skriftlig examination",
- lab:[
-  "Sleep. It outperforms one more hour of revision.",
-  "Bring whatever the examiner allowed, and nothing else.",
-  "Read every question through once before writing anything.",
-  "Answer what is actually asked — the verb in the question tells you how much to write.",
-  "On a command question, write the whole line including options, not just the command name.",
-  "Leave time at the end to reread the questions you rushed."],
- check:[
-  ["The question says “show the command”. What earns full marks?",
-   "The complete line with its options and arguments, in an order that would actually run. <code>ls</code> alone rarely answers anything."]]},
+/* =================== course plan tab ===================
+   A lab per lecture, worked on a simulated machine that lives in the page.
+   Task completion is checked against machine state and persists; the machine
+   itself resets on reload, which is what you want when practising. */
+const COURSE = buildCourse();
+const CS = {K:null, lec:-1, hist:[], hp:0, editing:null};
+const ckey = (li, ti) => "L" + COURSE[li].n + ":" + ti;
+const lecDone = li => COURSE[li].tasks.filter((_,ti)=>S.lab[ckey(li,ti)]).length;
 
-{wk:43, date:"Thu 22 Oct", type:"milestone",
- title:"Redovisning projekt 2 samt inlämningsuppgift",
- topics:"Slutredovisning och inlämning",
- lab:[
-  "Check the hand-in requirements line by line and tick each one off.",
-  "Submit in the format asked for, with the filename asked for.",
-  "Reboot once more and confirm the whole solution comes back by itself.",
-  "Include your restore procedure and say when you last tested it.",
-  "Note the limitations you know about — naming them yourself reads better than being asked.",
-  "Submit early enough that an upload problem is still fixable."],
- check:[
-  ["What separates a pass from a good grade in a final hand-in?",
-   "Showing that you understand the trade-offs you made, not only that the thing works. Say what you chose, what you rejected, and why."]]}
-];
+function bootMachine(){
+  CS.K = attachPython(seedVM(attachShell(makeVM())));
+  CS.hist = []; CS.hp = 0;
+}
 
-const csess = () => COURSE[Math.min(S.c, COURSE.length-1)];
-const labKey = (i,j) => "c"+i+":"+j;
-const labDone = i => (COURSE[i].lab||[]).filter((_,j)=>S.lab[labKey(i,j)]).length;
+function cline(html, cls){
+  const d = document.createElement("div");
+  d.className = "ln " + (cls||"");
+  d.innerHTML = html;
+  const s = $("c-screen");
+  s.appendChild(d); s.scrollTop = s.scrollHeight;
+}
+function cps1(){
+  const p = CS.K.vm.cwd.replace(CS.K.vm.HOME, "~");
+  return '<span class="h">analyst@'+CS.K.vm.host+'</span>:<span class="path">'+esc(p)+'</span>$';
+}
+function cprompt(){ $("c-ps1").innerHTML = cps1(); }
+
+/* run everything the current lecture asks for and tick off what is now true */
+function recheck(){
+  const lec = COURSE[CS.lec];
+  const ctx = makeLabCtx(CS.K, CS.hist);
+  const newly = [];
+  lec.tasks.forEach((t,ti)=>{
+    if(S.lab[ckey(CS.lec,ti)]) return;
+    let done = false;
+    try{ done = !!t.check(ctx); }catch(e){ done = false; }
+    if(done){ S.lab[ckey(CS.lec,ti)] = 1; newly.push(ti); }
+  });
+  if(newly.length){ save(); paintTasks(); }
+  return newly;
+}
+
+function paintTasks(){
+  const lec = COURSE[CS.lec];
+  lec.tasks.forEach((t,ti)=>{
+    const el = $("t"+ti);
+    if(!el) return;
+    const done = !!S.lab[ckey(CS.lec,ti)];
+    el.className = "ltask" + (done ? " done" : "");
+    el.querySelector(".lstat").textContent = done ? "done" : "";
+  });
+  const n = lecDone(CS.lec), tot = lec.tasks.length;
+  const bar = $("c-progress");
+  if(bar){
+    bar.innerHTML = '<b>'+n+"</b> / "+tot+" tasks" +
+      (n===tot ? ' &nbsp;<span class="allgood">lab complete</span>' : "");
+  }
+  renderCourseNav();
+}
+
+async function csubmit(raw){
+  const input = String(raw).trim();
+  if(!input) return;
+  CS.hist.push({cmd:input, out:"", err:"", code:0});
+  CS.hp = CS.hist.length;
+  cline(cps1()+" "+esc(input), "cmd");
+
+  if(/^(tasks|lab)$/i.test(input)){
+    CS.hist.pop();
+    COURSE[CS.lec].tasks.forEach((t,ti)=>
+      cline((S.lab[ckey(CS.lec,ti)] ? "[x] " : "[ ] ") + esc(t.q.replace(/<[^>]+>/g,"")), "note"));
+    return;
+  }
+  if(/^reset$/i.test(input)){
+    CS.hist.pop(); bootMachine();
+    $("c-screen").innerHTML = "";
+    cline("machine reset — your completed tasks are kept", "note");
+    cprompt(); return;
+  }
+
+  let r;
+  try{ r = CS.K.run(input); }
+  catch(e){ r = {out:"", err:"internal error: "+e.message+"\n", code:1}; }
+
+  const rec = CS.hist[CS.hist.length-1];
+  rec.out = r.out || ""; rec.err = r.err || ""; rec.code = r.code;
+
+  if(r.clear) $("c-screen").innerHTML = "";
+  if(r.out) r.out.replace(/\n$/,"").split("\n").forEach(l => cline(esc(l) || "&nbsp;"));
+  if(r.err) r.err.replace(/\n$/,"").split("\n").forEach(l => cline(esc(l), "err"));
+  if(r.editor) openEditor(r.editor);
+
+  cprompt();
+  const newly = recheck();
+  newly.forEach(ti => cline("task "+(ti+1)+" complete — "+
+    esc(COURSE[CS.lec].tasks[ti].q.replace(/<[^>]+>/g,"").slice(0,68)), "ok"));
+}
+
+/* ---------- the editor pane, for writing scripts and crontabs ---------- */
+function openEditor(path){
+  CS.editing = path;
+  const node = CS.K.lookup(path).node;
+  $("ed-path").textContent = path;
+  $("ed-body").value = node && node.t === "f" ? node.c : "";
+  $("c-editor").style.display = "";
+  setTimeout(()=>$("ed-body").focus(), 30);
+}
+function closeEditor(saveIt){
+  if(saveIt && CS.editing){
+    const node = CS.K.lookup(CS.editing).node;
+    if(node && node.t === "f") node.c = $("ed-body").value;
+    cline("saved "+esc(CS.editing), "note");
+    recheck();
+  }
+  $("c-editor").style.display = "none";
+  CS.editing = null;
+  $("c-entry").focus();
+}
 
 function renderCourseNav(){
   const box = $("modlist"); box.innerHTML = "";
   COURSE.forEach((s,i)=>{
     const b = document.createElement("button");
-    b.className = "mod"; b.setAttribute("aria-current", i===S.c);
-    const label = s.type==="milestone" ? s.title : "F"+s.n+": "+s.title;
-    b.innerHTML = '<span class="n">v'+s.wk+'</span><span>'+esc(label)+'</span>'+
-      '<span class="done">'+labDone(i)+"/"+s.lab.length+"</span>";
+    b.className = "mod"; b.setAttribute("aria-current", i===CS.lec);
+    b.innerHTML = '<span class="n">v'+s.wk+'</span><span>F'+s.n+": "+esc(s.title)+'</span>'+
+      '<span class="done">'+lecDone(i)+"/"+s.tasks.length+"</span>";
     b.onclick = ()=>{ S.c = i; renderCourse(); save(); };
     box.appendChild(b);
   });
-  const totalTasks = COURSE.reduce((n,s)=>n+s.lab.length,0);
-  const doneTasks = COURSE.reduce((n,s,i)=>n+labDone(i),0);
-  $("s-solved").textContent = doneTasks;
-  $("s-acc").textContent = Math.round(doneTasks/totalTasks*100)+"%";
+  const tot = COURSE.reduce((n,s)=>n+s.tasks.length,0);
+  const dn  = COURSE.reduce((n,s,i)=>n+lecDone(i),0);
+  $("s-solved").textContent = dn;
+  $("s-acc").textContent = Math.round(dn/tot*100)+"%";
   $("s-streak").textContent = "—";
 }
 
 function renderCourse(){
-  const s = csess(), i = COURSE.indexOf(s);
-  const kind = s.type==="milestone" ? "Milestone" : "Föreläsning "+s.n;
-  let html =
-    '<div class="cw'+(s.type==="milestone"?" milestone":"")+'">'+
-      '<div class="chead">'+
-        '<div class="cmeta"><span class="wk">Vecka '+s.wk+'</span>'+
-          '<span class="dt">'+esc(s.date)+'</span><span>'+esc(kind)+'</span></div>'+
-        "<h1>"+esc(s.title)+"</h1>"+
-        '<p class="topics">'+esc(s.topics)+"</p>"+
-      "</div>"+
-      '<div class="csec"><h2>'+(s.type==="milestone"?"Preparation checklist":"Lab — work through these")+"</h2>"+
-        '<ul class="lab" id="lablist">';
-  s.lab.forEach((t,j)=>{
-    const on = !!S.lab[labKey(i,j)];
-    html += '<li class="'+(on?"on":"")+'" data-j="'+j+'" role="checkbox" tabindex="0" aria-checked="'+on+'">'+
-      '<span class="box"></span><span class="txt">'+t+"</span></li>";
+  const li = Math.min(S.c|0, COURSE.length-1);
+  const lec = COURSE[li];
+  if(CS.lec !== li){ CS.lec = li; bootMachine(); }
+
+  let h =
+    '<div class="cw"><div class="chead">'+
+      '<div class="cmeta"><span class="wk">Vecka '+lec.wk+'</span>'+
+        '<span class="dt">'+esc(lec.date)+'</span><span>Föreläsning '+lec.n+'</span></div>'+
+      "<h1>"+esc(lec.title)+"</h1>"+
+      '<p class="topics">'+esc(lec.topics)+"</p>"+
+      '<p class="cbrief">'+esc(lec.brief)+"</p>"+
+    "</div>"+
+    '<div class="csec"><h2>Lab — the terminal below is a real simulated machine</h2>'+
+      '<ol class="ltasks">';
+  lec.tasks.forEach((t,ti)=>{
+    const done = !!S.lab[ckey(li,ti)];
+    h += '<li class="ltask'+(done?" done":"")+'" id="t'+ti+'">'+
+      '<span class="lnum">'+(ti+1)+"</span>"+
+      '<span class="lbody"><span class="ltext">'+t.q+"</span>"+
+        '<button class="lhint" data-h="'+ti+'">hint</button>'+
+        '<span class="lhinttext" id="h'+ti+'" hidden>'+esc(t.hint)+"</span></span>"+
+      '<span class="lstat">'+(done?"done":"")+"</span></li>";
   });
-  html += "</ul></div>";
-  if(s.check && s.check.length){
-    html += '<div class="csec"><h2>Check yourself — answers are hidden until you open them</h2>';
-    s.check.forEach(([q,a])=>{
-      html += '<details class="chk"><summary>'+q+'</summary><div class="ans">'+a+"</div></details>";
-    });
-    html += "</div>";
-  }
-  html += '<div class="csec"><p class="hint-oh">Handledning this week: Wednesday 09:00–12:00. '+
-    "Bring the task that blocked you — that is what open hours are for.</p></div>";
-  html += "</div>";
+  h += "</ol>"+
+    '<p class="cprog" id="c-progress"></p>'+
+    "</div>"+
+    '<div class="csec"><h2>Check yourself — answers are hidden until you open them</h2>';
+  lec.check.forEach(([q,a])=>{
+    h += '<details class="chk"><summary>'+q+'</summary><div class="ans">'+a+"</div></details>";
+  });
+  h += "</div></div>";
 
-  html += '<div class="cnav">'+
-    '<button class="nextbtn" id="c-prev" style="background:var(--panel);color:var(--bone);border:1px solid var(--line)">← Previous</button>'+
-    '<button class="nextbtn" id="c-next">Next session →</button>'+
-    '<span class="cprog"><b>'+labDone(i)+"</b> / "+s.lab.length+" done here</span></div>";
+  h += '<section class="term labterm">'+
+    '<div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>'+
+      '<span class="title">bash — analyst@workstation-07 (simulated)</span>'+
+      '<button class="tbtn" id="c-reset">reset machine</button></div>'+
+    '<div class="screen" id="c-screen"></div>'+
+    '<div class="inputline"><span class="ps1" id="c-ps1"></span>'+
+      '<input id="c-entry" autocomplete="off" autocapitalize="off" spellcheck="false" '+
+      'aria-label="Type a command" placeholder="type a command — try: ls, help, tasks"></div>'+
+    '<div class="editor" id="c-editor" style="display:none">'+
+      '<div class="edhead">editing <b id="ed-path"></b>'+
+        '<span class="edhint">Ctrl+Enter saves</span></div>'+
+      '<textarea id="ed-body" spellcheck="false"></textarea>'+
+      '<div class="edfoot"><button class="nextbtn" id="ed-save">Save</button>'+
+        '<button class="tbtn" id="ed-cancel">Cancel</button></div>'+
+    "</div>"+
+    "</section>";
 
-  $("courseview").innerHTML = html;
+  h += '<div class="cnav">'+
+    '<button class="tbtn" id="c-prev">← Previous</button>'+
+    '<button class="nextbtn" id="c-next">Next lecture →</button></div>';
 
-  const toggle = li => {
-    const j = +li.dataset.j, k = labKey(i,j);
-    if(S.lab[k]) delete S.lab[k]; else S.lab[k] = 1;
-    renderCourse(); save();
-  };
-  $("courseview").querySelectorAll(".lab li").forEach(li=>{
-    li.onclick = ()=>toggle(li);
-    li.onkeydown = e=>{ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); toggle(li); } };
+  $("courseview").innerHTML = h;
+
+  $("c-screen").innerHTML = "";
+  cline("Simulated Arch machine. Your home is /home/analyst. Nothing here can break anything.", "note");
+  cline("Type <b>help</b> for the command list, <b>tasks</b> to re-read the lab, <b>reset</b> to start the machine over.", "note");
+  cprompt();
+
+  $("c-entry").addEventListener("keydown", e=>{
+    if(e.key==="Enter"){ const v=e.target.value; e.target.value=""; csubmit(v); }
+    else if(e.key==="ArrowUp"){ e.preventDefault();
+      if(CS.hp>0){ CS.hp--; e.target.value = CS.hist[CS.hp] ? CS.hist[CS.hp].cmd : ""; } }
+    else if(e.key==="ArrowDown"){ e.preventDefault();
+      if(CS.hp < CS.hist.length-1){ CS.hp++; e.target.value = CS.hist[CS.hp].cmd; }
+      else { CS.hp = CS.hist.length; e.target.value=""; } }
+  });
+  $("c-screen").addEventListener("click", ()=>$("c-entry").focus());
+  $("c-reset").onclick = ()=>csubmit("reset");
+  $("ed-save").onclick = ()=>closeEditor(true);
+  $("ed-cancel").onclick = ()=>closeEditor(false);
+  $("ed-body").addEventListener("keydown", e=>{
+    if(e.key==="Enter" && (e.ctrlKey||e.metaKey)){ e.preventDefault(); closeEditor(true); }
+    if(e.key==="Escape"){ e.preventDefault(); closeEditor(false); }
+    if(e.key==="Tab"){ e.preventDefault();
+      const t = e.target, s = t.selectionStart;
+      t.value = t.value.slice(0,s) + "    " + t.value.slice(t.selectionEnd);
+      t.selectionStart = t.selectionEnd = s + 4; }
+  });
+  $("courseview").querySelectorAll(".lhint").forEach(b=>{
+    b.onclick = ()=>{ const el = $("h"+b.dataset.h);
+      el.hidden = !el.hidden; b.textContent = el.hidden ? "hint" : "hide hint"; };
   });
   $("c-prev").onclick = ()=>{ if(S.c>0){ S.c--; renderCourse(); save(); } };
   $("c-next").onclick = ()=>{ if(S.c<COURSE.length-1){ S.c++; renderCourse(); save(); } };
-  $("c-prev").disabled = S.c===0;
-  $("c-next").disabled = S.c===COURSE.length-1;
-  [["c-prev",S.c===0],["c-next",S.c===COURSE.length-1]].forEach(([id,off])=>{
-    $(id).style.opacity = off ? ".4" : "1";
-    $(id).style.cursor = off ? "default" : "pointer";
+  [["c-prev", li===0], ["c-next", li===COURSE.length-1]].forEach(([id,off])=>{
+    $(id).disabled = off; $(id).style.opacity = off ? ".4" : "1";
   });
-  renderCourseNav();
+
+  paintTasks();
 }
+
+/* ===== END simulated machine ===== */
+
 
 /* ---------- quiz state & rendering ---------- */
 const Q = {tier:0, i:0, picked:new Set(), checked:false};
