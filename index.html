@@ -313,8 +313,13 @@ aside{position:sticky;top:20px}
 .confirm .cf-body p{margin:0 0 9px}
 .confirm .cf-body ul{margin:0;padding-left:18px;color:var(--dim);font-size:13.5px}
 .confirm .cf-body li{margin-bottom:3px}
-.confirm .cf-btns{display:flex;gap:9px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
-.confirm .cf-btns .ghost{padding:8px 15px}
+.confirm .cf-btns{display:flex;gap:9px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;
+  align-items:center}
+/* .nextbtn carries a margin-top for its usual context, which here stretched
+   the row and made Cancel taller. Both buttons are sized identically instead. */
+.confirm .cf-btns button{margin:0;padding:9px 18px;font-size:12px;line-height:1.25;
+  border:1px solid transparent}
+.confirm .cf-btns .ghost{border-color:var(--line)}
 .nextbtn.danger{background:var(--rose);color:var(--void)}
 .nextbtn.danger:hover{filter:brightness(1.1)}
 @media(max-width:560px){
@@ -556,6 +561,8 @@ html,body{overflow-x:hidden}
   .ltask .ltext{font-size:13.5px}
 }
 /* ---------- end course lab ---------- */
+
+
 
 
 
@@ -7487,6 +7494,10 @@ function enterCourse(id){
 }
 
 /* ===== END simulated machine ===== */
+
+
+
+
 
 
 
