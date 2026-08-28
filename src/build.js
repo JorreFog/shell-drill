@@ -171,6 +171,10 @@ body.picking .wrap{filter:blur(3px) saturate(.6);opacity:.25;pointer-events:none
   display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
   color:var(--dim);font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
   padding:7px 12px;cursor:pointer;transition:color .14s ease,border-color .14s ease;
+  /* the header aligns on the text baseline, but a flex container takes its
+     baseline from its first item — the icon, which has no text — so this
+     button would otherwise hang below the logo. Centre it on the row instead. */
+  align-self:center;
 }
 .menubtn:hover{color:var(--amber);border-color:var(--amber)}
 .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:11px;height:11px}
