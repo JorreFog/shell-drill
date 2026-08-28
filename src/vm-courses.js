@@ -8,7 +8,7 @@
    thesis and portfolio work have nothing to practise in a browser. */
 const PROGRAMME = {
   name: "IT-säkerhet",
-  subtitle: "Yrkeshögskola · practice material for the taught courses",
+  
   courses: [
   {id:"grund-it", title:"Grundläggande IT och nätverk",
    blurb:"The Linux command line, filesystem and permissions, networking, systemd and an "+
@@ -17,39 +17,39 @@ const PROGRAMME = {
 
   {id:"natverkssakerhet", title:"Nätverkssäkerhet",
    blurb:"Segmentation, firewalls, VPN, and how traffic is attacked and defended.",
-   ready:false},
+   ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"kryptering", title:"Datasäkerhet och kryptering",
    blurb:"Symmetric and asymmetric cryptography, hashing, certificates and key handling.",
-   ready:false},
+   ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"hotanalys", title:"Cybersäkerhet och hotanalys",
    blurb:"Threat modelling, attacker techniques and how risk is assessed in practice.",
-   ready:false},
+   ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"pentest", title:"Sårbarhetsanalys och penetrationstestning",
    blurb:"Finding weaknesses methodically: scanning, enumeration, exploitation and reporting.",
-   ready:false},
+   ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"incident", title:"Incidenthantering och katastrofåterställning",
    blurb:"Detecting, containing and recovering from incidents, and planning for continuity.",
-   ready:false},
+   ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
-  {id:"ledningssystem", title:"Ledningssystem o systematiskt arbetssätt",
+  {id:"ledningssystem", title:"Ledningssystem och systematiskt arbetssätt",
    blurb:"ISO 27001 and working systematically with security rather than ad hoc.",
-   ready:false},
+   ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
-  {id:"kravstallning", title:"Kravställning, upphandling o kalkylering",
+  {id:"kravstallning", title:"Kravställning, upphandling och kalkylering",
    blurb:"Writing requirements, procuring systems and costing a security solution.",
-   ready:false},
+   ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"etik", title:"Etik och professionalism inom IT-säkerhet",
    blurb:"Professional conduct, disclosure, and the ethics of offensive and defensive work.",
-   ready:false},
+   ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
-  {id:"juridik", title:"Rättsliga aspekter o efterlevnad inom IT-säk",
+  {id:"juridik", title:"Rättsliga aspekter och efterlevnad inom IT-säkerhet",
    blurb:"GDPR, NIS2 and the legal duties that shape how security work is done.",
-   ready:false}
+   ready:true, provisional:true, modes:["quiz"], entry:"quiz"}
 ],
   /* Standalone practice, not tied to one course's schedule. */
   tools: [
@@ -87,21 +87,30 @@ function courseProgress(c){
   return null;
 }
 
+/* Shown at the top of a provisional course: its questions were written from the
+   course title, not from real material, and the student should know that. */
+function provisionalNotice(){
+  const c = activeCourse();
+  if(!c || !c.provisional) return "";
+  return '<div class="provnote"><h2>'+t("provTitle")+"</h2><p>"+t("provBody")+"</p></div>";
+}
+
 /* ---------- the picker ---------- */
 function pickerCard(c, i){
   const p = courseProgress(c);
   const pct = p && p.total ? Math.round(p.done / p.total * 100) : 0;
-  return '<button class="ccard '+(c.ready ? "ready" : "planned")+'" data-course="'+c.id+'" '+
-      'style="--i:'+i+'"'+(c.ready ? "" : ' aria-disabled="true"')+'>'+
+  const state = c.provisional ? "cardProvisional" : c.ready ? "cardOpen" : "cardSoon";
+  const engOnly = c.id === "grund-it" && S.lang === "sv";
+  return '<button class="ccard '+(c.ready ? "ready" : "planned")+(c.provisional ? " prov" : "")+
+      '" data-course="'+c.id+'" style="--i:'+i+'"'+(c.ready ? "" : ' aria-disabled="true"')+'>'+
     '<span class="cmain">'+
-      '<span class="ctitle">'+esc(c.title)+"</span>"+
-      '<span class="cblurb">'+esc(c.blurb)+"</span>"+
+      '<span class="ctitle">'+esc(L(c.title))+"</span>"+
+      '<span class="cblurb">'+esc(L(c.blurb))+"</span>"+
+      (engOnly ? '<span class="cnote">'+t("englishOnly")+"</span>" : "")+
       (p ? '<span class="cbar"><span class="cbar-fill" style="width:'+pct+'%"></span></span>'+
-           '<span class="cprogtext">'+p.done+" / "+p.total+" "+p.unit+"</span>" : "")+
+           '<span class="cprogtext">'+p.done+" / "+p.total+" "+L(p.unit)+"</span>" : "")+
     "</span>"+
-    '<span class="cside">'+
-      '<span class="cstate">'+(c.ready ? "open →" : "soon")+"</span>"+
-    "</span></button>";
+    '<span class="cside"><span class="cstate">'+t(state)+"</span></span></button>";
 }
 
 function renderPicker(){
@@ -117,13 +126,11 @@ function renderPicker(){
       '<div class="phead">'+
         '<div class="pbrand">shell<b>·</b>drill</div>'+
         "<h1>"+esc(PROGRAMME.name)+"</h1>"+
-        '<p class="psub">'+esc(PROGRAMME.subtitle)+"</p>"+
+        '<p class="psub">'+t("programmeSub")+"</p>"+
       "</div>"+
-      section("Kurser", "the programme, in order", PROGRAMME.courses)+
-      section("Verktyg", "practice on its own, any time", PROGRAMME.tools)+
-      '<p class="pfoot">Courses without material yet are placeholders and open once the '+
-        "content exists. LIA, examensarbete and kompetensportfölj are not listed — "+
-        "placement, thesis and portfolio work have nothing to practise here.</p>"+
+      section(t("sectionCourses"), t("sectionCoursesNote"), PROGRAMME.courses)+
+      section(t("sectionTools"), t("sectionToolsNote"), PROGRAMME.tools)+
+      '<p class="pfoot">'+t('pickerFoot')+'</p>'+
     "</div>";
 
   el.querySelectorAll(".ccard").forEach(b=>{
@@ -134,7 +141,7 @@ function renderPicker(){
         el.querySelectorAll(".csoon").forEach(n=>n.remove());
         const note = document.createElement("span");
         note.className = "csoon";
-        note.textContent = "No material yet — this opens when the course starts.";
+        note.textContent = t("cardNoMaterial");
         b.querySelector(".cmain").appendChild(note);
         b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge");
         return;

@@ -13,8 +13,22 @@ are placeholders that open when their content exists. **Verktyg** holds the two
 standalone practice tools. A **Menu** button in the header switches between them
 at any time.
 
+Nine courses carry **provisional** quizzes — 72 questions written from each
+course title and what such a course usually covers, since no real syllabus
+exists yet. Entering one shows a notice saying exactly that, so nobody mistakes
+them for the real thing. Replace the set in `src/vm-quizzes.js` and drop the
+`provisional` flag when the material arrives.
+
 Adding a course later is a data change in `src/vm-courses.js` plus its content —
 set `ready:true`, list the tabs it offers in `modes`, and it appears.
+
+## Language
+
+A **SV/EN** button in the header switches the interface and the nine provisional
+course quizzes between Swedish and English. Content is written as `{sv, en}` and
+`L()` picks the active one; plain strings pass through unchanged, which is how
+the original English-only Linux material keeps working. That material is not
+translated, and the menu says so when Swedish is selected.
 
 LIA, examensarbete and kompetensportfölj are deliberately absent: placement,
 thesis and portfolio work have nothing to practise in a browser.

@@ -36,6 +36,8 @@ const engine = BEGIN + '\n' +
   read('vm-python.js') + '\n' +
   read('vm-labs.js') + '\n' +
   read('vm-ui.js') + '\n' +
+  read('vm-i18n.js') + '\n' +
+  read('vm-quizzes.js') + '\n' +
   read('vm-courses.js') + '\n' +
   FINISH + '\n\n';
 
@@ -192,6 +194,26 @@ body.picking .wrap{filter:blur(3px) saturate(.6);opacity:.25;pointer-events:none
   .picker,.ccard{animation:none}
   body.picking .wrap{filter:none}
 }
+/* provisional-course notice and the language switch */
+.provnote{
+  border:1px solid var(--rose);border-left:3px solid var(--rose);
+  background:rgba(240,113,120,.07);padding:15px 17px;margin-bottom:16px;
+}
+.provnote h2{
+  margin:0 0 7px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--rose);font-weight:600;
+}
+.provnote p{margin:0;font-family:var(--sans);font-size:13.5px;line-height:1.6;color:var(--bone)}
+.ccard.prov .cstate{color:var(--rose)}
+.ccard.prov{border-left-color:rgba(240,113,120,.5)}
+.ccard.ready.prov:hover{border-left-color:var(--rose)}
+.cnote{display:block;font-family:var(--sans);font-size:12px;color:var(--amber);margin-top:7px}
+.langbtn{
+  align-self:center;background:var(--panel);border:1px solid var(--line);color:var(--dim);
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;padding:6px 10px;cursor:pointer;
+  transition:color .14s ease,border-color .14s ease;
+}
+.langbtn:hover{color:var(--cyan);border-color:var(--cyan)}
 .cmeta .nowtag{color:var(--lime);border:1px solid var(--lime);padding:1px 7px;font-size:10px}
 .mod.isnow .n{color:var(--lime);opacity:1}
 /* the closed drawer sits off-canvas; without this it widens the document */
