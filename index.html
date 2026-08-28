@@ -4424,7 +4424,9 @@ function buildCourse(){
    check:c => c.ran(/^pwd\s*$/m)},
   {q:"List your home directory in long format, including hidden files.",
    hint:"Two options after a single dash: long, and all.",
-   check:c => c.hist.some(h => /^\s*(sudo\s+)?ls\b/.test(h.cmd) && /^[^|]*-[a-z]*l/.test(h.cmd) && /^[^|]*-[a-z]*a/.test(h.cmd))},
+   // the listing itself has to show a mode column (long format) against a
+   // dotfile that only exists in home, so listing somewhere else will not do
+   check:c => c.said(/(^|\n)[-d][rwx-]{9}\s.*\s\.bashrc\s*$/m)},
   {q:"Create the directory tree <code>~/kurs/v36/lab1</code> with a single command.",
    hint:"mkdir needs one option to create missing parents.",
    check:c => c.isDir("/home/analyst/kurs/v36/lab1")},
@@ -4456,7 +4458,7 @@ function buildCourse(){
   {q:"Show the routing table and find the default gateway.", hint:"Same tool, different object.",
    check:c => c.said(/default via 10\.0\.0\.1/)},
   {q:"Send exactly 4 ping packets to the gateway.", hint:"One option sets the count, or it pings forever.",
-   check:c => c.hist.some(h => /^\s*ping\b/.test(h.cmd) && /-c\s*4\b/.test(h.cmd) && /10\.0\.0\.1/.test(h.cmd))},
+   check:c => c.hist.some(h => /4 packets transmitted/.test(h.out) && /PING 10\.0\.0\.1/.test(h.out))},
   {q:"Look up the A record for <code>example.com</code>.", hint:"dig, host or nslookup all work.",
    check:c => c.said(/93\.184\.216\.34/)},
   {q:"List every listening TCP and UDP port <b>with the process that owns it</b>. You will need root for the process column.",
@@ -4539,7 +4541,7 @@ function buildCourse(){
  brief:"systemctl to see state, journalctl to find out why. This pair answers most 'it is broken' questions on a modern system.",
  tasks:[
   {q:"Check whether the <code>sshd</code> service is running.", hint:"The systemd control command plus the obvious sub-command.",
-   check:c => c.said(/active \(running\)/)},
+   check:c => c.hist.some(h => /sshd/.test(h.out) && /active \(running\)/.test(h.out))},
   {q:"List the units that have <b>failed</b>.", hint:"list-units with a long option.",
    check:c => c.said(/bluetooth/)},
   {q:"Start the <code>docker</code> service now <b>and</b> make it start at every boot, in one command.",
@@ -4569,7 +4571,7 @@ function buildCourse(){
  tasks:[
   {q:"Show the last 20 lines of <code>/var/log/auth.log</code>. It needs root to read.",
    hint:"tail with a line count, behind sudo.",
-   check:c => c.said(/Failed password/)},
+   check:c => c.hist.some(h => /\btail\b/.test(h.cmd) && /Failed password/.test(h.out))},
   {q:"Count how many failed password attempts the log contains.",
    hint:"grep can count on its own with one option.",
    check:c => c.hist.some(h => /grep/.test(h.cmd) && /^\s*13\s*$/m.test(h.out))},
@@ -4581,9 +4583,9 @@ function buildCourse(){
   {q:"Confirm it answers, fetching only the response headers from <code>localhost</code>.",
    hint:"An uppercase option that means 'head'.",
    check:c => c.said(/HTTP\/1\.1 200 OK/)},
-  {q:"Find which process is listening on port 80.",
-   hint:"List sockets and filter for the port.",
-   check:c => c.hist.some(h => /:80/.test(h.cmd) || /nginx/.test(h.out)) && c.said(/nginx/)}],
+  {q:"Find which process is listening on port 80. You need root to see the process name.",
+   hint:"List sockets with sudo and filter for the port.",
+   check:c => c.hist.some(h => /\b(ss|netstat|lsof)\b/.test(h.cmd) && /:80\b/.test(h.out) && /nginx/.test(h.out))}],
  check:[
   ["Where do SSH authentication failures land?",
    "<code>/var/log/auth.log</code> on Debian and Ubuntu, <code>/var/log/secure</code> on RHEL. <code>journalctl -u ssh</code> works on systemd too."],
@@ -4598,7 +4600,10 @@ function buildCourse(){
  tasks:[
   {q:"Create a gzip-compressed archive <code>~/backup.tar.gz</code> of the <code>~/projects</code> directory.",
    hint:"create, gzip, file — and f must come last, immediately before the archive name.",
-   check:c => c.exists("/home/analyst/backup.tar.gz")},
+   // the archive must really be gzip: leaving -z out produces a plain tar
+   // wearing a .gz name, which is the mistake this task is teaching against
+   check:c => { try{ return JSON.parse(c.read("/home/analyst/backup.tar.gz")).fmt === "gzip"; }
+               catch(e){ return false; } }},
   {q:"Extract that archive into <code>/tmp</code> and prove the contents came back by reading <code>app.conf</code>.",
    hint:"cd there first, then extract. The compression flag must match the archive.",
    check:c => c.said(/port=8080/) && c.exists("/tmp/projects/webshop/app.conf")},
@@ -4611,7 +4616,8 @@ function buildCourse(){
    hint:"Three commands: init, add, commit with a message.",
    check:c => c.git() && c.git().commits.length >= 1},
   {q:"Show the history, one line per commit.", hint:"log with a long option.",
-   check:c => c.hist.some(h => /git\s+log/.test(h.cmd) && /--oneline/.test(h.cmd) && h.code===0)}],
+   check:c => c.hist.some(h => /git\s+log/.test(h.cmd) && /--oneline/.test(h.cmd) &&
+     h.code===0 && /^\w+\s+\S/m.test(h.out))}],
  check:[
   ["Why run <code>rsync --delete</code> with <code>--dry-run</code> first?",
    "<code>--delete</code> removes anything on the destination missing from the source. One wrong source path empties the backup."],
@@ -4656,7 +4662,8 @@ function buildCourse(){
    check:c => c.said(/Address already in use/) && c.hist.some(h=>/journalctl/.test(h.cmd) && /-p/.test(h.cmd))},
   {q:"Show the last 5 journal entries for the <code>sshd</code> unit.",
    hint:"Filter by unit and limit the number of lines.",
-   check:c => c.hist.some(h => /journalctl/.test(h.cmd) && /-u\s*sshd/.test(h.cmd) && /-n/.test(h.cmd))},
+   check:c => c.hist.some(h => /journalctl/.test(h.cmd) && /-u\s*sshd/.test(h.cmd) &&
+     /-n/.test(h.cmd) && /sshd/.test(h.out))},
   {q:"Read the audit rules in <code>/etc/audit/audit.rules</code> and note which files are watched.",
    hint:"cat is enough.", check:c => c.said(/-w \/etc\/shadow/)},
   {q:"Read <code>/etc/logrotate.conf</code> and note how many old copies are kept.",
@@ -5047,6 +5054,7 @@ function renderCourse(){
 }
 
 /* ===== END simulated machine ===== */
+
 
 
 

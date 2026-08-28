@@ -137,6 +137,26 @@ const SOL = {
    "python3 ~/py/sammanfatta.py"]
 };
 
+/* Near misses: commands that look right but do the wrong thing, and must NOT
+   complete the task. These guard against checks that match the typed string
+   instead of verifying what actually happened. */
+const NEAR_MISS = {
+ "1:1": [["ls -la /etc"],                       // long+hidden, but not home
+         ["ls -l"],                             // long, but no hidden files
+         ["ls -a"]],                            // hidden, but not long format
+ "2:2": [["ping -c 4 example.com"],             // right count, wrong host
+         ["ping -c 1 10.0.0.1"]],               // right host, wrong count
+ "3:0": [["chmod 644 ~/id_rsa"], ["chmod 600 ~/notes.txt"]],
+ "4:4": [["grep PasswordAuthentication /etc/ssh/sshd_config"]],  // read, not changed
+ "5:0": [["systemctl status cron"]],            // a running service, but not sshd
+ "5:2": [["sudo systemctl start docker"]],      // started but not enabled
+ "6:0": [["sudo grep 'Failed password' /var/log/auth.log"]],     // right text, not tail
+ "6:3": [["systemctl status nginx"]],           // looked at it, did not start it
+ "6:5": [["ss -tulpn"]],                        // no root, so no process name
+ "7:0": [["tar -cvf ~/backup.tar.gz projects"]],// uncompressed despite the .gz name
+ "13:3":[["chmod 755 ~/reports"]]
+};
+
 function fresh(){
   const K = attachShell(makeVM()); seedVM(K); attachPython(K);
   return K;
@@ -153,7 +173,7 @@ function applyStep(K, hist, step){
   hist.push({cmd:step.trim(), out:r.out||'', err:r.err||'', code:r.code});
 }
 
-let pass = 0, fail = 0, missing = 0, falsePass = 0;
+let pass = 0, fail = 0, missing = 0, falsePass = 0, loose = 0;
 
 COURSE.forEach(lec => {
   // one machine per lecture, worked through in order — the way a student does it
@@ -171,7 +191,18 @@ COURSE.forEach(lec => {
     if(already){ falsePass++;
       console.log('PASSES UNTOUCHED  [' + key + '] ' + task.q.replace(/<[^>]+>/g,'').slice(0,70)); }
 
-    // 2. the worked solution must satisfy it
+    // 2. near misses must NOT satisfy it — each on its own clean machine
+    (NEAR_MISS[key] || []).forEach(seq => {
+      const Kn = fresh(); const hn = [];
+      for(const step of seq) applyStep(Kn, hn, step);
+      let accepted = false;
+      try { accepted = !!task.check(makeLabCtx(Kn, hn)); } catch(e){ accepted = false; }
+      if(accepted){ loose++;
+        console.log('ACCEPTS A NEAR MISS  [' + key + '] "' + seq.join(' ; ') + '"' +
+                    '\n      task: ' + task.q.replace(/<[^>]+>/g,'').slice(0,70)); }
+    });
+
+    // 3. the worked solution must satisfy it
     for(const step of sol) applyStep(K, hist, step);
     let okNow = false, thrown = null;
     try { okNow = !!task.check(makeLabCtx(K, hist)); }
@@ -190,7 +221,8 @@ COURSE.forEach(lec => {
 });
 
 const total = COURSE.reduce((n,l)=>n+l.tasks.length,0);
-console.log('\nlectures: ' + COURSE.length + ', tasks: ' + total);
+const nm = Object.values(NEAR_MISS).reduce((n,v)=>n+v.length,0);
+console.log('\nlectures: ' + COURSE.length + ', tasks: ' + total + ', near-miss cases: ' + nm);
 console.log(pass + ' solvable, ' + fail + ' not satisfied, ' + missing + ' without a solution, ' +
-            falsePass + ' passing untouched');
-process.exitCode = (fail || missing || falsePass) ? 1 : 0;
+            falsePass + ' passing untouched, ' + loose + ' accepting a near miss');
+process.exitCode = (fail || missing || falsePass || loose) ? 1 : 0;
