@@ -5132,7 +5132,7 @@ function buildCourse(){
    hint:"mkdir needs one option to create missing parents.",
    check:c => c.isDir("/home/analyst/kurs/v36/lab1")},
   {q:"Inside <code>~/kurs/v36/lab1</code>, create three empty files: <code>a.txt</code>, <code>b.txt</code> and <code>c.txt</code>.",
-   hint:"cd into the directory first, or give touch the full paths — it takes more than one filename at a time.",
+   hint:"The names have to match exactly — a.txt, b.txt and c.txt. Use touch, not mkdir, and either cd into the directory first or give touch the full paths; it takes several filenames at once.",
    check:c => ["a","b","c"].every(n => c.isFile("/home/analyst/kurs/v36/lab1/"+n+".txt"))},
   {q:"Copy <code>a.txt</code> into <code>~/kurs</code> and give the copy the name <code>first.txt</code>.",
    hint:"Either cp then mv, or cp straight to the new path.",
@@ -5848,6 +5848,7 @@ function renderCourse(){
 }
 
 /* ===== END simulated machine ===== */
+
 
 
 
