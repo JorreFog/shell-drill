@@ -36,6 +36,7 @@ const engine = BEGIN + '\n' +
   read('vm-python.js') + '\n' +
   read('vm-labs.js') + '\n' +
   read('vm-ui.js') + '\n' +
+  read('vm-courses.js') + '\n' +
   FINISH + '\n\n';
 
 html = html.slice(0, a) + engine + html.slice(b);
@@ -99,6 +100,94 @@ ${CSS_MARK}
 .lanstext .afile{margin:0 0 6px;font-family:var(--mono);font-size:12.5px;color:var(--bone);
   background:var(--void);border:1px solid var(--line);padding:8px 10px;overflow-x:auto;
   white-space:pre;line-height:1.5}
+/* ---------- course & tool menu ---------- */
+body.picking{overflow:hidden}
+body.picking .wrap{filter:blur(3px) saturate(.6);opacity:.25;pointer-events:none}
+.picker{
+  position:fixed;inset:0;z-index:150;overflow-y:auto;background:var(--void);
+  animation:pickerIn .28s ease both;
+}
+.picker::before{
+  content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(900px 480px at 50% -8%,rgba(255,180,84,.10),transparent 70%),
+             radial-gradient(700px 420px at 92% 108%,rgba(92,207,230,.08),transparent 70%);
+}
+.pwrap{position:relative;max-width:1180px;margin:0 auto;padding:52px 20px 72px}
+.phead{margin-bottom:34px}
+.pbrand{font-weight:700;font-size:13px;letter-spacing:.26em;text-transform:uppercase;color:var(--dim)}
+.pbrand b{color:var(--amber)}
+.phead h1{
+  font-family:var(--sans);font-size:clamp(30px,5.2vw,46px);margin:12px 0 0;font-weight:700;
+  letter-spacing:-.01em;
+  background:linear-gradient(96deg,var(--bone) 12%,var(--amber) 58%,var(--cyan) 96%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.psub{font-family:var(--sans);color:var(--dim);font-size:14px;margin:9px 0 0}
+.psect{
+  display:flex;align-items:baseline;gap:12px;margin:34px 0 14px;font-size:11px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:600;
+}
+.psect::after{content:"";flex:1;height:1px;background:var(--line)}
+.psect span{font-family:var(--sans);font-size:12px;letter-spacing:.02em;text-transform:none;color:var(--dim);font-weight:400}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.ccard{
+  position:relative;display:flex;gap:15px;align-items:flex-start;text-align:left;width:100%;
+  background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--line);
+  padding:16px 17px;cursor:pointer;color:var(--bone);font-family:var(--mono);overflow:hidden;
+  animation:cardIn .42s cubic-bezier(.2,.7,.3,1) both;animation-delay:calc(var(--i) * 34ms);
+  transition:transform .16s ease,border-color .16s ease,background .16s ease;
+}
+.ccard::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(100deg,transparent 30%,rgba(255,180,84,.09),transparent 70%);
+  transition:opacity .2s ease;
+}
+.ccard.ready:hover,.ccard.ready:focus-visible{
+  transform:translateY(-3px);border-color:#3B5063;border-left-color:var(--amber);background:var(--panel-2);
+}
+.ccard.ready:hover::after{opacity:1}
+.ccard.planned{cursor:default;opacity:.62}
+.ccard.planned:hover{border-left-color:var(--rose)}
+.cmain{flex:1;min-width:0}
+.ctitle{display:block;font-family:var(--sans);font-size:15.5px;font-weight:600;line-height:1.3}
+.cblurb{display:block;font-family:var(--sans);font-size:12.5px;color:var(--dim);line-height:1.55;margin-top:6px}
+.cbar{display:block;height:3px;background:var(--line);margin-top:11px;overflow:hidden}
+.cbar-fill{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--cyan));
+  transition:width .5s cubic-bezier(.2,.7,.3,1)}
+.cprogtext{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:6px}
+.csoon{display:block;font-family:var(--sans);font-size:12px;color:var(--rose);margin-top:9px}
+.cside{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:9px;padding-top:2px}
+.cstate{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--line)}
+.ccard.ready .cstate{color:var(--lime)}
+.ccard.planned .cstate{color:var(--dim)}
+.pfoot{font-family:var(--sans);font-size:12.5px;color:var(--dim);margin:30px 0 0;max-width:70ch;line-height:1.6}
+@keyframes pickerIn{from{opacity:0}to{opacity:1}}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.ccard.nudge{animation:nudge .28s ease}
+
+/* header: menu button and the you-are-here label */
+.menubtn{
+  display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+  color:var(--dim);font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+  padding:7px 12px;cursor:pointer;transition:color .14s ease,border-color .14s ease;
+}
+.menubtn:hover{color:var(--amber);border-color:var(--amber)}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:11px;height:11px}
+.mgrid i{background:currentColor;display:block}
+.here{
+  font-family:var(--sans);font-size:12.5px;color:var(--cyan);
+  border-left:1px solid var(--line);padding-left:14px;
+}
+@media(max-width:820px){
+  .pwrap{padding:34px 16px 56px}
+  .cgrid{grid-template-columns:1fr}
+  .here{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .picker,.ccard{animation:none}
+  body.picking .wrap{filter:none}
+}
 .cmeta .nowtag{color:var(--lime);border:1px solid var(--lime);padding:1px 7px;font-size:10px}
 .mod.isnow .n{color:var(--lime);opacity:1}
 /* the closed drawer sits off-canvas; without this it widens the document */

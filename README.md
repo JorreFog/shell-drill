@@ -1,21 +1,35 @@
 # Shell Drill
 
 Learn the Linux terminal by typing in it — a single-file, no-dependency practice
-site with three modes and no install of any kind.
+site for the IT-säkerhet programme. No install, no server, no dependencies.
 
 **Live:** https://jorrefog.github.io/shell-drill/
 
-## The three tabs
+## The menu
+
+The site opens on a menu covering the IT-säkerhet programme. **Kurser** lists the
+taught courses; only *Grundläggande IT och nätverk* has material so far, the rest
+are placeholders that open when their content exists. **Verktyg** holds the two
+standalone practice tools. A **Menu** button in the header switches between them
+at any time.
+
+Adding a course later is a data change in `src/vm-courses.js` plus its content —
+set `ready:true`, list the tabs it offers in `modes`, and it appears.
+
+LIA, examensarbete and kompetensportfölj are deliberately absent: placement,
+thesis and portfolio work have nothing to practise in a browser.
+
+## Inside a course
 
 - **Terminal drill** — 123 tasks across ten modules. You type the real command;
   it tells you what was wrong when you don't.
 - **Knowledge quiz** — 34 multiple-answer questions with explanations.
-- **Course plan** — one lab per lecture, following the weeks 36-42 schedule,
-  worked on a simulated Linux machine that runs in the page.
+- **Grundläggande IT och nätverk** — one lab per lecture, following the weeks
+  36-42 schedule, worked on a simulated Linux machine that runs in the page.
 
 ## The simulated machine
 
-The Course plan tab contains a small but real Linux: a virtual filesystem with
+The course lab contains a small but real Linux: a virtual filesystem with
 owners, groups, permission bits and hard links, and a shell with pipes,
 redirection, quoting, globbing, brace expansion, `~` and variable expansion,
 command substitution, `$?`, `!!` history expansion and `&&`. Around 100

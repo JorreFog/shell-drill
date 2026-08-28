@@ -218,7 +218,7 @@ function renderCourseNav(){
     const b = document.createElement("button");
     b.className = "mod" + (i === now ? " isnow" : "");
     b.setAttribute("aria-current", i===CS.lec);
-    b.innerHTML = '<span class="n">v'+s.wk+'</span><span>F'+s.n+": "+esc(s.title)+'</span>'+
+    b.innerHTML = '<span class="n">v'+s.wk+"·F"+s.n+'</span><span class="mlong">'+esc(s.title)+'</span>'+
       '<span class="done">'+lecDone(i)+"/"+s.tasks.length+"</span>";
     b.onclick = ()=>{ S.c = i; renderCourse(); save(); };
     box.appendChild(b);
