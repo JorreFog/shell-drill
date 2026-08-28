@@ -148,12 +148,13 @@ aside{position:sticky;top:20px}
 .ps1{color:var(--lime);white-space:nowrap;font-size:13.5px}
 .ps1 .h{color:var(--cyan)}
 .ps1 .path{color:var(--amber)}
-#entry{
+/* every terminal input, not just the drill's — the lab terminal has its own id */
+.inputline input{
   flex:1;background:none;border:0;color:var(--bone);font-family:var(--mono);
   font-size:13.5px;padding:0;caret-color:var(--amber);
 }
-#entry:focus{outline:none}
-#entry::placeholder{color:#3E4C5C}
+.inputline input:focus{outline:none}
+.inputline input::placeholder{color:#3E4C5C}
 
 /* ---------- breakdown (signature) ---------- */
 .breakdown{
@@ -5046,6 +5047,7 @@ function renderCourse(){
 }
 
 /* ===== END simulated machine ===== */
+
 
 
 
