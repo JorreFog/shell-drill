@@ -15,6 +15,14 @@ function L(v){
 }
 
 const T = {
+  /* The site started as a Linux shell drill and grew into practice material for
+     the whole programme, so the name follows the subject rather than the shell.
+     Change these two lines to rename it. */
+  brandA:          {sv:"säk",               en:"sec"},
+  brandB:          {sv:"labb",              en:"lab"},
+  docTitle:        {sv:"Säk·labb — övningsmaterial för IT-säkerhetsanalytiker ITA26D",
+                    en:"Sec·lab — practice material for IT-säkerhetsanalytiker ITA26D"},
+
   menu:            {sv:"Meny",              en:"Menu"},
   menuTitle:       {sv:"Tillbaka till kurser och verktyg", en:"Back to courses and tools"},
   cheatsheet:      {sv:"Fusklapp",          en:"Cheatsheet"},
@@ -109,8 +117,12 @@ function setLang(lang){
 }
 
 /* static chrome that is not regenerated on every render */
+const brandHtml = () => esc(t("brandA")) + "<b>·</b>" + esc(t("brandB"));
+
 function applyChrome(){
   const set = (id, key) => { const e = $(id); if(e) e.textContent = t(key); };
+  document.title = t("docTitle");
+  document.querySelectorAll(".brand, .pbrand").forEach(e => { e.innerHTML = brandHtml(); });
   set("m-drill", "drillTab");
   set("m-quiz", "quizTab");
   set("tomenu-label", "menu");

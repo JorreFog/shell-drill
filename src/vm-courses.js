@@ -7,60 +7,72 @@
    LIA, Examensarbete and Kompetensportfölj are deliberately absent: placement,
    thesis and portfolio work have nothing to practise in a browser. */
 const PROGRAMME = {
-  name: "IT-säkerhet",
+  name: "IT-säkerhetsanalytiker ITA26D",
   
   courses: [
   {id:"grund-it", title:"Grundläggande IT och nätverk",
-   blurb:"The Linux command line, filesystem and permissions, networking, systemd and an "+
-         "introduction to Python — one lab per lecture, worked on a simulated machine.",
+   blurb:{sv:"Linux-kommandoraden, filsystem och rättigheter, nätverk, systemd och en introduktion till Python — en labb per föreläsning, på en simulerad maskin.",
+         en:"The Linux command line, filesystem and permissions, networking, systemd and an "+
+         "introduction to Python — one lab per lecture, worked on a simulated machine."},
    ready:true, modes:["course","drill","quiz"], entry:"course"},
 
   {id:"natverkssakerhet", title:"Nätverkssäkerhet",
-   blurb:"Segmentation, firewalls, VPN, and how traffic is attacked and defended.",
+   blurb:{sv:"Segmentering, brandväggar, VPN, och hur trafik angrips och skyddas.",
+         en:"Segmentation, firewalls, VPN, and how traffic is attacked and defended."},
    ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"kryptering", title:"Datasäkerhet och kryptering",
-   blurb:"Symmetric and asymmetric cryptography, hashing, certificates and key handling.",
+   blurb:{sv:"Symmetrisk och asymmetrisk kryptering, hashning, certifikat och nyckelhantering.",
+         en:"Symmetric and asymmetric cryptography, hashing, certificates and key handling."},
    ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"hotanalys", title:"Cybersäkerhet och hotanalys",
-   blurb:"Threat modelling, attacker techniques and how risk is assessed in practice.",
+   blurb:{sv:"Hotmodellering, angriparens tekniker och hur risk bedöms i praktiken.",
+         en:"Threat modelling, attacker techniques and how risk is assessed in practice."},
    ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"pentest", title:"Sårbarhetsanalys och penetrationstestning",
-   blurb:"Finding weaknesses methodically: scanning, enumeration, exploitation and reporting.",
+   blurb:{sv:"Att hitta svagheter metodiskt: kartläggning, skanning, exploatering och rapportering.",
+         en:"Finding weaknesses methodically: scanning, enumeration, exploitation and reporting."},
    ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"incident", title:"Incidenthantering och katastrofåterställning",
-   blurb:"Detecting, containing and recovering from incidents, and planning for continuity.",
+   blurb:{sv:"Att upptäcka, begränsa och återhämta sig från incidenter, och att planera för kontinuitet.",
+         en:"Detecting, containing and recovering from incidents, and planning for continuity."},
    ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"ledningssystem", title:"Ledningssystem och systematiskt arbetssätt",
-   blurb:"ISO 27001 and working systematically with security rather than ad hoc.",
+   blurb:{sv:"ISO 27001 och att arbeta systematiskt med säkerhet i stället för ad hoc.",
+         en:"ISO 27001 and working systematically with security rather than ad hoc."},
    ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"kravstallning", title:"Kravställning, upphandling och kalkylering",
-   blurb:"Writing requirements, procuring systems and costing a security solution.",
+   blurb:{sv:"Att formulera krav, upphandla system och kalkylera en säkerhetslösning.",
+         en:"Writing requirements, procuring systems and costing a security solution."},
    ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"etik", title:"Etik och professionalism inom IT-säkerhet",
-   blurb:"Professional conduct, disclosure, and the ethics of offensive and defensive work.",
+   blurb:{sv:"Yrkesmässigt uppträdande, ansvarsfullt röjande och etiken i offensivt och defensivt arbete.",
+         en:"Professional conduct, disclosure, and the ethics of offensive and defensive work."},
    ready:true, provisional:true, modes:["quiz"], entry:"quiz"},
 
   {id:"juridik", title:"Rättsliga aspekter och efterlevnad inom IT-säkerhet",
-   blurb:"GDPR, NIS2 and the legal duties that shape how security work is done.",
+   blurb:{sv:"GDPR, NIS2 och de rättsliga skyldigheter som formar hur säkerhetsarbete bedrivs.",
+         en:"GDPR, NIS2 and the legal duties that shape how security work is done."},
    ready:true, provisional:true, modes:["quiz"], entry:"quiz"}
 ],
   /* Standalone practice, not tied to one course's schedule. */
   tools: [
   {id:"tool-drill", title:"Terminal drill",
-   blurb:"123 tasks across ten modules. You type the real command; it tells you what was "+
-         "wrong when you don't.",
+   blurb:{sv:"123 uppgifter i tio moduler. Du skriver det riktiga kommandot, och får veta vad som var fel när det inte stämmer.",
+         en:"123 tasks across ten modules. You type the real command; it tells you what was "+
+         "wrong when you don't."},
    ready:true, modes:["drill"], entry:"drill"},
 
   {id:"tool-quiz", title:"Linux knowledge quiz",
-   blurb:"34 multiple-answer questions on the ideas behind the commands, each with an "+
-         "explanation.",
+   blurb:{sv:"34 flervalsfrågor om tankarna bakom kommandona, var och en med en förklaring.",
+         en:"34 multiple-answer questions on the ideas behind the commands, each with an "+
+         "explanation."},
    ready:true, modes:["quiz"], entry:"quiz"}
 ]};
 
@@ -124,7 +136,7 @@ function renderPicker(){
   el.innerHTML =
     '<div class="pwrap">'+
       '<div class="phead">'+
-        '<div class="pbrand">shell<b>·</b>drill</div>'+
+        '<div class="pbrand">'+brandHtml()+"</div>"+
         "<h1>"+esc(PROGRAMME.name)+"</h1>"+
         '<p class="psub">'+t("programmeSub")+"</p>"+
       "</div>"+

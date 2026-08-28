@@ -1,7 +1,10 @@
-# Shell Drill
+# Säk·labb / Sec·lab
 
-Learn the Linux terminal by typing in it — a single-file, no-dependency practice
-site for the IT-säkerhet programme. No install, no server, no dependencies.
+Practice material for **IT-säkerhetsanalytiker ITA26D** — a single-file,
+no-dependency site that runs entirely in the browser. No install, no server.
+
+The repository is still called `shell-drill`, which is where the site started;
+renaming it would change the published URL, so it stays.
 
 **Live:** https://jorrefog.github.io/shell-drill/
 
