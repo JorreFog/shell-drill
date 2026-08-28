@@ -147,6 +147,20 @@ t('glob expands', () => { const K = fresh();
   K.run('cd cache'); has(K.run('ls *.tmp').out, 'tmp1.tmp'); });
 t('quoted glob is not expanded by the shell', () => { const K = fresh();
   has(K.run('find /home/analyst -name "*.tmp"').out, 'tmp1.tmp'); });
+// the quiz teaches that the shell expands before the command runs, and that
+// quoting is how you stop it — so the simulator must actually behave that way
+t('unquoted ~ is expanded by the shell', () => { const K = fresh();
+  eq(K.run('echo ~').out, '/home/analyst\n'); });
+t('quoted ~ stays literal', () => { const K = fresh();
+  eq(K.run('echo "~/x"').out, '~/x\n'); });
+t("single-quoted ~ stays literal", () => { const K = fresh();
+  eq(K.run("echo '~/x'").out, '~/x\n'); });
+t('commands see the expanded path, not the tilde', () => { const K = fresh();
+  has(K.run('ls -l ~/id_rsa').out, '/home/analyst/id_rsa'); });
+t('unquoted glob is expanded', () => { const K = fresh();
+  K.run('cd cache'); eq(K.run('echo *.tmp').out, 'tmp1.tmp tmp2.tmp\n'); });
+t('quoted glob is not', () => { const K = fresh();
+  K.run('cd cache'); eq(K.run('echo "*.tmp"').out, '*.tmp\n'); });
 t('&& chains on success', () => { const K = fresh();
   const r = K.run('mkdir demo && cd demo && pwd'); has(r.out, '/home/analyst/demo'); });
 t('&& stops on failure', () => { const K = fresh();

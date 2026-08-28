@@ -125,12 +125,14 @@ function makeVM(){
 
   /* ---------- tokenizer: quotes, pipes, redirection, operators ---------- */
   function tokenize(src){
-    const out = []; let i=0, cur="", q=null, had=false;
-    const push = ()=>{ if(cur!=="" || had) out.push({v:cur, q}); cur=""; had=false; q=null; };
+    const out = []; let i=0, cur="", q=null, had=false, quoted=false;
+    // `quoted` has to outlive `q`, which is cleared by the closing quote —
+    // otherwise a finished "..." token looks unquoted and gets expanded
+    const push = ()=>{ if(cur!=="" || had) out.push({v:cur, q:quoted}); cur=""; had=false; q=null; quoted=false; };
     while(i<src.length){
       const c = src[i];
       if(q){ if(c===q){ q=null; had=true; } else cur+=c; i++; continue; }
-      if(c==='"' || c==="'"){ q=c; had=true; i++; continue; }
+      if(c==='"' || c==="'"){ q=c; had=true; quoted=true; i++; continue; }
       if(c==="\\" && i+1<src.length){ cur+=src[i+1]; had=true; i+=2; continue; }
       if(/\s/.test(c)){ push(); i++; continue; }
       const three = src.slice(i,i+3), two = src.slice(i,i+2);

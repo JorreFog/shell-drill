@@ -1037,9 +1037,12 @@ function attachShell(K){
       if(t.v==="2>&1"){ errToOut = true; continue; }
       stages[stages.length-1].push(t);
     }
+    // the shell expands ~ and globs before the command ever sees the argument,
+    // so commands report the expanded path — exactly as bash does
+    const tilde = s => s === "~" ? vm.HOME : s.startsWith("~/") ? vm.HOME + s.slice(1) : s;
     let stdin = "", out = "", err = "", code = 0, clear = false, editor = null;
     for(const stage of stages){
-      const argv = stage.flatMap(t => t.q ? [t.v] : glob(t.v));
+      const argv = stage.flatMap(t => t.q ? [t.v] : glob(tilde(t.v)));
       const r = runSimple(argv, stdin);
       stdin = r.out; out = r.out; err = r.err || ""; code = r.code;
       clear = clear || !!r.clear; editor = r.editor || editor;
