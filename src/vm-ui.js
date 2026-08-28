@@ -94,6 +94,24 @@ function paintTasks(){
   renderCourseNav();
 }
 
+/* ---------- show answer ----------
+   The answers come from LAB_ANSWERS, the same worked solutions the test suite
+   runs, so what is shown here is known to complete the task. You still have to
+   type it — that is the part that sticks. */
+function answerHtml(li, ti){
+  const steps = (typeof LAB_ANSWERS !== "undefined") && LAB_ANSWERS[COURSE[li].n + ":" + ti];
+  if(!steps) return '<span class="anote">No worked answer for this one — use the hint.</span>';
+  let h = '<span class="anote">One way that works, assuming the earlier tasks in this lab are done. '+
+          'Type it out rather than pasting — that is the part that sticks.</span>';
+  for(const s of steps){
+    if(typeof s === "string"){ h += '<code class="acmd">'+esc(s)+"</code>"; continue; }
+    // an editor step: show the command that opens it, then the file itself
+    h += '<code class="acmd">'+esc(s.open || ("edit " + s.edit))+"</code>"+
+         '<pre class="afile">'+esc(s.body.replace(/\n$/,""))+"</pre>";
+  }
+  return h;
+}
+
 /* ---------- Tab completion, which the module guide promises ---------- */
 function completions(input){
   const frag = (input.match(/(\S*)$/) || [""])[0];
@@ -238,8 +256,12 @@ function renderCourse(){
     h += '<li class="ltask'+(done?" done":"")+'" id="t'+ti+'" role="checkbox" aria-checked="'+done+'">'+
       '<span class="lnum">'+(ti+1)+"</span>"+
       '<span class="lbody"><span class="ltext">'+t.q+"</span>"+
-        '<button class="lhint" data-h="'+ti+'" aria-expanded="false" aria-controls="h'+ti+'">hint</button>'+
-        '<span class="lhinttext" id="h'+ti+'" hidden>'+esc(t.hint)+"</span></span>"+
+        '<span class="lbtns">'+
+          '<button class="lhint" data-h="'+ti+'" aria-expanded="false" aria-controls="h'+ti+'">hint</button>'+
+          '<button class="lhint lans" data-a="'+ti+'" aria-expanded="false" aria-controls="a'+ti+'">show answer</button>'+
+        "</span>"+
+        '<span class="lhinttext" id="h'+ti+'" hidden>'+esc(t.hint)+"</span>"+
+        '<span class="lanstext" id="a'+ti+'" hidden>'+answerHtml(li, ti)+"</span></span>"+
       '<span class="lstat">'+(done?"done":"")+"</span></li>";
   });
   h += "</ol><p class=\"cprog\" id=\"c-progress\"></p></div>"+
@@ -304,11 +326,17 @@ function renderCourse(){
       t.value = t.value.slice(0,s) + "    " + t.value.slice(t.selectionEnd);
       t.selectionStart = t.selectionEnd = s + 4; }
   });
-  $("courseview").querySelectorAll(".lhint").forEach(b=>{
+  $("courseview").querySelectorAll(".lhint[data-h]").forEach(b=>{
     b.onclick = ()=>{ const el = $("h"+b.dataset.h);
       el.hidden = !el.hidden;
       b.setAttribute("aria-expanded", String(!el.hidden));
       b.textContent = el.hidden ? "hint" : "hide hint"; };
+  });
+  $("courseview").querySelectorAll(".lans[data-a]").forEach(b=>{
+    b.onclick = ()=>{ const el = $("a"+b.dataset.a);
+      el.hidden = !el.hidden;
+      b.setAttribute("aria-expanded", String(!el.hidden));
+      b.textContent = el.hidden ? "show answer" : "hide answer"; };
   });
   $("c-prev").onclick = ()=>{ if(S.c>0){ S.c--; renderCourse(); save(); } };
   $("c-next").onclick = ()=>{ if(S.c<COURSE.length-1){ S.c++; renderCourse(); save(); } };

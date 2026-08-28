@@ -36,6 +36,9 @@ filesystem. `edit <file>` opens an editor pane for writing scripts and crontabs.
 
 Lab tasks check themselves by inspecting the machine afterwards, so a task
 completes because you did the work, not because you typed a matching string.
+Every task has a hint and a **show answer** button. The answers are the same
+worked solutions `test/solutions.js` runs against every task, so what a stuck
+student is shown is exactly what the suite proves works.
 Each lecture keeps its own machine, and both the machine and your completed
 tasks survive a reload. `reset` starts a lecture's machine over.
 

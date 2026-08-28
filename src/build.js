@@ -87,6 +87,18 @@ ${CSS_MARK}
 .edfoot{padding:9px 13px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center}
 .cnav{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
 .cnav .tbtn{margin-left:0;padding:9px 15px;font-size:12px}
+.lbtns{display:flex;gap:14px;margin-top:7px;flex-wrap:wrap}
+.lbtns .lhint{margin-top:0}
+.lans{border-bottom-color:#3B5063}
+.lans:hover{color:var(--lime);border-color:var(--lime)}
+.lanstext{display:block;margin-top:9px;padding-left:10px;border-left:2px solid rgba(167,217,108,.45)}
+.lanstext[hidden]{display:none}
+.lanstext .anote{display:block;font-family:var(--sans);font-size:12px;color:var(--dim);margin-bottom:7px}
+.lanstext .acmd{display:block;font-family:var(--mono);font-size:12.5px;color:var(--lime);
+  background:rgba(167,217,108,.08);padding:5px 9px;margin-bottom:4px;overflow-x:auto;white-space:pre}
+.lanstext .afile{margin:0 0 6px;font-family:var(--mono);font-size:12.5px;color:var(--bone);
+  background:var(--void);border:1px solid var(--line);padding:8px 10px;overflow-x:auto;
+  white-space:pre;line-height:1.5}
 .cmeta .nowtag{color:var(--lime);border:1px solid var(--lime);padding:1px 7px;font-size:10px}
 .mod.isnow .n{color:var(--lime);opacity:1}
 /* the closed drawer sits off-canvas; without this it widens the document */
