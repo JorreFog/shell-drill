@@ -291,6 +291,29 @@ aside{position:sticky;top:20px}
   .stat{padding:0;flex-direction:column;gap:0}
   .screen{max-height:38vh}
 }
+/* ---------- confirm dialog ---------- */
+.confirm{
+  position:fixed;z-index:200;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(430px,calc(100vw - 32px));background:var(--panel);
+  border:1px solid var(--line);border-top:2px solid var(--rose);
+  padding:22px;box-shadow:0 20px 64px rgba(0,0,0,.6);
+}
+.confirm h2{
+  margin:0 0 11px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--rose);font-weight:600;
+}
+.confirm .cf-body{font-family:var(--sans);font-size:14px;line-height:1.6;color:var(--bone)}
+.confirm .cf-body p{margin:0 0 9px}
+.confirm .cf-body ul{margin:0;padding-left:18px;color:var(--dim);font-size:13.5px}
+.confirm .cf-body li{margin-bottom:3px}
+.confirm .cf-btns{display:flex;gap:9px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+.confirm .cf-btns .ghost{padding:8px 15px}
+.nextbtn.danger{background:var(--rose);color:var(--void)}
+.nextbtn.danger:hover{filter:brightness(1.1)}
+@media(max-width:560px){
+  .confirm .cf-btns{flex-direction:column-reverse}
+  .confirm .cf-btns button{width:100%}
+}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 /* ---------- course plan ---------- */
@@ -414,6 +437,8 @@ html,body{overflow-x:hidden}
   .ltask .ltext{font-size:13.5px}
 }
 /* ---------- end course lab ---------- */
+
+
 
 
 </style>
@@ -1813,11 +1838,76 @@ $("entry").addEventListener("keydown", e=>{
   else if(e.key==="Enter"&&e.ctrlKey){ }
 });
 $("screen").addEventListener("click", ()=>$("entry").focus());
-$("reset").onclick = ()=>{
+/* ---------- confirm dialog ----------
+   Used for anything that throws work away. Cancel takes focus, so Enter or a
+   stray second click dismisses rather than confirms. */
+function confirmDialog(o){
+  const previous = document.activeElement;
+  const d = document.createElement("div");
+  d.className = "confirm";
+  d.setAttribute("role", "dialog");
+  d.setAttribute("aria-modal", "true");
+  d.setAttribute("aria-labelledby", "cf-title");
+  d.innerHTML = '<h2 id="cf-title">'+esc(o.title)+"</h2>"+
+    '<div class="cf-body">'+o.body+"</div>"+
+    '<div class="cf-btns"><button class="ghost" id="cf-no">Cancel</button>'+
+    '<button class="nextbtn danger" id="cf-yes">'+esc(o.confirmLabel)+"</button></div>";
+  document.body.appendChild(d);
+  $("scrim").classList.add("open");
+
+  const close = ()=>{
+    d.remove();
+    $("scrim").classList.remove("open");
+    $("scrim").onclick = closeRef;
+    document.removeEventListener("keydown", onKey);
+    if(previous && previous.focus) previous.focus();
+  };
+  function onKey(e){
+    if(e.key === "Escape"){ e.preventDefault(); close(); return; }
+    if(e.key === "Tab"){                     // keep focus inside the dialog
+      const f = [$("cf-no"), $("cf-yes")];
+      const i = f.indexOf(document.activeElement);
+      e.preventDefault();
+      f[(i + (e.shiftKey ? f.length - 1 : 1)) % f.length].focus();
+    }
+  }
+  document.addEventListener("keydown", onKey);
+  $("scrim").onclick = close;
+  $("cf-no").onclick = close;
+  $("cf-yes").onclick = ()=>{ close(); o.onConfirm(); };
+  $("cf-no").focus();
+}
+
+function doResetProgress(){
   S.solved={}; S.tries=0; S.hits=0; S.streak=0; S.best=0; S.m=0; S.t=0;
   S.qDone={}; S.qTries=0; S.qHits=0; Q.tier=0; Q.i=0; Q.picked.clear(); Q.checked=false;
   S.lab={}; S.c=-1; CS.machines={}; CS.screens={}; CS.histories={}; CS.lec=-1;
   setMode(S.mode);
+}
+
+$("reset").onclick = ()=>{
+  const drill = Object.keys(S.solved).length;
+  const quiz  = Object.keys(S.qDone).length;
+  const labs  = Object.keys(S.lab).length;
+  // only machines actually worked in — a freshly booted one is no loss
+  const machines = Object.keys(CS.machines || {})
+    .filter(li => (CS.histories[li] || []).length > 0).length;
+  const rows = [];
+  if(drill) rows.push(drill + " solved drill task" + (drill===1?"":"s"));
+  if(quiz)  rows.push(quiz + " answered quiz question" + (quiz===1?"":"s"));
+  if(labs)  rows.push(labs + " completed lab task" + (labs===1?"":"s"));
+  if(machines) rows.push("the simulated machine" + (machines===1?"":"s") +
+    " for " + machines + " lecture" + (machines===1?"":"s") + ", with any files you made");
+
+  confirmDialog({
+    title: "Reset all progress?",
+    body: rows.length
+      ? "<p>This clears everything saved in this browser and cannot be undone:</p><ul><li>"+
+        rows.join("</li><li>")+"</li></ul>"
+      : "<p>Nothing is saved yet, so there is nothing to lose. You can reset anyway.</p>",
+    confirmLabel: "Reset everything",
+    onConfirm: doResetProgress
+  });
 };
 
 /* =================== cheatsheet =================== */
@@ -1843,7 +1933,9 @@ $("openref").onclick = openRef;
 $("closeref").onclick = closeRef;
 $("scrim").onclick = closeRef;
 $("refsearch").addEventListener("input", e=>renderSheet(e.target.value));
-document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeRef(); endTour(); } });
+document.addEventListener("keydown", e=>{
+  // a confirm dialog handles its own Escape; don't also close the drawer or tour
+  if(e.key==="Escape" && !document.querySelector(".confirm")){ closeRef(); endTour(); } });
 
 /* =================== tutorial =================== */
 const TOUR = [
@@ -6023,6 +6115,10 @@ function renderCourse(){
 }
 
 /* ===== END simulated machine ===== */
+
+
+
+
 
 
 
