@@ -141,5 +141,26 @@ t('parse /etc/passwd',
     console.log('FAIL  python3 -c\n      got: ' + JSON.stringify(r3.out + r3.err)); }
 })();
 
+/* ---- features added after the audit ---- */
+t('list comprehension', 'print([i*2 for i in range(4)])', '[0, 2, 4, 6]');
+t('comprehension with a filter', 'print([x for x in range(6) if x % 2 == 0])', '[0, 2, 4]');
+t('comprehension over a method call', 'print([w.upper() for w in "a b".split()])', "['A', 'B']");
+t('comprehension does not leak its name', 'x = 9\nprint([x for x in range(2)], x)', '[0, 1] 9');
+t('sorted with reverse', 'print(sorted([3,1,2], reverse=True))', '[3, 2, 1]');
+t('sorted without reverse still ascends', 'print(sorted([3,1,2]))', '[1, 2, 3]');
+t('list.sort with reverse', 'x=[1,3,2]\nx.sort(reverse=True)\nprint(x)', '[3, 2, 1]');
+t('list.sort without reverse ascends', 'x=[3,1,2]\nx.sort()\nprint(x)', '[1, 2, 3]');
+t('print sep', 'print("a","b",sep="-")', 'a-b');
+t('print end', 'print("x", end="")\nprint("y")', 'xy');
+t('str.format positional', 'print("{} and {}".format(1,2))', '1 and 2');
+t('str.format with a spec', 'print("{:.2f}".format(3.14159))', '3.14');
+t('percent formatting', 'print("%s has %d" % ("bob", 3))', 'bob has 3');
+t('star args', 'def f(*a):\n    return len(a)\nprint(f(1,2,3))', '3');
+t('keyword argument to a function', 'def g(a, b=2):\n    return a+b\nprint(g(1, b=5))', '6');
+t('unexpected keyword argument', 'def h(a):\n    return a\nprint(h(1, zz=2))',
+  'Traceback (most recent call last):\n  File "<stdin>"\nTypeError: h() got an unexpected keyword argument \'zz\'');
+t('modules explain themselves', 'import os\nprint(os.getcwd())',
+  'Traceback (most recent call last):\n  File "<stdin>"\nModuleNotFoundError: \'os\' is not available — this trainer has no modules, only the built-ins');
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exitCode = fail ? 1 : 0;

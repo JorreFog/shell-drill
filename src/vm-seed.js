@@ -168,5 +168,76 @@ function seedVM(K){
   ];
   vm.cron = [];
   vm.allGroups = ["root","sudo","www-data","users","analyst","adm","shadow"];
+
+  /* ---- packages: one database behind pacman / apt / dnf / zypper ---- */
+  vm.repo = {
+    firefox:  {ver:"128.0-1", desc:"Fast, private and safe web browser",
+               deps:["gtk3","nss"], files:["/usr/bin/firefox"], size:212},
+    nmap:     {ver:"7.95-1", desc:"Utility for network discovery and security auditing",
+               deps:["lua"], files:["/usr/bin/nmap","/usr/bin/ncat"], size:26},
+    htop:     {ver:"3.3.0-1", desc:"Interactive process viewer", deps:[], files:["/usr/bin/htop"], size:1},
+    nginx:    {ver:"1.27.0-1", desc:"Lightweight HTTP server and reverse proxy",
+               deps:["pcre2"], files:["/usr/bin/nginx"], size:8},
+    git:      {ver:"2.45.2-1", desc:"Fast distributed version control system", deps:[], files:["/usr/bin/git"], size:24},
+    tcpdump:  {ver:"4.99.4-1", desc:"Powerful command-line packet analyser",
+               deps:["libpcap"], files:["/usr/bin/tcpdump"], size:2},
+    gtk3:     {ver:"3.24.42-1", desc:"GObject-based multi-platform GUI toolkit", deps:[], files:[], size:48},
+    nss:      {ver:"3.101-1", desc:"Network Security Services", deps:[], files:[], size:6},
+    lua:      {ver:"5.4.6-1", desc:"Powerful lightweight programming language", deps:[], files:[], size:1},
+    pcre2:    {ver:"10.44-1", desc:"Perl compatible regular expressions library", deps:[], files:[], size:2},
+    libpcap:  {ver:"1.10.4-1", desc:"Portable packet capture library", deps:[], files:[], size:1},
+    coreutils:{ver:"9.5-1", desc:"The basic file, shell and text manipulation utilities",
+               deps:[], files:["/usr/bin/ls","/usr/bin/cat"], size:15},
+    bash:     {ver:"5.2.032-1", desc:"The GNU Bourne Again shell", deps:[], files:["/usr/bin/bash"], size:8},
+    openssh:  {ver:"9.8p1-1", desc:"SSH protocol implementation for remote login",
+               deps:[], files:["/usr/bin/ssh","/usr/bin/ssh-keygen"], size:9},
+    "shadow": {ver:"4.16.0-1", desc:"Password and account management tool suite",
+               deps:[], files:["/usr/bin/passwd"], size:2}
+  };
+  vm.installed = {};
+  ["coreutils","bash","openssh","git","shadow","nginx","pcre2"].forEach(n => {
+    vm.installed[n] = Object.assign({}, vm.repo[n], {auto: n === "pcre2"});
+  });
+  vm.pkgCache = 148;
+
+  /* ---- login history for last / lastb ---- */
+  vm.logins = [
+    {user:"analyst", tty:"pts/0", from:"10.0.0.24",     when:"Mon Aug 31 08:58   still logged in"},
+    {user:"analyst", tty:"pts/1", from:"10.0.0.24",     when:"Sun Aug 30 14:02 - 16:41  (02:39)"},
+    {user:"root",    tty:"tty1",  from:"-",             when:"Sun Aug 30 09:15 - 09:22  (00:07)"},
+    {user:"admin",   tty:"ssh",   from:"91.240.118.44", when:"Sun Aug 30 03:11 - 03:11  (00:00)", bad:true},
+    {user:"admin",   tty:"ssh",   from:"91.240.118.44", when:"Sun Aug 30 03:10 - 03:10  (00:00)", bad:true},
+    {user:"analyst", tty:"pts/0", from:"10.0.0.24",     when:"Fri Aug 28 08:02 - 17:30  (09:28)"}
+  ];
+
+  /* ---- mount table and block devices ---- */
+  vm.mounts = [
+    {dev:"/dev/sda2", at:"/",     fs:"ext4",  opts:"rw,relatime"},
+    {dev:"/dev/sda1", at:"/boot", fs:"vfat",  opts:"rw,noatime"},
+    {dev:"tmpfs",     at:"/dev/shm", fs:"tmpfs", opts:"rw,nosuid,nodev"}
+  ];
+  vm.blockdev = ["/dev/sda","/dev/sda1","/dev/sda2","/dev/sdb","/dev/sdb1"];
+  mkdirp("/mnt", 0o755);
+
+  /* Spread modification times out so -mtime and -newer mean something, and
+     give a couple of files real bulk so -size does too. */
+  const DAY = 86400;
+  const age = (p, days) => { const n = K.lookup(p).node; if(n) n.mt = vm.now - days*DAY; };
+  age(H+"/notes.txt", 0);
+  age(H+"/urls.txt", 1);
+  age(H+"/hosts.txt", 3);
+  age(H+"/deploy.sh", 6);
+  age(H+"/temp.log", 12);
+  age(H+"/id_rsa", 40);
+  age(H+"/reports/old.conf", 400);
+  age(H+"/reports/report.txt", 200);
+  age(H+"/projects/README.md", 30);
+  age(H+"/.bashrc", 365);
+  age(H+"/cache/tmp1.tmp", 2);
+  age(H+"/cache/tmp2.tmp", 9);
+  // a big file, so `find -size +1M` and `du -h` have something to find
+  put(H+"/logs/big-capture.pcap", "[binary capture data]\n", 0o644, "analyst", "analyst");
+  K.lookup(H+"/logs/big-capture.pcap").node.sz = 3 * 1024 * 1024;
+  age(H+"/logs/big-capture.pcap", 5);
   return K;
 }

@@ -309,5 +309,130 @@ t('ssh-keygen creates a key pair with correct modes', () => { const K = fresh();
   has(K.run('ls ~/.ssh').out, 'id_ed25519.pub'); });
 t('echo expands $HOME', () => { const K = fresh(); eq(K.run('echo $HOME').out, '/home/analyst\n'); });
 
+/* ---------- shell language: variables, status, substitution, history ------ */
+t('$? reports the last exit status', () => { const K = fresh();
+  K.run('false'); eq(K.run('echo $?').out, '1\n');
+  K.run('true');  eq(K.run('echo $?').out, '0\n'); });
+t('NAME=value sets a variable', () => { const K = fresh();
+  K.run('NAME=world'); eq(K.run('echo $NAME').out, 'world\n'); });
+t('export sets a variable too', () => { const K = fresh();
+  K.run('export G=hej'); eq(K.run('echo $G').out, 'hej\n'); });
+t('${VAR} braces work', () => { const K = fresh();
+  K.run('N=x'); eq(K.run('echo ${N}y').out, 'xy\n'); });
+t('single quotes do not expand variables', () => { const K = fresh();
+  K.run('N=x'); eq(K.run("echo '$N'").out, '$N\n'); });
+t('$(cmd) substitutes command output', () => { const K = fresh();
+  eq(K.run('echo $(pwd)').out, '/home/analyst\n'); });
+t('backticks substitute too', () => { const K = fresh();
+  eq(K.run('echo `pwd`').out, '/home/analyst\n'); });
+t('substitution works inside double quotes', () => { const K = fresh();
+  eq(K.run('echo "at $(pwd)"').out, 'at /home/analyst\n'); });
+t('!! repeats the previous command', () => { const K = fresh();
+  K.run('cat /etc/shadow');
+  has(K.run('sudo !!').out, 'root:'); });
+t('!! with no history is an error', () => { const K = fresh();
+  has(K.run('sudo !!').err, 'event not found'); });
+t('echo -e interprets escapes', () => { const K = fresh();
+  eq(K.run('echo -e "a\\tb"').out, 'a\tb\n'); });
+t('brace expansion, list form', () => { const K = fresh();
+  eq(K.run('echo {a,b,c}.txt').out, 'a.txt b.txt c.txt\n'); });
+t('brace expansion, range form', () => { const K = fresh();
+  eq(K.run('echo f{1..3}').out, 'f1 f2 f3\n'); });
+t('a lone {x} stays literal', () => { const K = fresh();
+  eq(K.run('echo {x}').out, '{x}\n'); });
+t('quoted braces stay literal', () => { const K = fresh();
+  eq(K.run("echo '{a,b}'").out, '{a,b}\n'); });
+t('touch with brace expansion creates each file', () => { const K = fresh();
+  K.run('mkdir -p ~/d && cd ~/d && touch {a,b,c}.txt');
+  eq(K.run('ls ~/d').out, 'a.txt\nb.txt\nc.txt\n'); });
+
+/* ---------- options that used to be silently ignored ---------- */
+t('find -mtime actually filters', () => { const K = fresh();
+  eq(K.run('find /home/analyst -type f -mtime +9999').out, ''); });
+t('find -mtime -7 finds only recent files', () => { const K = fresh();
+  const recent = K.run('find /home/analyst -type f -mtime -7').out.trim().split('\n').length;
+  const all = K.run('find /home/analyst -type f').out.trim().split('\n').length;
+  if(!(recent < all && recent > 0)) throw new Error('expected a partial set, got ' + recent + ' of ' + all); });
+t('find -size actually filters', () => { const K = fresh();
+  eq(K.run('find /home/analyst -type f -size +100M').out, '');
+  has(K.run('find /home/analyst -type f -size +1M').out, 'big-capture.pcap'); });
+t('find -user filters by owner', () => { const K = fresh();
+  eq(K.run('find /home/analyst -user root').out, ''); });
+t('ls -R recurses', () => { const K = fresh();
+  has(K.run('ls -R projects').out, 'webshop:'); });
+t('ls --help prints usage', () => { const K = fresh();
+  has(K.run('ls --help').out, 'Usage: ls'); });
+t('head -c counts bytes', () => { const K = fresh();
+  eq(K.run('head -c 8 notes.txt').out, 'remember'); });
+t('sort -k sorts on a field', () => { const K = fresh();
+  const byField = K.run('sort -k2 -t: /etc/passwd').out;
+  const byLine  = K.run('sort /etc/passwd').out;
+  if(byField === byLine) throw new Error('-k was ignored'); });
+
+/* ---------- permissions that used to be bypassed ---------- */
+t('mkdir -p respects permissions', () => { const K = fresh();
+  has(K.run('mkdir -p /kurs/v36').err, 'Permission denied');
+  if(K.run('ls -d /kurs').code === 0) throw new Error('/kurs was created anyway'); });
+t('sudo mkdir -p at the root works', () => { const K = fresh();
+  K.run('sudo mkdir -p /kurs/v36'); eq(K.run('ls -d /kurs/v36').code, 0); });
+t('chmod -x removes the execute bit', () => { const K = fresh();
+  K.run('chmod +x deploy.sh'); K.run('chmod -x deploy.sh');
+  has(K.run('ls -l deploy.sh').out, '-rw-r--r--'); });
+t('chmod accepts a comma-separated mode', () => { const K = fresh();
+  K.run('chmod u+x,g-r deploy.sh');
+  has(K.run('ls -l deploy.sh').out, '-rwx---r--'); });
+t('an executable script runs, a non-executable one does not', () => { const K = fresh();
+  has(K.run('./deploy.sh').err, 'Permission denied');
+  K.run('chmod +x deploy.sh');
+  has(K.run('./deploy.sh').out, 'deploying'); });
+
+/* ---------- hard links, which the quiz teaches ---------- */
+t('ln creates a second name for the same data', () => { const K = fresh();
+  K.run('ln notes.txt hard.txt');
+  has(K.run('ls -l notes.txt').out, ' 2 ');
+  K.run('rm notes.txt');
+  has(K.run('cat hard.txt').out, 'backup job'); });
+t('ln refuses a directory', () => { const K = fresh();
+  has(K.run('ln projects p2').err, 'hard link not allowed for directory'); });
+
+/* ---------- package managers ---------- */
+t('pacman installs, owns and removes', () => { const K = fresh();
+  K.run('sudo pacman -S nmap');
+  has(K.run('pacman -Qo /usr/bin/nmap').out, 'owned by nmap');
+  K.run('sudo pacman -Rns nmap');
+  has(K.run('pacman -Qo /usr/bin/nmap').err, 'No package owns'); });
+t('installing needs root', () => { const K = fresh();
+  has(K.run('pacman -S nmap').err, 'unless you are root'); });
+t('apt install and dpkg -S agree', () => { const K = fresh();
+  K.run('sudo apt install nmap');
+  has(K.run('dpkg -S /usr/bin/nmap').out, 'nmap'); });
+t('dnf provides finds the owner', () => { const K = fresh();
+  K.run('sudo dnf install nmap');
+  has(K.run('dnf provides /usr/bin/nmap').out, 'nmap'); });
+t('zypper search finds a package', () => { const K = fresh();
+  has(K.run('zypper se nmap').out, 'nmap'); });
+t('pacman -Sy alone warns about partial upgrades', () => { const K = fresh();
+  has(K.run('sudo pacman -Sy').out, 'partial upgrade'); });
+
+/* ---------- the other commands the drill teaches ---------- */
+t('top lists processes', () => { const K = fresh(); has(K.run('top').out, 'node server.js'); });
+t('last shows login history', () => { const K = fresh(); has(K.run('last').out, 'analyst'); });
+t('w shows who is logged in', () => { const K = fresh(); has(K.run('w').out, 'analyst'); });
+t('lsof -i finds the listener on a port', () => { const K = fresh();
+  has(K.run('sudo lsof -i :22').out, 'sshd'); });
+t('mount lists filesystems', () => { const K = fresh(); has(K.run('mount').out, 'on / type ext4'); });
+t('mount needs root and a real device', () => { const K = fresh();
+  has(K.run('mount /dev/sdb1 /mnt').err, 'only root');
+  has(K.run('sudo mount /dev/sdz9 /mnt').err, 'does not exist');
+  eq(K.run('sudo mount /dev/sdb1 /mnt').code, 0); });
+t('stat reports mode and links', () => { const K = fresh();
+  has(K.run('stat notes.txt').out, 'Access: (0644'); });
+t('file identifies types', () => { const K = fresh();
+  has(K.run('file projects').out, 'directory');
+  has(K.run('file deploy.sh').out, 'script'); });
+t('scp needs a remote path', () => { const K = fresh();
+  has(K.run('scp notes.txt /tmp/x').err, 'no remote host');
+  has(K.run('scp notes.txt admin@10.0.0.5:/tmp').out, '100%'); });
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exitCode = fail ? 1 : 0;

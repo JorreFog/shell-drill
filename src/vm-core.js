@@ -21,6 +21,7 @@ function makeVM(){
     nextUid:1001, nextGid:1001,
     asRoot:false, hist:[], env:{HOME, USER:"analyst", SHELL:"/bin/bash", PATH:"/usr/local/bin:/usr/bin:/bin"},
     units:{}, sockets:[], procs:[], cron:[], iface:{}, selinux:"Enforcing", firewall:[], keys:{},
+    now: T0,
     lastStatus:0
   };
 
@@ -112,7 +113,10 @@ function makeVM(){
     if(n.mode & 0o2000) s = s.slice(0,6) + (s[6]==="x"?"s":"S") + s.slice(7);
     return s;
   }
-  const sizeOf = n => n.t==="d" ? 4096 : n.t==="l" ? n.tgt.length : n.c.length;
+  // a file may declare a size without holding that many bytes, so the seed can
+  // include a believably large capture without carrying megabytes around
+  const sizeOf = n => n.t==="d" ? 4096 : n.t==="l" ? n.tgt.length
+                    : (n.sz != null ? n.sz : n.c.length);
   function dateStr(mt){ const d = new Date(mt*1000);
     return MON[d.getUTCMonth()]+" "+String(d.getUTCDate()).padStart(2," ")+" "+
       String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0"); }
@@ -125,14 +129,27 @@ function makeVM(){
 
   /* ---------- tokenizer: quotes, pipes, redirection, operators ---------- */
   function tokenize(src){
-    const out = []; let i=0, cur="", q=null, had=false, quoted=false;
-    // `quoted` has to outlive `q`, which is cleared by the closing quote —
-    // otherwise a finished "..." token looks unquoted and gets expanded
-    const push = ()=>{ if(cur!=="" || had) out.push({v:cur, q:quoted}); cur=""; had=false; q=null; quoted=false; };
+    const out = []; let i=0, cur="", q=null, had=false, quoted=null;
+    // `quoted` records WHICH quote was used and has to outlive `q`, which the
+    // closing quote clears. Single quotes suppress every expansion, double
+    // quotes suppress globbing and ~ but still expand variables.
+    const push = ()=>{ if(cur!=="" || had) out.push({v:cur, q:quoted}); cur=""; had=false; q=null; quoted=null; };
     while(i<src.length){
       const c = src[i];
       if(q){ if(c===q){ q=null; had=true; } else cur+=c; i++; continue; }
-      if(c==='"' || c==="'"){ q=c; had=true; quoted=true; i++; continue; }
+      if(c==='"' || c==="'"){ q=c; had=true; if(!quoted) quoted=c; i++; continue; }
+      // $( ... ) and ` ... ` are one token even though they contain spaces
+      if(c==="$" && src[i+1]==="("){
+        let depth=1, j=i+2, s="$(";
+        while(j<src.length && depth>0){ if(src[j]==="(") depth++; if(src[j]===")") depth--;
+          if(depth>0) s+=src[j]; j++; }
+        cur += s+")"; had=true; i=j; continue;
+      }
+      if(c==="`"){
+        let j=i+1, s="`";
+        while(j<src.length && src[j]!=="`"){ s+=src[j]; j++; }
+        cur += s+"`"; had=true; i=j+1; continue;
+      }
       if(c==="\\" && i+1<src.length){ cur+=src[i+1]; had=true; i+=2; continue; }
       if(/\s/.test(c)){ push(); i++; continue; }
       const three = src.slice(i,i+3), two = src.slice(i,i+2);

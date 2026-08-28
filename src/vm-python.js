@@ -7,8 +7,8 @@ function attachPython(K){
 
   class PyFloat { constructor(v){ this.v = v; } }
   class PyTuple { constructor(a){ this.a = a; } }
-  class PyFunc  { constructor(name, params, defaults, body, closure){
-    Object.assign(this, {name, params, defaults, body, closure}); } }
+  class PyFunc  { constructor(name, params, defaults, body, closure, rest){
+    Object.assign(this, {name, params, defaults, body, closure, rest}); } }
   class PyFile  { constructor(path, mode){ this.path = path; this.mode = mode; this.buf = ""; this.closed = false; } }
   class PyErr extends Error { constructor(type, msg){ super(msg); this.pytype = type; this.pymsg = msg; } }
   const err = (t,m) => { throw new PyErr(t,m); };
@@ -190,20 +190,28 @@ function attachPython(K){
           case "def": {
             p++; const name = eat("NAME").v; eat("OP","(");
             const params = [], defaults = {};
+            let rest = null;
             while(!at("OP",")")){
+              if(at("OP","*")){ p++; rest = eat("NAME").v; if(!opt("OP",",")) break; continue; }
               const pn = eat("NAME").v;
               if(opt("OP","=")) defaults[pn] = expr();
               params.push(pn);
               if(!opt("OP",",")) break;
             }
             eat("OP",")"); eat("OP",":");
-            return {k:"def", name, params, defaults, body:block()};
+            return {k:"def", name, params, defaults, rest, body:block()};
           }
           case "return": { p++; const v = (at("NL")||at("EOF")) ? null : expr(); opt("NL"); return {k:"return", v}; }
           case "break": p++; opt("NL"); return {k:"break"};
           case "continue": p++; opt("NL"); return {k:"continue"};
           case "pass": p++; opt("NL"); return {k:"pass"};
-          case "import": case "from": { while(!at("NL")&&!at("EOF")) p++; opt("NL"); return {k:"pass"}; }
+          case "import": case "from": {
+            // record the names so using them gives a clear message rather than
+            // a confusing NameError
+            const names = [];
+            while(!at("NL")&&!at("EOF")){ if(at("NAME")) names.push(peek().v); p++; }
+            opt("NL"); return {k:"import", names};
+          }
           case "with": {
             p++; const ctx = expr(); eat("KW","as"); const name = eat("NAME").v; eat("OP",":");
             return {k:"with", ctx, name, body:block()};
@@ -274,10 +282,16 @@ function attachPython(K){
       let e = atom();
       for(;;){
         if(at("OP","(")){
-          p++; const args = [];
-          while(!at("OP",")")){ args.push(expr()); if(!opt("OP",",")) break; }
+          p++; const args = [], kwargs = {};
+          while(!at("OP",")")){
+            // name=value is a keyword argument; name==value is a comparison
+            if(peek().t==="NAME" && peek(1).t==="OP" && peek(1).v==="="){
+              const kw = eat("NAME").v; eat("OP","="); kwargs[kw] = expr();
+            } else args.push(expr());
+            if(!opt("OP",",")) break;
+          }
           eat("OP",")");
-          e = {k:"call", fn:e, args};
+          e = {k:"call", fn:e, args, kwargs};
         } else if(at("OP","[")){
           p++;
           let lo = at("OP",":") ? null : expr();
@@ -318,8 +332,20 @@ function attachPython(K){
         eat("OP",")"); return first;
       }
       if(at("OP","[")){
-        p++; const items = [];
-        while(!at("OP","]")){ items.push(expr()); if(!opt("OP",",")) break; }
+        p++;
+        if(at("OP","]")){ p++; return {k:"list", items:[]}; }
+        const first = expr();
+        if(at("KW","for")){                       // [expr for x in xs if cond]
+          p++; const names = [eat("NAME").v];
+          while(opt("OP",",")) names.push(eat("NAME").v);
+          eat("KW","in"); const iter = expr();
+          let cond = null;
+          if(at("KW","if")){ p++; cond = expr(); }
+          eat("OP","]");
+          return {k:"comp", body:first, names, iter, cond};
+        }
+        const items = [first];
+        while(opt("OP",",")){ if(at("OP","]")) break; items.push(expr()); }
         eat("OP","]"); return {k:"list", items};
       }
       if(at("OP","{")){
@@ -427,8 +453,9 @@ function attachPython(K){
       round: a => { const d = a[1]===undefined ? 0 : num(a[1]);
         const r = Math.round(num(a[0]) * Math.pow(10,d)) / Math.pow(10,d);
         return d===0 ? Math.round(num(a[0])) : new PyFloat(r); },
-      sorted: a => { const l = BUILTINS.list([a[0]]).slice();
+      sorted: (a, kw) => { const l = BUILTINS.list([a[0]]).slice();
         l.sort((x,y)=> isNum(x)&&isNum(y) ? num(x)-num(y) : String(x)<String(y)?-1:String(x)>String(y)?1:0);
+        if(kw && kw.reverse !== undefined && truthy(kw.reverse)) l.reverse();
         return l; },
       reversed: a => BUILTINS.list([a[0]]).slice().reverse(),
       enumerate: a => BUILTINS.list([a[0]]).map((v,i)=> new PyTuple([i,v])),
@@ -481,7 +508,12 @@ function attachPython(K){
           join: a => BUILTINS.list([a[0]]).map(str).join(obj),
           title: () => obj.replace(/\w\S*/g, w=>w[0].toUpperCase()+w.slice(1).toLowerCase()),
           capitalize: () => obj.charAt(0).toUpperCase()+obj.slice(1).toLowerCase(),
-          isdigit: () => /^\d+$/.test(obj), isalpha: () => /^[A-Za-z]+$/.test(obj)
+          isdigit: () => /^\d+$/.test(obj), isalpha: () => /^[A-Za-z]+$/.test(obj),
+          format: (a) => { let i = 0;
+            return obj.replace(/\{(\d*)(?::([^}]*))?\}/g, (m, idx, spec) => {
+              const v = a[idx === "" ? i++ : Number(idx)];
+              if(spec && /^\.\d+f$/.test(spec)) return num(v).toFixed(parseInt(spec.slice(1),10));
+              return str(v); }); }
         };
         if(S[name]) return {__method:S[name]};
         err("AttributeError","'str' object has no attribute '"+name+"'");
@@ -494,8 +526,9 @@ function attachPython(K){
             if(i<0) err("ValueError","list.remove(x): x not in list"); obj.splice(i,1); return null; },
           pop: a => { if(!obj.length) err("IndexError","pop from empty list");
             return a && a.length ? obj.splice(num(a[0]),1)[0] : obj.pop(); },
-          sort: () => { obj.sort((x,y)=> isNum(x)&&isNum(y) ? num(x)-num(y)
-            : String(x)<String(y)?-1:String(x)>String(y)?1:0); return null; },
+          sort: (a, kw) => { obj.sort((x,y)=> isNum(x)&&isNum(y) ? num(x)-num(y)
+            : String(x)<String(y)?-1:String(x)>String(y)?1:0);
+            if(kw && kw.reverse !== undefined && truthy(kw.reverse)) obj.reverse(); return null; },
           reverse: () => { obj.reverse(); return null; },
           index: a => { const i = obj.findIndex(x=>eqVal(x,a[0]));
             if(i<0) err("ValueError",repr(a[0])+" is not in list"); return i; },
@@ -544,6 +577,8 @@ function attachPython(K){
         if(F[name]) return {__method:F[name]};
         err("AttributeError","'TextIOWrapper' object has no attribute '"+name+"'");
       }
+      if(obj && obj.__module)
+        err("ModuleNotFoundError", "'"+obj.__module+"' is not available — this trainer has no modules, only the built-ins");
       if(obj && obj.__type !== undefined && name === "__name__") return obj.__type;
       err("AttributeError","'"+typeName(obj)+"' object has no attribute '"+name+"'");
     }
@@ -567,6 +602,15 @@ function attachPython(K){
         if(Array.isArray(a) && Array.isArray(b)) return a.concat(b);
         if(isNum(a) && isNum(b)) return (isFloat(a)||isFloat(b)) ? new PyFloat(num(a)+num(b)) : a+b;
         err("TypeError","unsupported operand type(s) for +: '"+typeName(a)+"' and '"+typeName(b)+"'");
+      }
+      if(op === "%" && isStr(a)){
+        const vals = b instanceof PyTuple ? b.a : [b];
+        let i = 0;
+        return a.replace(/%([sd]|\.\d+f)/g, (m, kind) => {
+          const v = vals[i++];
+          if(kind === "d") return String(Math.trunc(num(v)));
+          if(kind.endsWith("f")) return num(v).toFixed(parseInt(kind.slice(1),10));
+          return str(v); });
       }
       if(op === "*"){
         if(isStr(a) && isInt(b)) return a.repeat(Math.max(0,b));
@@ -671,32 +715,51 @@ function attachPython(K){
           if(lo<0) lo += L; if(hi<0) hi += L;
           return isStr(o) ? o.slice(lo,hi) : seq.slice(lo,hi);
         }
+        case "comp": {
+          const inner = new Map(scope);           // the loop name stays local
+          const out = [];
+          for(const item of iterate(evalNode(n.iter, scope))){
+            if(n.names.length === 1) inner.set(n.names[0], item);
+            else { const vs = iterate(item); n.names.forEach((nm,i)=>inner.set(nm, vs[i])); }
+            if(n.cond && !truthy(evalNode(n.cond, inner))) continue;
+            out.push(evalNode(n.body, inner));
+          }
+          return out;
+        }
         case "call": {
           const args = n.args.map(a=>evalNode(a,scope));
+          const kw = {};
+          for(const k in (n.kwargs||{})) kw[k] = evalNode(n.kwargs[k], scope);
           const fnNode = n.fn;
           if(fnNode.k === "attr"){
             const m = getAttr(evalNode(fnNode.obj,scope), fnNode.name);
-            if(m && m.__method) return m.__method(args);
+            if(m && m.__method) return m.__method(args, kw);
             err("TypeError","'"+typeName(m)+"' object is not callable");
           }
           const f = evalNode(fnNode, scope);
-          if(f && f.__builtin) return BUILTINS[f.__builtin](args);
-          if(f instanceof PyFunc) return callFunc(f, args);
+          if(f && f.__builtin) return BUILTINS[f.__builtin](args, kw);
+          if(f instanceof PyFunc) return callFunc(f, args, kw);
+          if(f && f.__module) err("TypeError","'"+f.__module+"' is not available — this trainer has no modules, only the built-ins");
           err("TypeError","'"+typeName(f)+"' object is not callable");
         }
       }
       err("SyntaxError","cannot evaluate node "+n.k);
     }
 
-    function callFunc(f, args){
+    function callFunc(f, args, kw){
+      kw = kw || {};
       const local = new Map(f.closure);
       f.params.forEach((pn,i)=>{
         if(i < args.length) local.set(pn, args[i]);
+        else if(kw[pn] !== undefined) local.set(pn, kw[pn]);
         else if(f.defaults[pn] !== undefined) local.set(pn, evalNode(f.defaults[pn], local));
         else err("TypeError",f.name+"() missing required positional argument: '"+pn+"'");
       });
-      if(args.length > f.params.length)
+      if(f.rest) local.set(f.rest, new PyTuple(args.slice(f.params.length)));
+      else if(args.length > f.params.length)
         err("TypeError",f.name+"() takes "+f.params.length+" positional arguments but "+args.length+" were given");
+      for(const k in kw) if(!f.params.includes(k))
+        err("TypeError",f.name+"() got an unexpected keyword argument '"+k+"'");
       const r = execBlock(f.body, local);
       return r instanceof Ret ? r.v : null;
     }
@@ -732,6 +795,7 @@ function attachPython(K){
     function execStmt(st, scope){
       switch(st.k){
         case "pass": return null;
+        case "import": st.names.forEach(n => scope.set(n, {__module:n})); return null;
         case "expr": evalNode(st.e, scope); return null;
         case "assign": assign(st.target, evalNode(st.value, scope), scope); return null;
         case "aug": {
@@ -764,7 +828,7 @@ function attachPython(K){
           }
           return null;
         }
-        case "def": scope.set(st.name, new PyFunc(st.name, st.params, st.defaults, st.body, scope)); return null;
+        case "def": scope.set(st.name, new PyFunc(st.name, st.params, st.defaults, st.body, scope, st.rest)); return null;
         case "return": return new Ret(st.v ? evalNode(st.v, scope) : null);
         case "break": return BREAK;
         case "continue": return CONT;

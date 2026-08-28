@@ -47,9 +47,30 @@ function attachShell(K){
   };
 
   C.ls = (argv) => {
-    const {flags, ops} = splitFlags(argv);
+    const {flags, long, ops} = splitFlags(argv);
+    if(long["help"]) return ok(
+      "Usage: ls [OPTION]... [FILE]...\nList information about the FILEs (the current directory by default).\n\n"+
+      "  -a     do not ignore entries starting with .\n"+
+      "  -l     use a long listing format\n"+
+      "  -h     with -l, print sizes like 1K 234M 2G\n"+
+      "  -d     list directories themselves, not their contents\n"+
+      "  -R     list subdirectories recursively\n");
     const all = flags.has("a"), lng = flags.has("l"), hum = flags.has("h"), dirSelf = flags.has("d");
-    const targets = ops.length ? ops : ["."];
+    let targets = ops.length ? ops : ["."];
+    // -R turns one directory into a listing per directory, depth first
+    if(flags.has("R") && !dirSelf){
+      const expanded = [];
+      for(const t of targets){
+        const r0 = lookup(t);
+        if(!r0.node || r0.node.t !== "d"){ expanded.push(t); continue; }
+        (function walk(node, p){
+          expanded.push(p);
+          for(const n of Object.keys(node.ch).sort())
+            if(node.ch[n].t === "d" && (all || !n.startsWith("."))) walk(node.ch[n], p.replace(/\/$/,"")+"/"+n);
+        })(r0.node, t);
+      }
+      targets = expanded;
+    }
     const chunks = [], errs = [];
     for(const t of targets){
       // ls shows a symlink itself rather than its target, unless the link
@@ -74,7 +95,7 @@ function attachShell(K){
         const rows = entries.map(e=>{
           const n = e.node;
           const nm = n.t==="l" ? e.n+" -> "+n.tgt : e.n;
-          return [modeStr(n), "1", n.owner, n.group,
+          return [modeStr(n), String(n.links||1), n.owner, n.group,
                   hum ? human(sizeOf(n)) : String(sizeOf(n)), dateStr(n.mt), nm];
         });
         const w = [0,1,2,3,4].map(i => Math.max(...rows.map(r=>r[i].length), 0));
@@ -116,7 +137,26 @@ function attachShell(K){
     if(!ops.length) return bad("mkdir: missing operand");
     const errs = [];
     for(const p of ops){
-      if(flags.has("p")){ K.mkdirp(p, 0o755, vm.user, vm.user); continue; }
+      if(flags.has("p")){
+        // -p still has to respect permissions at every level it creates —
+        // mkdir -p /kurs as a normal user must fail, not silently succeed
+        const seg = K.abspath(p).split("/").filter(Boolean);
+        let node = vm.root, sofar = "", failed = false;
+        for(const s of seg){
+          sofar += "/" + s;
+          if(node.ch[s]){
+            node = node.ch[s];
+            if(node.t !== "d"){
+              errs.push("mkdir: cannot create directory '"+p+"': Not a directory"); failed = true; break; }
+            continue;
+          }
+          if(!canWrite(node)){
+            errs.push("mkdir: cannot create directory '"+sofar+"': Permission denied"); failed = true; break; }
+          node.ch[s] = dnode(0o755, vm.user, vm.user);
+          node = node.ch[s];
+        }
+        continue;
+      }
       const par = lookup(parentOf(p));
       if(!par.node){ errs.push("mkdir: cannot create directory '"+p+"': No such file or directory"); continue; }
       if(!canWrite(par.node)){ errs.push("mkdir: cannot create directory '"+p+"': Permission denied"); continue; }
@@ -217,6 +257,7 @@ function attachShell(K){
       if(r.node.t==="d" && !rec){ errs.push("rm: cannot remove '"+p+"': Is a directory"); continue; }
       const par = lookup(parentOf(p));
       if(!canWrite(par.node)){ errs.push("rm: cannot remove '"+p+"': Permission denied"); continue; }
+      if(r.node.links > 1) r.node.links--;
       delete par.node.ch[baseOf(p)];
     }
     return {out:"", err: join(errs), code: errs.length?1:0};
@@ -224,16 +265,27 @@ function attachShell(K){
 
   C.ln = (argv) => {
     const {flags, ops} = splitFlags(argv);
-    if(!flags.has("s")) return bad("ln: hard links are not simulated here — use ln -s");
     if(ops.length<1) return bad("ln: missing file operand");
     const [target, nameArg] = ops;
     const linkPath = nameArg || baseOf(target);
     const dr = lookup(linkPath);
     const finalPath = (dr.node && dr.node.t==="d") ? linkPath+"/"+baseOf(target) : linkPath;
+    const kind = flags.has("s") ? "symbolic link" : "hard link";
     const par = lookup(parentOf(finalPath));
-    if(!par.node) return bad("ln: failed to create symbolic link '"+finalPath+"': No such file or directory");
-    if(par.node.ch[baseOf(finalPath)]) return bad("ln: failed to create symbolic link '"+finalPath+"': File exists");
-    par.node.ch[baseOf(finalPath)] = lnode(target, vm.user, vm.user);
+    if(!par.node) return bad("ln: failed to create "+kind+" '"+finalPath+"': No such file or directory");
+    if(par.node.ch[baseOf(finalPath)]) return bad("ln: failed to create "+kind+" '"+finalPath+"': File exists");
+    if(flags.has("s")){
+      par.node.ch[baseOf(finalPath)] = lnode(target, vm.user, vm.user);
+      return ok("");
+    }
+    // a hard link is a second name for the same inode: share the node object,
+    // so editing through one name shows through the other and deleting one
+    // leaves the data reachable through the other
+    const tr = lookup(target, true);
+    if(!tr.node) return bad("ln: failed to access '"+target+"': No such file or directory");
+    if(tr.node.t === "d") return bad("ln: "+target+": hard link not allowed for directory");
+    tr.node.links = (tr.node.links || 1) + 1;
+    par.node.ch[baseOf(finalPath)] = tr.node;
     return ok("");
   };
 
@@ -248,14 +300,18 @@ function attachShell(K){
   C.less = C.cat; C.more = C.cat;
 
   C.head = (argv, stdin) => {
+    const cv = flagValue(argv, "c");            // -c counts bytes, not lines
     const fv = flagValue(argv, "n");
-    let n = 10, rest = argv.slice();
-    if(fv){ n = parseInt(fv.val,10); rest = rest.filter((_,i)=>!fv.consume.includes(i)).filter(a=>a!=="-n"); }
+    let n = 10, bytes = null, rest = argv.slice();
+    if(cv){ bytes = parseInt(cv.val,10); rest = rest.filter((_,i)=>!cv.consume.includes(i)).filter(a=>!/^-c/.test(a)); }
+    else if(fv){ n = parseInt(fv.val,10); rest = rest.filter((_,i)=>!fv.consume.includes(i)).filter(a=>a!=="-n"); }
     const numeric = argv.find(a=>/^-\d+$/.test(a));
-    if(numeric){ n = parseInt(numeric.slice(1),10); rest = rest.filter(a=>a!==numeric); }
+    if(numeric && bytes==null){ n = parseInt(numeric.slice(1),10); rest = rest.filter(a=>a!==numeric); }
     const {ops} = splitFlags(rest.filter(a=>!/^-n$/.test(a)));
     const {items, errs} = inputs(ops, stdin, "head");
-    const out = items.map(it => join(lines(it.c).slice(0,n))).join("");
+    const out = bytes != null
+      ? items.map(it => it.c.slice(0, bytes)).join("")
+      : items.map(it => join(lines(it.c).slice(0,n))).join("");
     return {out, err: join(errs), code: errs.length?1:0};
   };
 
@@ -345,11 +401,33 @@ function attachShell(K){
     if(!r.node) return bad("find: '"+start+"': No such file or directory");
     const opts = argv.slice(argv[0]===start?1:0);
     const get = k => { const i = opts.indexOf(k); return i>=0 ? opts[i+1] : null; };
-    const nameP = get("-name"), typeP = get("-type"), permP = get("-perm"), sizeP = get("-size");
+    const nameP = get("-name"), inameP = get("-iname"), typeP = get("-type"),
+          permP = get("-perm"), sizeP = get("-size"), mtimeP = get("-mtime"), userP = get("-user");
     const maxd = get("-maxdepth") ? parseInt(get("-maxdepth"),10) : Infinity;
     const del = opts.includes("-delete");
-    const nameRx = nameP ? new RegExp("^"+nameP.replace(/[.+^${}()|\\]/g,"\\$&")
-      .replace(/\*/g,"[^/]*").replace(/\?/g,"[^/]")+"$") : null;
+    const pat = nameP || inameP;
+    const nameRx = pat ? new RegExp("^"+pat.replace(/[.+^${}()|\\]/g,"\\$&")
+      .replace(/\*/g,"[^/]*").replace(/\?/g,"[^/]")+"$", inameP ? "i" : "") : null;
+
+    // -size accepts c (bytes), k, M, G, or bare 512-byte blocks; a leading
+    // + means greater than, - means less than, bare means exactly
+    const sizeCmp = (bytes) => {
+      const m = String(sizeP).match(/^([+-]?)(\d+)([ckMG]?)$/);
+      if(!m) return true;
+      const unit = {c:1, k:1024, M:1048576, G:1073741824}[m[3]] || 512;
+      const want = Number(m[2]) * unit;
+      const v = m[3] === "c" ? bytes : Math.ceil(bytes / unit) * unit;
+      return m[1] === "+" ? v > want : m[1] === "-" ? v < want : v === want;
+    };
+    // -mtime counts whole 24-hour periods since modification
+    const mtimeCmp = (mt) => {
+      const m = String(mtimeP).match(/^([+-]?)(\d+)$/);
+      if(!m) return true;
+      const days = Math.floor((vm.now - mt) / 86400);
+      const want = Number(m[2]);
+      return m[1] === "+" ? days > want : m[1] === "-" ? days < want : days === want;
+    };
+
     const hits = [];
     (function walk(node, path, depth){
       const base = path.split("/").pop() || path;
@@ -358,9 +436,12 @@ function attachShell(K){
       if(typeP==="f" && node.t!=="f") match = false;
       if(typeP==="d" && node.t!=="d") match = false;
       if(typeP==="l" && node.t!=="l") match = false;
+      if(sizeP != null && !sizeCmp(sizeOf(node))) match = false;
+      if(mtimeP != null && !mtimeCmp(node.mt)) match = false;
+      if(userP != null && node.owner !== userP) match = false;
       if(permP){
-        const want = parseInt(permP.replace(/^-/,""),8);
-        match = match && (permP.startsWith("-") ? (node.mode & want)===want : node.mode===want);
+        const want = parseInt(permP.replace(/^[-/]/,""),8);
+        match = match && (/^[-/]/.test(permP) ? (node.mode & want)===want : node.mode===want);
       }
       if(match) hits.push({path, node});
       if(node.t==="d" && depth<maxd && K.canExec(node))
@@ -397,18 +478,53 @@ function attachShell(K){
 
   /* ---------------- text processing ---------------- */
   C.echo = (argv) => {
-    const noNl = argv[0]==="-n";
-    const parts = (noNl?argv.slice(1):argv).map(a =>
-      a.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (m,k) => vm.env[k]!=null ? vm.env[k] : ""));
-    return ok(parts.join(" ") + (noNl?"":"\n"));
+    let rest = argv.slice(), noNl = false, esc = false;
+    while(rest.length && /^-[neE]+$/.test(rest[0])){
+      if(rest[0].includes("n")) noNl = true;
+      if(rest[0].includes("e")) esc = true;
+      rest = rest.slice(1);
+    }
+    let s = rest.join(" ");
+    if(esc) s = s.replace(/\\n/g,"\n").replace(/\\t/g,"\t").replace(/\\r/g,"\r")
+                 .replace(/\\0/g,"\0").replace(/\\\\/g,"\\");
+    return ok(s + (noNl ? "" : "\n"));
   };
+  C.export = (argv) => {
+    if(!argv.length) return ok(Object.entries(vm.env).map(([k,v])=>"declare -x "+k+'="'+v+'"').join("\n")+"\n");
+    for(const a of argv){
+      const i = a.indexOf("=");
+      if(i > 0) vm.env[a.slice(0,i)] = a.slice(i+1);
+    }
+    return ok("");
+  };
+  C.env = () => ok(Object.entries(vm.env).map(([k,v])=>k+"="+v).join("\n")+"\n");
+  C.unset = (argv) => { argv.forEach(k => delete vm.env[k]); return ok(""); };
+  C.printf = (argv) => {
+    const fmt = argv[0] || "";
+    let i = 1;
+    return ok(fmt.replace(/\\n/g,"\n").replace(/\\t/g,"\t")
+                 .replace(/%[sd]/g, () => argv[i++] ?? ""));
+  };
+  C.true = () => ok("");
+  C.false = () => ({out:"", err:"", code:1});
 
   C.sort = (argv, stdin) => {
-    const {flags, ops} = splitFlags(argv);
+    const kv = flagValue(argv, "k"), tv = flagValue(argv, "t");
+    const consumed = new Set([...(kv?kv.consume:[]), ...(tv?tv.consume:[])]);
+    const rest = argv.filter((a,i)=>!consumed.has(i) && !/^-[kt]/.test(a));
+    const {flags, ops} = splitFlags(rest);
     const {items, errs} = inputs(ops, stdin, "sort");
     let ls = items.flatMap(it => lines(it.c));
-    if(flags.has("n")) ls.sort((a,b)=>parseFloat(a)-parseFloat(b) || a.localeCompare(b));
-    else ls.sort((a,b)=>a.localeCompare(b));
+    // -k picks the field to compare on, -t sets the delimiter
+    const field = kv ? parseInt(kv.val, 10) : null;
+    const delim = tv ? tv.val : null;
+    const keyOf = l => {
+      if(!field) return l;
+      const parts = delim == null ? l.trim().split(/\s+/) : l.split(delim);
+      return parts.slice(field - 1).join(delim == null ? " " : delim);
+    };
+    if(flags.has("n")) ls.sort((a,b)=>(parseFloat(keyOf(a))||0)-(parseFloat(keyOf(b))||0) || keyOf(a).localeCompare(keyOf(b)));
+    else ls.sort((a,b)=>keyOf(a).localeCompare(keyOf(b)));
     if(flags.has("r")) ls.reverse();
     if(flags.has("u")) ls = ls.filter((l,i)=>i===0||l!==ls[i-1]);
     return {out: join(ls), err: join(errs), code: errs.length?1:0};
@@ -532,14 +648,22 @@ function attachShell(K){
     if(m[3].includes("s")){ if(who.includes("u")) node.mode |= 0o4000; if(who.includes("g")) node.mode |= 0o2000; }
     return true;
   }
+  const MODE_RX = /^([0-7]{3,4}|[ugoa]*[+\-=][rwxstXugo]*(,[ugoa]*[+\-=][rwxstXugo]*)*)$/;
   C.chmod = (argv) => {
-    const {flags, ops} = splitFlags(argv);
-    if(ops.length<2) return bad("chmod: missing operand");
-    const spec = ops.shift();
+    // the mode comes first and may itself start with '-' (chmod -x file), so
+    // it has to be taken out before options are parsed
+    let rest = argv.slice(), spec = null;
+    for(let i=0;i<rest.length;i++){
+      if(rest[i] === "-R" || rest[i] === "--recursive") continue;
+      if(MODE_RX.test(rest[i])){ spec = rest[i]; rest.splice(i,1); break; }
+    }
+    const {flags, ops} = splitFlags(rest);
+    if(spec === null) return bad("chmod: invalid mode: '"+(argv[0]||"")+"'");
+    if(!ops.length) return bad("chmod: missing operand after '"+spec+"'");
     const errs = [];
     const apply = (node) => {
       if(/^[0-7]{3,4}$/.test(spec)) node.mode = parseInt(spec,8);
-      else if(!applySymbolic(node, spec)) return false;
+      else if(!spec.split(",").every(part => applySymbolic(node, part))) return false;
       return true;
     };
     for(const p of ops){
@@ -990,6 +1114,309 @@ function attachShell(K){
     return bad("git: '"+sub+"' is not simulated here");
   };
 
+  /* ---------------- packages ----------------
+     One package database behind four front ends, so the operations the drill
+     teaches (install, search, info, update, remove, owns, list, clean) do the
+     same real thing whichever distro you practise. */
+  const needRoot = tool => vm.asRoot || vm.user === "root"
+    ? null : bad("error: you cannot perform this operation unless you are root.");
+
+  function pkgFind(name){ return vm.repo[name]; }
+  function pkgInstall(name){
+    const p = pkgFind(name);
+    if(!p) return {err:"target not found: "+name};
+    if(vm.installed[name]) return {msg:"warning: "+name+" is up to date -- reinstalling"};
+    const deps = (p.deps||[]).filter(d => !vm.installed[d]);
+    deps.forEach(d => { vm.installed[d] = Object.assign({}, vm.repo[d], {auto:true}); });
+    vm.installed[name] = Object.assign({}, p, {auto:false});
+    (p.files||[]).forEach(f => K.put(f, "#!ELF\n", 0o755, "root", "root"));
+    vm.pkgCache += p.size || 4;
+    return {msg:"Packages ("+(deps.length+1)+") "+[...deps, name].join(" ")+"\n\ninstalling..."};
+  }
+  function pkgRemove(name, withDeps){
+    if(!vm.installed[name]) return {err:"target not found: "+name};
+    const p = vm.installed[name];
+    (p.files||[]).forEach(f => { const par = lookup(parentOf(f)); if(par.node) delete par.node.ch[baseOf(f)]; });
+    delete vm.installed[name];
+    let extra = [];
+    if(withDeps){
+      extra = Object.keys(vm.installed).filter(d => vm.installed[d].auto &&
+        !Object.keys(vm.installed).some(o => (vm.installed[o].deps||[]).includes(d)));
+      extra.forEach(d => delete vm.installed[d]);
+    }
+    return {msg:"removing "+[name, ...extra].join(" ")};
+  }
+  function pkgOwner(file){
+    const abs = K.abspath(file);
+    for(const n in vm.installed) if((vm.installed[n].files||[]).includes(abs)) return n;
+    return null;
+  }
+  const pkgSearch = q => Object.entries(vm.repo)
+    .filter(([n,p]) => n.includes(q) || (p.desc||"").toLowerCase().includes(q.toLowerCase()));
+
+  C.pacman = (argv) => {
+    const a = argv.join(" ");
+    const op = (argv.find(x=>/^-[A-Z]/.test(x)) || "").replace(/^-/,"");
+    const names = argv.filter(x=>!x.startsWith("-"));
+    if(!op) return bad("error: no operation specified (use -h for help)");
+    if(op[0]==="S" && op.includes("s")) {
+      const hits = pkgSearch(names[0]||"");
+      return hits.length ? ok(hits.map(([n,p])=>"extra/"+n+" "+p.ver+"\n    "+p.desc).join("\n")+"\n")
+                         : {out:"",err:"",code:1};
+    }
+    if(op[0]==="S" && op.includes("i")){
+      const p = pkgFind(names[0]);
+      return p ? ok("Repository      : extra\nName            : "+names[0]+"\nVersion         : "+p.ver+
+                    "\nDescription     : "+p.desc+"\nDepends On      : "+((p.deps||[]).join(" ")||"None")+"\n")
+               : bad("error: package '"+names[0]+"' was not found");
+    }
+    if(op[0]==="S" && op.includes("c")) { const r = needRoot(); if(r) return r;
+      const freed = vm.pkgCache; vm.pkgCache = 0; return ok("Cache directory: /var/cache/pacman/pkg/\nfreed "+freed+" MiB\n"); }
+    if(op[0]==="S" && op.includes("y") && op.includes("u")){ const r = needRoot(); if(r) return r;
+      return ok(":: Synchronising package databases...\n core downloading...\n extra downloading...\n:: Starting full system upgrade...\n there is nothing to do\n"); }
+    if(op[0]==="S" && op.includes("y") && !op.includes("u")){ const r = needRoot(); if(r) return r;
+      return ok(":: Synchronising package databases...\nwarning: refreshing without upgrading risks a partial upgrade — use -Syu\n"); }
+    if(op[0]==="S"){ const r = needRoot(); if(r) return r;
+      const res = pkgInstall(names[0]);
+      return res.err ? bad("error: "+res.err) : ok(res.msg+"\n"); }
+    if(op[0]==="R"){ const r = needRoot(); if(r) return r;
+      const res = pkgRemove(names[0], op.includes("s"));
+      return res.err ? bad("error: "+res.err) : ok(res.msg+"\n"); }
+    if(op[0]==="Q" && op.includes("o")){
+      const owner = pkgOwner(names[0]);
+      return owner ? ok(K.abspath(names[0])+" is owned by "+owner+" "+vm.installed[owner].ver+"\n")
+                   : bad("error: No package owns "+names[0]);
+    }
+    if(op[0]==="Q" && op.includes("i")){
+      const p = vm.installed[names[0]];
+      return p ? ok("Name            : "+names[0]+"\nVersion         : "+p.ver+"\nDescription     : "+p.desc+"\n")
+               : bad("error: package '"+names[0]+"' was not found");
+    }
+    if(op[0]==="Q") return ok(Object.entries(vm.installed)
+      .filter(([n,p]) => !op.includes("e") || !p.auto)
+      .map(([n,p])=>n+" "+p.ver).join("\n")+"\n");
+    return bad("error: invalid option -- '"+op+"'");
+  };
+
+  const aptLike = (tool) => (argv) => {
+    const sub = argv[0], names = argv.slice(1).filter(x=>!x.startsWith("-"));
+    const R = () => needRoot();
+    if(sub==="update"){ const r=R(); if(r) return r;
+      return ok("Hit:1 http://deb.example.org stable InRelease\nReading package lists... Done\n"+
+                "All packages are up to date.\n"); }
+    if(sub==="upgrade"||sub==="full-upgrade"||sub==="dist-upgrade"){ const r=R(); if(r) return r;
+      return ok("Reading package lists... Done\n0 upgraded, 0 newly installed, 0 to remove.\n"); }
+    if(sub==="install"){ const r=R(); if(r) return r;
+      const res = pkgInstall(names[0]);
+      return res.err ? bad("E: Unable to locate package "+names[0]) : ok(res.msg+"\n"); }
+    if(sub==="remove"||sub==="purge"||sub==="autoremove"){ const r=R(); if(r) return r;
+      const withDeps = sub==="autoremove" || argv.includes("--auto-remove");
+      if(!names.length && sub==="autoremove") return ok("0 to remove.\n");
+      const res = pkgRemove(names[0], withDeps);
+      return res.err ? bad("E: Unable to locate package "+names[0]) : ok(res.msg+"\n"); }
+    if(sub==="search"){ const hits = pkgSearch(names[0]||"");
+      return ok(hits.map(([n,p])=>n+"/stable "+p.ver+"\n  "+p.desc).join("\n")+"\n"); }
+    if(sub==="show"){ const p = pkgFind(names[0]);
+      return p ? ok("Package: "+names[0]+"\nVersion: "+p.ver+"\nDepends: "+((p.deps||[]).join(", ")||"none")+
+                    "\nDescription: "+p.desc+"\n") : bad("E: No packages found"); }
+    if(sub==="list"){ return ok(Object.entries(vm.installed)
+      .map(([n,p])=>n+"/stable,now "+p.ver+" [installed]").join("\n")+"\n"); }
+    if(sub==="clean"||sub==="autoclean"){ const r=R(); if(r) return r;
+      vm.pkgCache = 0; return ok("Deleting cached package files in /var/cache/apt/archives\n"); }
+    return bad(tool+": invalid operation "+(sub||""));
+  };
+  C.apt = aptLike("apt"); C["apt-get"] = aptLike("apt-get");
+  C["apt-cache"] = (argv) => argv[0]==="search" ? C.apt(argv) : argv[0]==="show" ? C.apt(argv)
+    : bad("apt-cache: unsupported operation");
+  C.dpkg = (argv) => {
+    const {flags, long, ops} = splitFlags(argv);
+    if(flags.has("S")||long["search"]){
+      const owner = pkgOwner(ops[0]);
+      return owner ? ok(owner+": "+K.abspath(ops[0])+"\n")
+                   : bad("dpkg-query: no path found matching pattern "+ops[0]); }
+    if(flags.has("l")||long["list"]) return ok("ii  "+Object.keys(vm.installed).join("\nii  ")+"\n");
+    return bad("dpkg: unsupported operation");
+  };
+
+  const dnfLike = (tool) => (argv) => {
+    const sub = argv[0], names = argv.slice(1).filter(x=>!x.startsWith("-"));
+    const R = () => needRoot();
+    if(sub==="install"){ const r=R(); if(r) return r;
+      const res = pkgInstall(names[0]);
+      return res.err ? bad("No match for argument: "+names[0]) : ok(res.msg+"\nComplete!\n"); }
+    if(sub==="remove"||sub==="erase"||sub==="autoremove"){ const r=R(); if(r) return r;
+      const res = pkgRemove(names[0], true);
+      return res.err ? bad("No match for argument: "+names[0]) : ok(res.msg+"\nComplete!\n"); }
+    if(sub==="upgrade"||sub==="update"){ const r=R(); if(r) return r;
+      return ok("Last metadata expiration check: 0:00:01 ago.\nDependencies resolved.\nNothing to do.\nComplete!\n"); }
+    if(sub==="search"){ return ok(pkgSearch(names[0]||"").map(([n,p])=>n+" : "+p.desc).join("\n")+"\n"); }
+    if(sub==="info"){ const p = pkgFind(names[0]);
+      return p ? ok("Name         : "+names[0]+"\nVersion      : "+p.ver+"\nRepository   : fedora\nSummary      : "+p.desc+"\n")
+               : bad("No matching packages to list"); }
+    if(sub==="provides"||sub==="whatprovides"){ const owner = pkgOwner(names[0]);
+      return owner ? ok(owner+" : "+vm.repo[owner].desc+"\nRepo : @System\nMatched from:\nFilename : "+K.abspath(names[0])+"\n")
+                   : bad("Error: No Matches found"); }
+    if(sub==="list"){ return ok("Installed Packages\n"+Object.entries(vm.installed)
+      .map(([n,p])=>n.padEnd(24)+p.ver+"  @System").join("\n")+"\n"); }
+    if(sub==="clean"){ const r=R(); if(r) return r; vm.pkgCache = 0;
+      return ok("0 files removed\n"); }
+    return bad(tool+": No such command: "+(sub||""));
+  };
+  C.dnf = dnfLike("dnf"); C.yum = dnfLike("yum");
+  C.rpm = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    if(flags.has("q") && flags.has("f")){ const owner = pkgOwner(ops[0]);
+      return owner ? ok(owner+"-"+vm.installed[owner].ver+"\n") : bad("file "+ops[0]+" is not owned by any package"); }
+    if(flags.has("q") && flags.has("a")) return ok(Object.entries(vm.installed).map(([n,p])=>n+"-"+p.ver).join("\n")+"\n");
+    return bad("rpm: unsupported operation");
+  };
+
+  C.zypper = (argv) => {
+    const sub = argv[0], names = argv.slice(1).filter(x=>!x.startsWith("-"));
+    const R = () => needRoot();
+    if(sub==="install"||sub==="in"){ const r=R(); if(r) return r;
+      const res = pkgInstall(names[0]);
+      return res.err ? bad("Package '"+names[0]+"' not found.") : ok(res.msg+"\n"); }
+    if(sub==="remove"||sub==="rm"){ const r=R(); if(r) return r;
+      const res = pkgRemove(names[0], argv.includes("--clean-deps"));
+      return res.err ? bad("Package '"+names[0]+"' not found.") : ok(res.msg+"\n"); }
+    if(sub==="update"||sub==="up"||sub==="dup"){ const r=R(); if(r) return r;
+      return ok("Loading repository data...\nNothing to do.\n"); }
+    if(sub==="refresh"||sub==="ref"){ const r=R(); if(r) return r;
+      return ok("Repository 'oss' is up to date.\nAll repositories have been refreshed.\n"); }
+    if(sub==="search"||sub==="se"){
+      if(argv.includes("--installed-only")||argv.includes("-i"))
+        return ok(Object.entries(vm.installed).map(([n,p])=>"i | "+n+" | "+p.desc).join("\n")+"\n");
+      if(argv.includes("--provides")){ const owner = pkgOwner(names[0]);
+        return owner ? ok("i | "+owner+" | "+vm.repo[owner].desc+"\n") : bad("No matching items found."); }
+      return ok(pkgSearch(names[0]||"").map(([n,p])=>"  | "+n+" | "+p.desc).join("\n")+"\n"); }
+    if(sub==="info"){ const p = pkgFind(names[0]);
+      return p ? ok("Name           : "+names[0]+"\nVersion        : "+p.ver+"\nSummary        : "+p.desc+"\n")
+               : bad("package '"+names[0]+"' not found."); }
+    if(sub==="clean"){ const r=R(); if(r) return r; vm.pkgCache = 0;
+      return ok("All repositories have been cleaned up.\n"); }
+    return bad("Unknown command '"+(sub||"")+"'");
+  };
+
+  /* ---------------- the remaining commands the drill teaches ------------- */
+  C.top = () => ok(
+    "top - 09:00:12 up 3 days,  2:14,  1 user,  load average: 0.08, 0.12, 0.09\n"+
+    "Tasks: "+vm.procs.length+" total,   1 running\n"+
+    "%Cpu(s):  4.1 us,  1.2 sy, 94.7 id\nMiB Mem :  15738.7 total,   8605.8 free\n\n"+
+    "  PID USER      %CPU  COMMAND\n"+
+    vm.procs.slice().sort((a,b)=>parseFloat(b.cpu)-parseFloat(a.cpu))
+      .map(p=>String(p.pid).padStart(5)+" "+p.user.padEnd(9)+p.cpu.padStart(5)+"  "+p.cmd).join("\n")+
+    "\n\n[a snapshot — the real top refreshes until you press q]\n");
+  C.htop = C.top; C.btop = C.top;
+
+  C.last = (argv) => {
+    const nv = flagValue(argv, "n");
+    let rows = vm.logins.slice();
+    if(nv) rows = rows.slice(0, parseInt(nv.val,10));
+    return ok(rows.map(l => l.user.padEnd(9)+l.tty.padEnd(9)+l.from.padEnd(17)+l.when).join("\n")+
+      "\n\nwtmp begins Fri Aug 28 08:02:11 2026\n");
+  };
+  C.lastb = () => ok(vm.logins.filter(l=>l.bad)
+    .map(l => l.user.padEnd(9)+l.tty.padEnd(9)+l.from.padEnd(17)+l.when).join("\n")+"\n");
+
+  C.who = () => ok("analyst  pts/0        2026-08-31 08:58 (10.0.0.24)\n");
+  C.w = () => ok(
+    " 09:00:12 up 3 days,  2:14,  1 user,  load average: 0.08, 0.12, 0.09\n"+
+    "USER     TTY      FROM             LOGIN@   IDLE   WHAT\n"+
+    "analyst  pts/0    10.0.0.24        08:58    0.00s  -bash\n");
+
+  C.lsof = (argv) => {
+    const iv = argv.find(a => a.startsWith("-i"));
+    const spec = iv && iv.length > 2 ? iv.slice(2) : argv[argv.indexOf(iv)+1];
+    const port = spec ? String(spec).replace(/^:/,"") : null;
+    if(!iv) return bad("lsof: only -i (network files) is simulated here");
+    const rows = vm.sockets.filter(s => !port || String(s.port) === port);
+    if(!rows.length) return {out:"", err:"", code:1};
+    if(!(vm.asRoot || vm.user === "root"))
+      return {out:"", err:"lsof: WARNING: can't stat() many filesystems — run with sudo to see other users' sockets\n", code:1};
+    return ok("COMMAND   PID     USER   TYPE NODE NAME\n"+
+      rows.map(s => s.proc.padEnd(9)+String(s.pid).padEnd(7)+" root".padEnd(8)+" IPv4 "+
+        s.proto.toUpperCase()+" *:"+s.port+" (LISTEN)").join("\n")+"\n");
+  };
+
+  C.mount = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(!ops.length) return ok(vm.mounts.map(m => m.dev+" on "+m.at+" type "+m.fs+" ("+m.opts+")").join("\n")+"\n");
+    const r = needRoot(); if(r) return bad("mount: only root can do that");
+    const [dev, at] = ops;
+    if(!vm.blockdev.includes(dev)) return bad("mount: "+dev+": special device does not exist");
+    if(!lookup(at).node) return bad("mount: mount point "+at+" does not exist");
+    if(vm.mounts.some(m => m.at === at)) return bad("mount: "+at+": already mounted");
+    vm.mounts.push({dev, at, fs:"ext4", opts:"rw,relatime"});
+    K.put(at + "/lost+found/.keep", "", 0o644, "root", "root");
+    return ok("");
+  };
+  C.umount = (argv) => {
+    const t = argv.filter(a=>!a.startsWith("-"))[0];
+    const i = vm.mounts.findIndex(m => m.at === t || m.dev === t);
+    if(i < 0) return bad("umount: "+t+": not mounted");
+    if(i < 2) return bad("umount: "+t+": target is busy");
+    vm.mounts.splice(i,1); return ok("");
+  };
+
+  C.scp = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(ops.length < 2) return bad("usage: scp source ... target");
+    const [src, dst] = ops;
+    if(!/:/.test(dst) && !/:/.test(src)) return bad("scp: no remote host given — the destination looks like host:/path");
+    if(/:/.test(dst)){
+      const r = lookup(src);
+      if(!r.node) return bad("scp: "+src+": No such file or directory");
+      const [host] = dst.split(":");
+      const h = host.includes("@") ? host.split("@")[1] : host;
+      if(!vm.dns[h]) return bad("ssh: Could not resolve hostname "+h);
+      return ok(baseOf(src)+"      100%  "+sizeOf(r.node)+"     1.2MB/s   00:00\n");
+    }
+    return bad("scp: pulling from a remote host is not simulated here");
+  };
+
+  C.make = (argv) => {
+    if(!lookup("Makefile").node && !lookup("makefile").node)
+      return bad("make: *** No targets specified and no makefile found.  Stop.");
+    return ok("cc -c -o main.o main.c\ncc -c -o util.o util.c\ncc -o app main.o util.o\n");
+  };
+
+  C.stat = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(!ops.length) return bad("stat: missing operand");
+    const out = [];
+    for(const p of ops){
+      const r = lookup(p, true);
+      if(!r.node) return bad("stat: cannot statx '"+p+"': No such file or directory");
+      const n = r.node;
+      out.push("  File: "+p+"\n  Size: "+sizeOf(n)+"\tBlocks: "+Math.ceil(sizeOf(n)/512)+
+        "\t"+(n.t==="d"?"directory":n.t==="l"?"symbolic link":"regular file")+
+        "\nAccess: ("+(n.mode & 0o7777).toString(8).padStart(4,"0")+"/"+modeStr(n)+")  Uid: ( "+
+        (vm.users[n.owner]?vm.users[n.owner].uid:0)+"/"+n.owner+")   Gid: ( 0/"+n.group+")\n"+
+        "Modify: "+dateStr(n.mt)+"\n Links: "+(n.links||1));
+    }
+    return ok(out.join("\n")+"\n");
+  };
+
+  C.file = (argv) => {
+    const {ops} = splitFlags(argv);
+    const out = [];
+    for(const p of ops){
+      const r = lookup(p, true);
+      if(!r.node){ out.push(p+": cannot open (No such file or directory)"); continue; }
+      const n = r.node;
+      let kind = "ASCII text";
+      if(n.t==="d") kind = "directory";
+      else if(n.t==="l") kind = "symbolic link to "+n.tgt;
+      else if(n.c.startsWith("#!ELF")) kind = "ELF 64-bit LSB executable, x86-64";
+      else if(/^#!/.test(n.c)) kind = "a "+n.c.split("\n")[0].replace(/^#!\s*/,"")+" script, ASCII text executable";
+      else if(n.c === "") kind = "empty";
+      else { try{ if(JSON.parse(n.c).fmt) kind = JSON.parse(n.c).fmt+" compressed data"; }catch(e){} }
+      out.push(p+": "+kind);
+    }
+    return ok(join(out));
+  };
+
   C.man = (argv) => {
     const n = argv[0];
     if(!n) return bad("What manual page do you want?");
@@ -1000,10 +1427,69 @@ function attachShell(K){
   C.help = () => ok("This is a simulated machine. Available commands:\n\n"+
     Object.keys(C).sort().join("  ")+"\n\nType 'tasks' to see what the current lab asks for.\n");
 
+  /* ---------------- expansion ----------------
+     bash order: variables and $( ) first, then ~ , then globbing. Single
+     quotes suppress all three; double quotes suppress ~ and globbing only. */
+  const tilde = s => s === "~" ? vm.HOME : s.startsWith("~/") ? vm.HOME + s.slice(1) : s;
+
+  function varExpand(s){
+    // $(cmd) and `cmd`
+    s = s.replace(/\$\(([^]*?)\)|`([^`]*)`/g, (m, a, b) =>
+      run(a != null ? a : b).out.replace(/\n+$/, "").replace(/\n/g, " "));
+    // $?  ${VAR}  $VAR
+    s = s.replace(/\$\?/g, () => String(vm.lastStatus));
+    s = s.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (m, k) => vm.env[k] != null ? vm.env[k] : "");
+    s = s.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (m, k) => vm.env[k] != null ? vm.env[k] : "");
+    return s;
+  }
+
+  /* {a,b,c} and {1..5}, which bash expands before anything else */
+  function braceExpand(s){
+    const m = s.match(/^(.*?)\{([^{}]*)\}(.*)$/);
+    if(!m) return [s];
+    const [, pre, body, post] = m;
+    let parts;
+    const range = body.match(/^(-?\d+)\.\.(-?\d+)$/);
+    if(range){
+      const a = Number(range[1]), b = Number(range[2]);
+      parts = [];
+      for(let i = a; a <= b ? i <= b : i >= b; a <= b ? i++ : i--) parts.push(String(i));
+    } else if(body.includes(",")) parts = body.split(",");
+    else return [s];                              // {x} on its own is literal
+    return parts.flatMap(p => braceExpand(pre + p + post));
+  }
+
+  function expandToken(t){
+    if(t.q === "'") return [t.v];                 // literal, no expansion at all
+    if(t.q === '"') return [varExpand(t.v)];      // variables only
+    return braceExpand(t.v).flatMap(b => glob(tilde(varExpand(b))));
+  }
+
   /* ---------------- shell execution ---------------- */
   function runSimple(argv, stdin){
     if(!argv.length) return ok("");
     let cmd = argv[0], args = argv.slice(1);
+
+    // NAME=value as a command sets a shell variable
+    if(/^[A-Za-z_][A-Za-z0-9_]*=/.test(cmd) && !args.length){
+      const i = cmd.indexOf("=");
+      vm.env[cmd.slice(0, i)] = cmd.slice(i + 1);
+      return ok("");
+    }
+    // ./script.sh runs a file that carries the execute bit
+    if(/^[.~/]/.test(cmd) && !C[cmd]){
+      const r = lookup(cmd);
+      if(!r.node) return {out:"", err:"bash: "+cmd+": No such file or directory\n", code:127};
+      if(r.node.t === "d") return {out:"", err:"bash: "+cmd+": Is a directory\n", code:126};
+      if(!K.canExec(r.node)) return {out:"", err:"bash: "+cmd+": Permission denied\n", code:126};
+      let o = "", e = "", cd = 0;
+      for(const ln of r.node.c.split("\n")){
+        const line = ln.trim();
+        if(!line || line.startsWith("#")) continue;
+        const rr = run(line); o += rr.out; e += rr.err; cd = rr.code;
+      }
+      return {out:o, err:e, code:cd};
+    }
     let elevated = false;
     if(cmd==="sudo"){
       if(!args.length) return bad("usage: sudo command");
@@ -1037,12 +1523,9 @@ function attachShell(K){
       if(t.v==="2>&1"){ errToOut = true; continue; }
       stages[stages.length-1].push(t);
     }
-    // the shell expands ~ and globs before the command ever sees the argument,
-    // so commands report the expanded path — exactly as bash does
-    const tilde = s => s === "~" ? vm.HOME : s.startsWith("~/") ? vm.HOME + s.slice(1) : s;
     let stdin = "", out = "", err = "", code = 0, clear = false, editor = null;
     for(const stage of stages){
-      const argv = stage.flatMap(t => t.q ? [t.v] : glob(tilde(t.v)));
+      const argv = stage.flatMap(expandToken);
       const r = runSimple(argv, stdin);
       stdin = r.out; out = r.out; err = r.err || ""; code = r.code;
       clear = clear || !!r.clear; editor = r.editor || editor;
@@ -1072,8 +1555,15 @@ function attachShell(K){
   }
 
   function run(input){
-    const src = String(input).trim();
+    let src = String(input).trim();
     if(!src) return {out:"", err:"", code:0};
+    // history expansion happens before anything else, and what gets recorded
+    // in history is the expanded line — same as bash
+    if(src.includes("!!")){
+      const prev = vm.hist[vm.hist.length-1];
+      if(!prev) return {out:"", err:"bash: !!: event not found\n", code:1};
+      src = src.split("!!").join(prev);
+    }
     vm.hist.push(src);
     const toks = tokenize(src);
     // split on && and ; keeping short-circuit semantics

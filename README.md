@@ -16,11 +16,18 @@ site with three modes and no install of any kind.
 ## The simulated machine
 
 The Course plan tab contains a small but real Linux: a virtual filesystem with
-owners, groups and permission bits, and a shell that handles pipes,
-redirection, quoting, globbing and `&&`. Around 80 commands are implemented
-against actual machine state rather than canned output, so `chmod 600 id_rsa`
-really changes the mode that `ls -l` then reports, and `cat /etc/shadow` really
-is denied until you put `sudo` in front of it.
+owners, groups, permission bits and hard links, and a shell with pipes,
+redirection, quoting, globbing, brace expansion, `~` and variable expansion,
+command substitution, `$?`, `!!` history expansion and `&&`. Around 100
+commands are implemented against actual machine state rather than canned
+output, so `chmod 600 id_rsa` really changes the mode that `ls -l` reports,
+`cat /etc/shadow` really is denied until you put `sudo` in front of it, and
+`mkdir -p /kurs` really fails the way it would on a machine you do not own.
+
+That includes a package database behind four front ends — `pacman`, `apt`,
+`dnf` and `zypper` — so the install, search, remove and "which package owns
+this file" tasks from the drill do the same real thing whichever distro you
+practise on.
 
 It also includes a small Python interpreter covering what lectures 10-12 teach —
 types, arithmetic, f-strings, lists, dicts, sets, control flow, functions and
@@ -29,7 +36,8 @@ filesystem. `edit <file>` opens an editor pane for writing scripts and crontabs.
 
 Lab tasks check themselves by inspecting the machine afterwards, so a task
 completes because you did the work, not because you typed a matching string.
-Completed tasks persist; the machine resets on reload, or with `reset`.
+Each lecture keeps its own machine, and both the machine and your completed
+tasks survive a reload. `reset` starts a lecture's machine over.
 
 Nothing here needs a Linux computer, a VM, or an internet connection beyond
 loading the page.
@@ -48,7 +56,7 @@ page — the script is idempotent, so it is safe to run repeatedly:
 
 Tests run on plain Node with no dependencies:
 
-    node test/vmtest.js                 # 102 shell tests
-    node test/pytest.js                 #  70 python tests
-    node test/solutions.js              # works every lab task, checks each registers
+    node test/vmtest.js                 # 154 shell tests
+    node test/pytest.js                 #  87 python tests
+    node test/solutions.js              # works every task; 83 near-miss cases must NOT pass
     node test/selfcheck.js index.html   # drill + quiz integrity

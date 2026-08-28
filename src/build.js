@@ -87,6 +87,22 @@ ${CSS_MARK}
 .edfoot{padding:9px 13px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center}
 .cnav{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
 .cnav .tbtn{margin-left:0;padding:9px 15px;font-size:12px}
+.cmeta .nowtag{color:var(--lime);border:1px solid var(--lime);padding:1px 7px;font-size:10px}
+.mod.isnow .n{color:var(--lime);opacity:1}
+/* the closed drawer sits off-canvas; without this it widens the document */
+html,body{overflow-x:hidden}
+.drawer{visibility:hidden}
+.drawer.open{visibility:visible}
+@media(max-width:820px){
+  /* iOS Safari zooms any focused input under 16px, which yanks the layout
+     around every time you tap the terminal */
+  .inputline input,#ed-body,#refsearch{font-size:16px}
+  .labterm .screen{min-height:180px;max-height:38vh}
+  .editor{position:fixed;inset:8px;z-index:120}
+  #ed-body{font-size:16px}
+  .ltask{padding:10px}
+  .ltask .ltext{font-size:13.5px}
+}
 ${CSS_END}
 `;
   const ca = html.indexOf(CSS_MARK);

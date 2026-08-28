@@ -385,7 +385,25 @@ aside{position:sticky;top:20px}
 .edfoot{padding:9px 13px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center}
 .cnav{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
 .cnav .tbtn{margin-left:0;padding:9px 15px;font-size:12px}
+.cmeta .nowtag{color:var(--lime);border:1px solid var(--lime);padding:1px 7px;font-size:10px}
+.mod.isnow .n{color:var(--lime);opacity:1}
+/* the closed drawer sits off-canvas; without this it widens the document */
+html,body{overflow-x:hidden}
+.drawer{visibility:hidden}
+.drawer.open{visibility:visible}
+@media(max-width:820px){
+  /* iOS Safari zooms any focused input under 16px, which yanks the layout
+     around every time you tap the terminal */
+  .inputline input,#ed-body,#refsearch{font-size:16px}
+  .labterm .screen{min-height:180px;max-height:38vh}
+  .editor{position:fixed;inset:8px;z-index:120}
+  #ed-body{font-size:16px}
+  .ltask{padding:10px}
+  .ltask .ltext{font-size:13.5px}
+}
 /* ---------- end course lab ---------- */
+
+
 </style>
 </head>
 <body>
@@ -676,6 +694,17 @@ tasks:[
 
 /* ---------- cheatsheet shown in the drawer ---------- */
 const SHEET = [
+["In the Course plan machine",[
+["edit FILE","Open the editor pane to write a script or a crontab"],
+["python3 FILE","Run a Python file you wrote with edit"],
+["python3 -c 'CODE'","Run one line of Python without a file"],
+["tasks","Re-print this lecture's lab with what you have done"],
+["reset","Start the simulated machine over — completed tasks are kept"],
+["help","List every command the simulated machine understands"],
+["Tab","Complete a command name or a path"],
+["tree","Show a directory as a tree"],
+["stat FILE","Size, mode, owner, link count and timestamps"],
+["file FILE","Guess what a file actually contains"]]],
 ["Getting around",[
 ["pwd","Print the directory you are currently in"],
 ["ls","List files here"],
@@ -1368,7 +1397,7 @@ const PKGOUT = {
 
 /* =================== state =================== */
 const S = {mode:"drill", pm:"pacman", m:0, t:0, solved:{}, tries:0, hits:0, streak:0, best:0,
-           qDone:{}, qTries:0, qHits:0, c:0, lab:{},
+           qDone:{}, qTries:0, qHits:0, c:-1, lab:{},
            wrongInput:null, awaitingNext:false, hist:[], hp:0, busy:false};
 
 const $ = id => document.getElementById(id);
@@ -1393,14 +1422,17 @@ async function save(){
   try{ await store.set("shelldrill:v1", JSON.stringify(
     {mode:S.mode, pm:S.pm, m:S.m, t:S.t, solved:S.solved, tries:S.tries, hits:S.hits, best:S.best,
      qDone:S.qDone, qTries:S.qTries, qHits:S.qHits, qt:Q.tier, qi:Q.i,
-     c:S.c, lab:S.lab, seen:true})); }catch(e){}
+     c:S.c, lab:S.lab, seen:true,
+     mach:(typeof serializeMachines === "function" ? serializeMachines() : undefined)})); }
+  catch(e){ /* quota or serialisation trouble: keep going without saving */ }
 }
 async function load(){
   try{ const r = await store.get("shelldrill:v1");
     if(r && r.value){ const d = JSON.parse(r.value); Object.assign(S,{mode:d.mode||"drill",pm:d.pm||"pacman",m:d.m|0,t:d.t|0,
       solved:d.solved||{},tries:d.tries|0,hits:d.hits|0,best:d.best|0,
       qDone:d.qDone||{},qTries:d.qTries|0,qHits:d.qHits|0,
-      c:d.c|0, lab:d.lab||{}});
+      c:(d.c==null?-1:d.c|0), lab:d.lab||{}});
+    if(d.mach && typeof restoreMachines === "function") restoreMachines(d.mach);
     Q.tier=d.qt|0; Q.i=d.qi|0; return d.seen===true; }
   }catch(e){}
   return false;
@@ -1749,7 +1781,20 @@ async function submit(raw){
     renderModules(); save();
   }
 }
+/* Tab completion over the command vocabulary, which the module guide promises */
+function drillComplete(el){
+  const frag = (el.value.match(/(\S*)$/) || [""])[0];
+  if(!frag) return;
+  const words = Object.keys(CMDDESC).concat(["sudo","systemctl","journalctl"]);
+  const list = [...new Set(words)].filter(w => w.startsWith(frag)).sort();
+  if(!list.length) return;
+  const common = list.reduce((a,b)=>{ let i=0; while(i<a.length && a[i]===b[i]) i++; return a.slice(0,i); });
+  const keep = el.value.slice(0, el.value.length - frag.length);
+  el.value = keep + (list.length===1 ? list[0]+" " : common);
+  if(list.length>1) line('<span class="note">'+list.map(esc).join("   ")+"</span>");
+}
 $("entry").addEventListener("keydown", e=>{
+  if(e.key==="Tab"){ e.preventDefault(); drillComplete(e.target); return; }
   if(e.key==="Enter"){ const v=e.target.value; e.target.value=""; submit(v); }
   else if(e.key==="ArrowUp"){ e.preventDefault(); if(S.hp>0){ S.hp--; e.target.value=S.hist[S.hp]||""; } }
   else if(e.key==="ArrowDown"){ e.preventDefault(); if(S.hp<S.hist.length-1){ S.hp++; e.target.value=S.hist[S.hp]||""; } else { S.hp=S.hist.length; e.target.value=""; } }
@@ -1759,7 +1804,7 @@ $("screen").addEventListener("click", ()=>$("entry").focus());
 $("reset").onclick = ()=>{
   S.solved={}; S.tries=0; S.hits=0; S.streak=0; S.best=0; S.m=0; S.t=0;
   S.qDone={}; S.qTries=0; S.qHits=0; Q.tier=0; Q.i=0; Q.picked.clear(); Q.checked=false;
-  S.lab={}; S.c=0;
+  S.lab={}; S.c=-1; CS.machines={}; CS.screens={}; CS.histories={}; CS.lec=-1;
   setMode(S.mode);
 };
 
@@ -1802,9 +1847,11 @@ const TOUR = [
   b:"Package commands differ between distros. Switch here and the install tasks, the prompt and the output all change to match Arch, Ubuntu, Fedora or openSUSE."},
  {el:"openref", t:"Keep the cheatsheet open",
   b:"Every command in the course with a plain-English explanation, filterable. Leave it open beside you while you work — looking things up is normal, memorising comes later."},
- {el:"m-quiz", t:"Two ways to practise",
-  b:"<b>Terminal drill</b> is typing real commands. <b>Knowledge quiz</b> is 34 multiple-choice questions on the concepts behind them — what a kernel is, how permissions add up, why sudo beats root. Some questions have more than one correct answer."},
- {el:"modlist", t:"Ten modules, in order",
+ {el:"m-quiz", t:"Three ways to practise",
+  b:"<b>Terminal drill</b> is typing real commands. <b>Knowledge quiz</b> is 34 multiple-choice questions on the concepts behind them. <b>Course plan</b> is a lab per lecture, worked on a full simulated machine."},
+ {el:"m-course", t:"The course plan",
+  b:"One lab per lecture, following the weeks 36–42 schedule. Each task is checked against the simulated machine, so it ticks off when you actually do it. The machine has a real filesystem, permissions and a small Python — nothing there can break anything."},
+ {el:"modlist", t:"Modules, in order",
   b:"From <i>pwd</i> to auditing SUID binaries. Progress is saved per module. Type <b>tutorial</b> in the terminal to see this again."}
 ];
 let ti = -1;
@@ -1818,7 +1865,16 @@ function tourCard(){
   }
   return c;
 }
-function showStep(){
+function showStep(dir){
+  // steps point at elements that only exist in one tab; skip any that are
+  // currently hidden rather than highlighting nothing
+  const step = dir === -1 ? -1 : 1;
+  while(ti >= 0 && ti < TOUR.length){
+    const e = $(TOUR[ti].el);
+    if(e && e.getBoundingClientRect().height > 0) break;
+    ti += step;
+  }
+  if(ti < 0 || ti >= TOUR.length) return endTour();
   const s = TOUR[ti], el = $(s.el);
   document.querySelectorAll(".tourlit").forEach(n=>{n.classList.remove("tourlit");n.style.outline="";n.style.outlineOffset="";});
   if(el){ el.classList.add("tourlit"); el.style.outline="2px solid var(--amber)"; el.style.outlineOffset="4px";
@@ -1837,7 +1893,7 @@ function showStep(){
   c.style.top = top+"px"; c.style.left = left+"px";
   $("t-next").onclick = ()=>{ ti++; ti>=TOUR.length ? endTour() : showStep(); };
   $("t-skip").onclick = endTour;
-  if($("t-back")) $("t-back").onclick = ()=>{ ti--; showStep(); };
+  if($("t-back")) $("t-back").onclick = ()=>{ ti--; showStep(-1); };
 }
 function startTour(){ ti = 0; $("scrim").classList.add("open"); $("scrim").onclick = endTour; showStep(); }
 function endTour(){
@@ -2090,6 +2146,7 @@ function makeVM(){
     nextUid:1001, nextGid:1001,
     asRoot:false, hist:[], env:{HOME, USER:"analyst", SHELL:"/bin/bash", PATH:"/usr/local/bin:/usr/bin:/bin"},
     units:{}, sockets:[], procs:[], cron:[], iface:{}, selinux:"Enforcing", firewall:[], keys:{},
+    now: T0,
     lastStatus:0
   };
 
@@ -2181,7 +2238,10 @@ function makeVM(){
     if(n.mode & 0o2000) s = s.slice(0,6) + (s[6]==="x"?"s":"S") + s.slice(7);
     return s;
   }
-  const sizeOf = n => n.t==="d" ? 4096 : n.t==="l" ? n.tgt.length : n.c.length;
+  // a file may declare a size without holding that many bytes, so the seed can
+  // include a believably large capture without carrying megabytes around
+  const sizeOf = n => n.t==="d" ? 4096 : n.t==="l" ? n.tgt.length
+                    : (n.sz != null ? n.sz : n.c.length);
   function dateStr(mt){ const d = new Date(mt*1000);
     return MON[d.getUTCMonth()]+" "+String(d.getUTCDate()).padStart(2," ")+" "+
       String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0"); }
@@ -2194,14 +2254,27 @@ function makeVM(){
 
   /* ---------- tokenizer: quotes, pipes, redirection, operators ---------- */
   function tokenize(src){
-    const out = []; let i=0, cur="", q=null, had=false, quoted=false;
-    // `quoted` has to outlive `q`, which is cleared by the closing quote —
-    // otherwise a finished "..." token looks unquoted and gets expanded
-    const push = ()=>{ if(cur!=="" || had) out.push({v:cur, q:quoted}); cur=""; had=false; q=null; quoted=false; };
+    const out = []; let i=0, cur="", q=null, had=false, quoted=null;
+    // `quoted` records WHICH quote was used and has to outlive `q`, which the
+    // closing quote clears. Single quotes suppress every expansion, double
+    // quotes suppress globbing and ~ but still expand variables.
+    const push = ()=>{ if(cur!=="" || had) out.push({v:cur, q:quoted}); cur=""; had=false; q=null; quoted=null; };
     while(i<src.length){
       const c = src[i];
       if(q){ if(c===q){ q=null; had=true; } else cur+=c; i++; continue; }
-      if(c==='"' || c==="'"){ q=c; had=true; quoted=true; i++; continue; }
+      if(c==='"' || c==="'"){ q=c; had=true; if(!quoted) quoted=c; i++; continue; }
+      // $( ... ) and ` ... ` are one token even though they contain spaces
+      if(c==="$" && src[i+1]==="("){
+        let depth=1, j=i+2, s="$(";
+        while(j<src.length && depth>0){ if(src[j]==="(") depth++; if(src[j]===")") depth--;
+          if(depth>0) s+=src[j]; j++; }
+        cur += s+")"; had=true; i=j; continue;
+      }
+      if(c==="`"){
+        let j=i+1, s="`";
+        while(j<src.length && src[j]!=="`"){ s+=src[j]; j++; }
+        cur += s+"`"; had=true; i=j+1; continue;
+      }
       if(c==="\\" && i+1<src.length){ cur+=src[i+1]; had=true; i+=2; continue; }
       if(/\s/.test(c)){ push(); i++; continue; }
       const three = src.slice(i,i+3), two = src.slice(i,i+2);
@@ -2324,9 +2397,30 @@ function attachShell(K){
   };
 
   C.ls = (argv) => {
-    const {flags, ops} = splitFlags(argv);
+    const {flags, long, ops} = splitFlags(argv);
+    if(long["help"]) return ok(
+      "Usage: ls [OPTION]... [FILE]...\nList information about the FILEs (the current directory by default).\n\n"+
+      "  -a     do not ignore entries starting with .\n"+
+      "  -l     use a long listing format\n"+
+      "  -h     with -l, print sizes like 1K 234M 2G\n"+
+      "  -d     list directories themselves, not their contents\n"+
+      "  -R     list subdirectories recursively\n");
     const all = flags.has("a"), lng = flags.has("l"), hum = flags.has("h"), dirSelf = flags.has("d");
-    const targets = ops.length ? ops : ["."];
+    let targets = ops.length ? ops : ["."];
+    // -R turns one directory into a listing per directory, depth first
+    if(flags.has("R") && !dirSelf){
+      const expanded = [];
+      for(const t of targets){
+        const r0 = lookup(t);
+        if(!r0.node || r0.node.t !== "d"){ expanded.push(t); continue; }
+        (function walk(node, p){
+          expanded.push(p);
+          for(const n of Object.keys(node.ch).sort())
+            if(node.ch[n].t === "d" && (all || !n.startsWith("."))) walk(node.ch[n], p.replace(/\/$/,"")+"/"+n);
+        })(r0.node, t);
+      }
+      targets = expanded;
+    }
     const chunks = [], errs = [];
     for(const t of targets){
       // ls shows a symlink itself rather than its target, unless the link
@@ -2351,7 +2445,7 @@ function attachShell(K){
         const rows = entries.map(e=>{
           const n = e.node;
           const nm = n.t==="l" ? e.n+" -> "+n.tgt : e.n;
-          return [modeStr(n), "1", n.owner, n.group,
+          return [modeStr(n), String(n.links||1), n.owner, n.group,
                   hum ? human(sizeOf(n)) : String(sizeOf(n)), dateStr(n.mt), nm];
         });
         const w = [0,1,2,3,4].map(i => Math.max(...rows.map(r=>r[i].length), 0));
@@ -2393,7 +2487,26 @@ function attachShell(K){
     if(!ops.length) return bad("mkdir: missing operand");
     const errs = [];
     for(const p of ops){
-      if(flags.has("p")){ K.mkdirp(p, 0o755, vm.user, vm.user); continue; }
+      if(flags.has("p")){
+        // -p still has to respect permissions at every level it creates —
+        // mkdir -p /kurs as a normal user must fail, not silently succeed
+        const seg = K.abspath(p).split("/").filter(Boolean);
+        let node = vm.root, sofar = "", failed = false;
+        for(const s of seg){
+          sofar += "/" + s;
+          if(node.ch[s]){
+            node = node.ch[s];
+            if(node.t !== "d"){
+              errs.push("mkdir: cannot create directory '"+p+"': Not a directory"); failed = true; break; }
+            continue;
+          }
+          if(!canWrite(node)){
+            errs.push("mkdir: cannot create directory '"+sofar+"': Permission denied"); failed = true; break; }
+          node.ch[s] = dnode(0o755, vm.user, vm.user);
+          node = node.ch[s];
+        }
+        continue;
+      }
       const par = lookup(parentOf(p));
       if(!par.node){ errs.push("mkdir: cannot create directory '"+p+"': No such file or directory"); continue; }
       if(!canWrite(par.node)){ errs.push("mkdir: cannot create directory '"+p+"': Permission denied"); continue; }
@@ -2494,6 +2607,7 @@ function attachShell(K){
       if(r.node.t==="d" && !rec){ errs.push("rm: cannot remove '"+p+"': Is a directory"); continue; }
       const par = lookup(parentOf(p));
       if(!canWrite(par.node)){ errs.push("rm: cannot remove '"+p+"': Permission denied"); continue; }
+      if(r.node.links > 1) r.node.links--;
       delete par.node.ch[baseOf(p)];
     }
     return {out:"", err: join(errs), code: errs.length?1:0};
@@ -2501,16 +2615,27 @@ function attachShell(K){
 
   C.ln = (argv) => {
     const {flags, ops} = splitFlags(argv);
-    if(!flags.has("s")) return bad("ln: hard links are not simulated here — use ln -s");
     if(ops.length<1) return bad("ln: missing file operand");
     const [target, nameArg] = ops;
     const linkPath = nameArg || baseOf(target);
     const dr = lookup(linkPath);
     const finalPath = (dr.node && dr.node.t==="d") ? linkPath+"/"+baseOf(target) : linkPath;
+    const kind = flags.has("s") ? "symbolic link" : "hard link";
     const par = lookup(parentOf(finalPath));
-    if(!par.node) return bad("ln: failed to create symbolic link '"+finalPath+"': No such file or directory");
-    if(par.node.ch[baseOf(finalPath)]) return bad("ln: failed to create symbolic link '"+finalPath+"': File exists");
-    par.node.ch[baseOf(finalPath)] = lnode(target, vm.user, vm.user);
+    if(!par.node) return bad("ln: failed to create "+kind+" '"+finalPath+"': No such file or directory");
+    if(par.node.ch[baseOf(finalPath)]) return bad("ln: failed to create "+kind+" '"+finalPath+"': File exists");
+    if(flags.has("s")){
+      par.node.ch[baseOf(finalPath)] = lnode(target, vm.user, vm.user);
+      return ok("");
+    }
+    // a hard link is a second name for the same inode: share the node object,
+    // so editing through one name shows through the other and deleting one
+    // leaves the data reachable through the other
+    const tr = lookup(target, true);
+    if(!tr.node) return bad("ln: failed to access '"+target+"': No such file or directory");
+    if(tr.node.t === "d") return bad("ln: "+target+": hard link not allowed for directory");
+    tr.node.links = (tr.node.links || 1) + 1;
+    par.node.ch[baseOf(finalPath)] = tr.node;
     return ok("");
   };
 
@@ -2525,14 +2650,18 @@ function attachShell(K){
   C.less = C.cat; C.more = C.cat;
 
   C.head = (argv, stdin) => {
+    const cv = flagValue(argv, "c");            // -c counts bytes, not lines
     const fv = flagValue(argv, "n");
-    let n = 10, rest = argv.slice();
-    if(fv){ n = parseInt(fv.val,10); rest = rest.filter((_,i)=>!fv.consume.includes(i)).filter(a=>a!=="-n"); }
+    let n = 10, bytes = null, rest = argv.slice();
+    if(cv){ bytes = parseInt(cv.val,10); rest = rest.filter((_,i)=>!cv.consume.includes(i)).filter(a=>!/^-c/.test(a)); }
+    else if(fv){ n = parseInt(fv.val,10); rest = rest.filter((_,i)=>!fv.consume.includes(i)).filter(a=>a!=="-n"); }
     const numeric = argv.find(a=>/^-\d+$/.test(a));
-    if(numeric){ n = parseInt(numeric.slice(1),10); rest = rest.filter(a=>a!==numeric); }
+    if(numeric && bytes==null){ n = parseInt(numeric.slice(1),10); rest = rest.filter(a=>a!==numeric); }
     const {ops} = splitFlags(rest.filter(a=>!/^-n$/.test(a)));
     const {items, errs} = inputs(ops, stdin, "head");
-    const out = items.map(it => join(lines(it.c).slice(0,n))).join("");
+    const out = bytes != null
+      ? items.map(it => it.c.slice(0, bytes)).join("")
+      : items.map(it => join(lines(it.c).slice(0,n))).join("");
     return {out, err: join(errs), code: errs.length?1:0};
   };
 
@@ -2622,11 +2751,33 @@ function attachShell(K){
     if(!r.node) return bad("find: '"+start+"': No such file or directory");
     const opts = argv.slice(argv[0]===start?1:0);
     const get = k => { const i = opts.indexOf(k); return i>=0 ? opts[i+1] : null; };
-    const nameP = get("-name"), typeP = get("-type"), permP = get("-perm"), sizeP = get("-size");
+    const nameP = get("-name"), inameP = get("-iname"), typeP = get("-type"),
+          permP = get("-perm"), sizeP = get("-size"), mtimeP = get("-mtime"), userP = get("-user");
     const maxd = get("-maxdepth") ? parseInt(get("-maxdepth"),10) : Infinity;
     const del = opts.includes("-delete");
-    const nameRx = nameP ? new RegExp("^"+nameP.replace(/[.+^${}()|\\]/g,"\\$&")
-      .replace(/\*/g,"[^/]*").replace(/\?/g,"[^/]")+"$") : null;
+    const pat = nameP || inameP;
+    const nameRx = pat ? new RegExp("^"+pat.replace(/[.+^${}()|\\]/g,"\\$&")
+      .replace(/\*/g,"[^/]*").replace(/\?/g,"[^/]")+"$", inameP ? "i" : "") : null;
+
+    // -size accepts c (bytes), k, M, G, or bare 512-byte blocks; a leading
+    // + means greater than, - means less than, bare means exactly
+    const sizeCmp = (bytes) => {
+      const m = String(sizeP).match(/^([+-]?)(\d+)([ckMG]?)$/);
+      if(!m) return true;
+      const unit = {c:1, k:1024, M:1048576, G:1073741824}[m[3]] || 512;
+      const want = Number(m[2]) * unit;
+      const v = m[3] === "c" ? bytes : Math.ceil(bytes / unit) * unit;
+      return m[1] === "+" ? v > want : m[1] === "-" ? v < want : v === want;
+    };
+    // -mtime counts whole 24-hour periods since modification
+    const mtimeCmp = (mt) => {
+      const m = String(mtimeP).match(/^([+-]?)(\d+)$/);
+      if(!m) return true;
+      const days = Math.floor((vm.now - mt) / 86400);
+      const want = Number(m[2]);
+      return m[1] === "+" ? days > want : m[1] === "-" ? days < want : days === want;
+    };
+
     const hits = [];
     (function walk(node, path, depth){
       const base = path.split("/").pop() || path;
@@ -2635,9 +2786,12 @@ function attachShell(K){
       if(typeP==="f" && node.t!=="f") match = false;
       if(typeP==="d" && node.t!=="d") match = false;
       if(typeP==="l" && node.t!=="l") match = false;
+      if(sizeP != null && !sizeCmp(sizeOf(node))) match = false;
+      if(mtimeP != null && !mtimeCmp(node.mt)) match = false;
+      if(userP != null && node.owner !== userP) match = false;
       if(permP){
-        const want = parseInt(permP.replace(/^-/,""),8);
-        match = match && (permP.startsWith("-") ? (node.mode & want)===want : node.mode===want);
+        const want = parseInt(permP.replace(/^[-/]/,""),8);
+        match = match && (/^[-/]/.test(permP) ? (node.mode & want)===want : node.mode===want);
       }
       if(match) hits.push({path, node});
       if(node.t==="d" && depth<maxd && K.canExec(node))
@@ -2674,18 +2828,53 @@ function attachShell(K){
 
   /* ---------------- text processing ---------------- */
   C.echo = (argv) => {
-    const noNl = argv[0]==="-n";
-    const parts = (noNl?argv.slice(1):argv).map(a =>
-      a.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (m,k) => vm.env[k]!=null ? vm.env[k] : ""));
-    return ok(parts.join(" ") + (noNl?"":"\n"));
+    let rest = argv.slice(), noNl = false, esc = false;
+    while(rest.length && /^-[neE]+$/.test(rest[0])){
+      if(rest[0].includes("n")) noNl = true;
+      if(rest[0].includes("e")) esc = true;
+      rest = rest.slice(1);
+    }
+    let s = rest.join(" ");
+    if(esc) s = s.replace(/\\n/g,"\n").replace(/\\t/g,"\t").replace(/\\r/g,"\r")
+                 .replace(/\\0/g,"\0").replace(/\\\\/g,"\\");
+    return ok(s + (noNl ? "" : "\n"));
   };
+  C.export = (argv) => {
+    if(!argv.length) return ok(Object.entries(vm.env).map(([k,v])=>"declare -x "+k+'="'+v+'"').join("\n")+"\n");
+    for(const a of argv){
+      const i = a.indexOf("=");
+      if(i > 0) vm.env[a.slice(0,i)] = a.slice(i+1);
+    }
+    return ok("");
+  };
+  C.env = () => ok(Object.entries(vm.env).map(([k,v])=>k+"="+v).join("\n")+"\n");
+  C.unset = (argv) => { argv.forEach(k => delete vm.env[k]); return ok(""); };
+  C.printf = (argv) => {
+    const fmt = argv[0] || "";
+    let i = 1;
+    return ok(fmt.replace(/\\n/g,"\n").replace(/\\t/g,"\t")
+                 .replace(/%[sd]/g, () => argv[i++] ?? ""));
+  };
+  C.true = () => ok("");
+  C.false = () => ({out:"", err:"", code:1});
 
   C.sort = (argv, stdin) => {
-    const {flags, ops} = splitFlags(argv);
+    const kv = flagValue(argv, "k"), tv = flagValue(argv, "t");
+    const consumed = new Set([...(kv?kv.consume:[]), ...(tv?tv.consume:[])]);
+    const rest = argv.filter((a,i)=>!consumed.has(i) && !/^-[kt]/.test(a));
+    const {flags, ops} = splitFlags(rest);
     const {items, errs} = inputs(ops, stdin, "sort");
     let ls = items.flatMap(it => lines(it.c));
-    if(flags.has("n")) ls.sort((a,b)=>parseFloat(a)-parseFloat(b) || a.localeCompare(b));
-    else ls.sort((a,b)=>a.localeCompare(b));
+    // -k picks the field to compare on, -t sets the delimiter
+    const field = kv ? parseInt(kv.val, 10) : null;
+    const delim = tv ? tv.val : null;
+    const keyOf = l => {
+      if(!field) return l;
+      const parts = delim == null ? l.trim().split(/\s+/) : l.split(delim);
+      return parts.slice(field - 1).join(delim == null ? " " : delim);
+    };
+    if(flags.has("n")) ls.sort((a,b)=>(parseFloat(keyOf(a))||0)-(parseFloat(keyOf(b))||0) || keyOf(a).localeCompare(keyOf(b)));
+    else ls.sort((a,b)=>keyOf(a).localeCompare(keyOf(b)));
     if(flags.has("r")) ls.reverse();
     if(flags.has("u")) ls = ls.filter((l,i)=>i===0||l!==ls[i-1]);
     return {out: join(ls), err: join(errs), code: errs.length?1:0};
@@ -2809,14 +2998,22 @@ function attachShell(K){
     if(m[3].includes("s")){ if(who.includes("u")) node.mode |= 0o4000; if(who.includes("g")) node.mode |= 0o2000; }
     return true;
   }
+  const MODE_RX = /^([0-7]{3,4}|[ugoa]*[+\-=][rwxstXugo]*(,[ugoa]*[+\-=][rwxstXugo]*)*)$/;
   C.chmod = (argv) => {
-    const {flags, ops} = splitFlags(argv);
-    if(ops.length<2) return bad("chmod: missing operand");
-    const spec = ops.shift();
+    // the mode comes first and may itself start with '-' (chmod -x file), so
+    // it has to be taken out before options are parsed
+    let rest = argv.slice(), spec = null;
+    for(let i=0;i<rest.length;i++){
+      if(rest[i] === "-R" || rest[i] === "--recursive") continue;
+      if(MODE_RX.test(rest[i])){ spec = rest[i]; rest.splice(i,1); break; }
+    }
+    const {flags, ops} = splitFlags(rest);
+    if(spec === null) return bad("chmod: invalid mode: '"+(argv[0]||"")+"'");
+    if(!ops.length) return bad("chmod: missing operand after '"+spec+"'");
     const errs = [];
     const apply = (node) => {
       if(/^[0-7]{3,4}$/.test(spec)) node.mode = parseInt(spec,8);
-      else if(!applySymbolic(node, spec)) return false;
+      else if(!spec.split(",").every(part => applySymbolic(node, part))) return false;
       return true;
     };
     for(const p of ops){
@@ -3267,6 +3464,309 @@ function attachShell(K){
     return bad("git: '"+sub+"' is not simulated here");
   };
 
+  /* ---------------- packages ----------------
+     One package database behind four front ends, so the operations the drill
+     teaches (install, search, info, update, remove, owns, list, clean) do the
+     same real thing whichever distro you practise. */
+  const needRoot = tool => vm.asRoot || vm.user === "root"
+    ? null : bad("error: you cannot perform this operation unless you are root.");
+
+  function pkgFind(name){ return vm.repo[name]; }
+  function pkgInstall(name){
+    const p = pkgFind(name);
+    if(!p) return {err:"target not found: "+name};
+    if(vm.installed[name]) return {msg:"warning: "+name+" is up to date -- reinstalling"};
+    const deps = (p.deps||[]).filter(d => !vm.installed[d]);
+    deps.forEach(d => { vm.installed[d] = Object.assign({}, vm.repo[d], {auto:true}); });
+    vm.installed[name] = Object.assign({}, p, {auto:false});
+    (p.files||[]).forEach(f => K.put(f, "#!ELF\n", 0o755, "root", "root"));
+    vm.pkgCache += p.size || 4;
+    return {msg:"Packages ("+(deps.length+1)+") "+[...deps, name].join(" ")+"\n\ninstalling..."};
+  }
+  function pkgRemove(name, withDeps){
+    if(!vm.installed[name]) return {err:"target not found: "+name};
+    const p = vm.installed[name];
+    (p.files||[]).forEach(f => { const par = lookup(parentOf(f)); if(par.node) delete par.node.ch[baseOf(f)]; });
+    delete vm.installed[name];
+    let extra = [];
+    if(withDeps){
+      extra = Object.keys(vm.installed).filter(d => vm.installed[d].auto &&
+        !Object.keys(vm.installed).some(o => (vm.installed[o].deps||[]).includes(d)));
+      extra.forEach(d => delete vm.installed[d]);
+    }
+    return {msg:"removing "+[name, ...extra].join(" ")};
+  }
+  function pkgOwner(file){
+    const abs = K.abspath(file);
+    for(const n in vm.installed) if((vm.installed[n].files||[]).includes(abs)) return n;
+    return null;
+  }
+  const pkgSearch = q => Object.entries(vm.repo)
+    .filter(([n,p]) => n.includes(q) || (p.desc||"").toLowerCase().includes(q.toLowerCase()));
+
+  C.pacman = (argv) => {
+    const a = argv.join(" ");
+    const op = (argv.find(x=>/^-[A-Z]/.test(x)) || "").replace(/^-/,"");
+    const names = argv.filter(x=>!x.startsWith("-"));
+    if(!op) return bad("error: no operation specified (use -h for help)");
+    if(op[0]==="S" && op.includes("s")) {
+      const hits = pkgSearch(names[0]||"");
+      return hits.length ? ok(hits.map(([n,p])=>"extra/"+n+" "+p.ver+"\n    "+p.desc).join("\n")+"\n")
+                         : {out:"",err:"",code:1};
+    }
+    if(op[0]==="S" && op.includes("i")){
+      const p = pkgFind(names[0]);
+      return p ? ok("Repository      : extra\nName            : "+names[0]+"\nVersion         : "+p.ver+
+                    "\nDescription     : "+p.desc+"\nDepends On      : "+((p.deps||[]).join(" ")||"None")+"\n")
+               : bad("error: package '"+names[0]+"' was not found");
+    }
+    if(op[0]==="S" && op.includes("c")) { const r = needRoot(); if(r) return r;
+      const freed = vm.pkgCache; vm.pkgCache = 0; return ok("Cache directory: /var/cache/pacman/pkg/\nfreed "+freed+" MiB\n"); }
+    if(op[0]==="S" && op.includes("y") && op.includes("u")){ const r = needRoot(); if(r) return r;
+      return ok(":: Synchronising package databases...\n core downloading...\n extra downloading...\n:: Starting full system upgrade...\n there is nothing to do\n"); }
+    if(op[0]==="S" && op.includes("y") && !op.includes("u")){ const r = needRoot(); if(r) return r;
+      return ok(":: Synchronising package databases...\nwarning: refreshing without upgrading risks a partial upgrade — use -Syu\n"); }
+    if(op[0]==="S"){ const r = needRoot(); if(r) return r;
+      const res = pkgInstall(names[0]);
+      return res.err ? bad("error: "+res.err) : ok(res.msg+"\n"); }
+    if(op[0]==="R"){ const r = needRoot(); if(r) return r;
+      const res = pkgRemove(names[0], op.includes("s"));
+      return res.err ? bad("error: "+res.err) : ok(res.msg+"\n"); }
+    if(op[0]==="Q" && op.includes("o")){
+      const owner = pkgOwner(names[0]);
+      return owner ? ok(K.abspath(names[0])+" is owned by "+owner+" "+vm.installed[owner].ver+"\n")
+                   : bad("error: No package owns "+names[0]);
+    }
+    if(op[0]==="Q" && op.includes("i")){
+      const p = vm.installed[names[0]];
+      return p ? ok("Name            : "+names[0]+"\nVersion         : "+p.ver+"\nDescription     : "+p.desc+"\n")
+               : bad("error: package '"+names[0]+"' was not found");
+    }
+    if(op[0]==="Q") return ok(Object.entries(vm.installed)
+      .filter(([n,p]) => !op.includes("e") || !p.auto)
+      .map(([n,p])=>n+" "+p.ver).join("\n")+"\n");
+    return bad("error: invalid option -- '"+op+"'");
+  };
+
+  const aptLike = (tool) => (argv) => {
+    const sub = argv[0], names = argv.slice(1).filter(x=>!x.startsWith("-"));
+    const R = () => needRoot();
+    if(sub==="update"){ const r=R(); if(r) return r;
+      return ok("Hit:1 http://deb.example.org stable InRelease\nReading package lists... Done\n"+
+                "All packages are up to date.\n"); }
+    if(sub==="upgrade"||sub==="full-upgrade"||sub==="dist-upgrade"){ const r=R(); if(r) return r;
+      return ok("Reading package lists... Done\n0 upgraded, 0 newly installed, 0 to remove.\n"); }
+    if(sub==="install"){ const r=R(); if(r) return r;
+      const res = pkgInstall(names[0]);
+      return res.err ? bad("E: Unable to locate package "+names[0]) : ok(res.msg+"\n"); }
+    if(sub==="remove"||sub==="purge"||sub==="autoremove"){ const r=R(); if(r) return r;
+      const withDeps = sub==="autoremove" || argv.includes("--auto-remove");
+      if(!names.length && sub==="autoremove") return ok("0 to remove.\n");
+      const res = pkgRemove(names[0], withDeps);
+      return res.err ? bad("E: Unable to locate package "+names[0]) : ok(res.msg+"\n"); }
+    if(sub==="search"){ const hits = pkgSearch(names[0]||"");
+      return ok(hits.map(([n,p])=>n+"/stable "+p.ver+"\n  "+p.desc).join("\n")+"\n"); }
+    if(sub==="show"){ const p = pkgFind(names[0]);
+      return p ? ok("Package: "+names[0]+"\nVersion: "+p.ver+"\nDepends: "+((p.deps||[]).join(", ")||"none")+
+                    "\nDescription: "+p.desc+"\n") : bad("E: No packages found"); }
+    if(sub==="list"){ return ok(Object.entries(vm.installed)
+      .map(([n,p])=>n+"/stable,now "+p.ver+" [installed]").join("\n")+"\n"); }
+    if(sub==="clean"||sub==="autoclean"){ const r=R(); if(r) return r;
+      vm.pkgCache = 0; return ok("Deleting cached package files in /var/cache/apt/archives\n"); }
+    return bad(tool+": invalid operation "+(sub||""));
+  };
+  C.apt = aptLike("apt"); C["apt-get"] = aptLike("apt-get");
+  C["apt-cache"] = (argv) => argv[0]==="search" ? C.apt(argv) : argv[0]==="show" ? C.apt(argv)
+    : bad("apt-cache: unsupported operation");
+  C.dpkg = (argv) => {
+    const {flags, long, ops} = splitFlags(argv);
+    if(flags.has("S")||long["search"]){
+      const owner = pkgOwner(ops[0]);
+      return owner ? ok(owner+": "+K.abspath(ops[0])+"\n")
+                   : bad("dpkg-query: no path found matching pattern "+ops[0]); }
+    if(flags.has("l")||long["list"]) return ok("ii  "+Object.keys(vm.installed).join("\nii  ")+"\n");
+    return bad("dpkg: unsupported operation");
+  };
+
+  const dnfLike = (tool) => (argv) => {
+    const sub = argv[0], names = argv.slice(1).filter(x=>!x.startsWith("-"));
+    const R = () => needRoot();
+    if(sub==="install"){ const r=R(); if(r) return r;
+      const res = pkgInstall(names[0]);
+      return res.err ? bad("No match for argument: "+names[0]) : ok(res.msg+"\nComplete!\n"); }
+    if(sub==="remove"||sub==="erase"||sub==="autoremove"){ const r=R(); if(r) return r;
+      const res = pkgRemove(names[0], true);
+      return res.err ? bad("No match for argument: "+names[0]) : ok(res.msg+"\nComplete!\n"); }
+    if(sub==="upgrade"||sub==="update"){ const r=R(); if(r) return r;
+      return ok("Last metadata expiration check: 0:00:01 ago.\nDependencies resolved.\nNothing to do.\nComplete!\n"); }
+    if(sub==="search"){ return ok(pkgSearch(names[0]||"").map(([n,p])=>n+" : "+p.desc).join("\n")+"\n"); }
+    if(sub==="info"){ const p = pkgFind(names[0]);
+      return p ? ok("Name         : "+names[0]+"\nVersion      : "+p.ver+"\nRepository   : fedora\nSummary      : "+p.desc+"\n")
+               : bad("No matching packages to list"); }
+    if(sub==="provides"||sub==="whatprovides"){ const owner = pkgOwner(names[0]);
+      return owner ? ok(owner+" : "+vm.repo[owner].desc+"\nRepo : @System\nMatched from:\nFilename : "+K.abspath(names[0])+"\n")
+                   : bad("Error: No Matches found"); }
+    if(sub==="list"){ return ok("Installed Packages\n"+Object.entries(vm.installed)
+      .map(([n,p])=>n.padEnd(24)+p.ver+"  @System").join("\n")+"\n"); }
+    if(sub==="clean"){ const r=R(); if(r) return r; vm.pkgCache = 0;
+      return ok("0 files removed\n"); }
+    return bad(tool+": No such command: "+(sub||""));
+  };
+  C.dnf = dnfLike("dnf"); C.yum = dnfLike("yum");
+  C.rpm = (argv) => {
+    const {flags, ops} = splitFlags(argv);
+    if(flags.has("q") && flags.has("f")){ const owner = pkgOwner(ops[0]);
+      return owner ? ok(owner+"-"+vm.installed[owner].ver+"\n") : bad("file "+ops[0]+" is not owned by any package"); }
+    if(flags.has("q") && flags.has("a")) return ok(Object.entries(vm.installed).map(([n,p])=>n+"-"+p.ver).join("\n")+"\n");
+    return bad("rpm: unsupported operation");
+  };
+
+  C.zypper = (argv) => {
+    const sub = argv[0], names = argv.slice(1).filter(x=>!x.startsWith("-"));
+    const R = () => needRoot();
+    if(sub==="install"||sub==="in"){ const r=R(); if(r) return r;
+      const res = pkgInstall(names[0]);
+      return res.err ? bad("Package '"+names[0]+"' not found.") : ok(res.msg+"\n"); }
+    if(sub==="remove"||sub==="rm"){ const r=R(); if(r) return r;
+      const res = pkgRemove(names[0], argv.includes("--clean-deps"));
+      return res.err ? bad("Package '"+names[0]+"' not found.") : ok(res.msg+"\n"); }
+    if(sub==="update"||sub==="up"||sub==="dup"){ const r=R(); if(r) return r;
+      return ok("Loading repository data...\nNothing to do.\n"); }
+    if(sub==="refresh"||sub==="ref"){ const r=R(); if(r) return r;
+      return ok("Repository 'oss' is up to date.\nAll repositories have been refreshed.\n"); }
+    if(sub==="search"||sub==="se"){
+      if(argv.includes("--installed-only")||argv.includes("-i"))
+        return ok(Object.entries(vm.installed).map(([n,p])=>"i | "+n+" | "+p.desc).join("\n")+"\n");
+      if(argv.includes("--provides")){ const owner = pkgOwner(names[0]);
+        return owner ? ok("i | "+owner+" | "+vm.repo[owner].desc+"\n") : bad("No matching items found."); }
+      return ok(pkgSearch(names[0]||"").map(([n,p])=>"  | "+n+" | "+p.desc).join("\n")+"\n"); }
+    if(sub==="info"){ const p = pkgFind(names[0]);
+      return p ? ok("Name           : "+names[0]+"\nVersion        : "+p.ver+"\nSummary        : "+p.desc+"\n")
+               : bad("package '"+names[0]+"' not found."); }
+    if(sub==="clean"){ const r=R(); if(r) return r; vm.pkgCache = 0;
+      return ok("All repositories have been cleaned up.\n"); }
+    return bad("Unknown command '"+(sub||"")+"'");
+  };
+
+  /* ---------------- the remaining commands the drill teaches ------------- */
+  C.top = () => ok(
+    "top - 09:00:12 up 3 days,  2:14,  1 user,  load average: 0.08, 0.12, 0.09\n"+
+    "Tasks: "+vm.procs.length+" total,   1 running\n"+
+    "%Cpu(s):  4.1 us,  1.2 sy, 94.7 id\nMiB Mem :  15738.7 total,   8605.8 free\n\n"+
+    "  PID USER      %CPU  COMMAND\n"+
+    vm.procs.slice().sort((a,b)=>parseFloat(b.cpu)-parseFloat(a.cpu))
+      .map(p=>String(p.pid).padStart(5)+" "+p.user.padEnd(9)+p.cpu.padStart(5)+"  "+p.cmd).join("\n")+
+    "\n\n[a snapshot — the real top refreshes until you press q]\n");
+  C.htop = C.top; C.btop = C.top;
+
+  C.last = (argv) => {
+    const nv = flagValue(argv, "n");
+    let rows = vm.logins.slice();
+    if(nv) rows = rows.slice(0, parseInt(nv.val,10));
+    return ok(rows.map(l => l.user.padEnd(9)+l.tty.padEnd(9)+l.from.padEnd(17)+l.when).join("\n")+
+      "\n\nwtmp begins Fri Aug 28 08:02:11 2026\n");
+  };
+  C.lastb = () => ok(vm.logins.filter(l=>l.bad)
+    .map(l => l.user.padEnd(9)+l.tty.padEnd(9)+l.from.padEnd(17)+l.when).join("\n")+"\n");
+
+  C.who = () => ok("analyst  pts/0        2026-08-31 08:58 (10.0.0.24)\n");
+  C.w = () => ok(
+    " 09:00:12 up 3 days,  2:14,  1 user,  load average: 0.08, 0.12, 0.09\n"+
+    "USER     TTY      FROM             LOGIN@   IDLE   WHAT\n"+
+    "analyst  pts/0    10.0.0.24        08:58    0.00s  -bash\n");
+
+  C.lsof = (argv) => {
+    const iv = argv.find(a => a.startsWith("-i"));
+    const spec = iv && iv.length > 2 ? iv.slice(2) : argv[argv.indexOf(iv)+1];
+    const port = spec ? String(spec).replace(/^:/,"") : null;
+    if(!iv) return bad("lsof: only -i (network files) is simulated here");
+    const rows = vm.sockets.filter(s => !port || String(s.port) === port);
+    if(!rows.length) return {out:"", err:"", code:1};
+    if(!(vm.asRoot || vm.user === "root"))
+      return {out:"", err:"lsof: WARNING: can't stat() many filesystems — run with sudo to see other users' sockets\n", code:1};
+    return ok("COMMAND   PID     USER   TYPE NODE NAME\n"+
+      rows.map(s => s.proc.padEnd(9)+String(s.pid).padEnd(7)+" root".padEnd(8)+" IPv4 "+
+        s.proto.toUpperCase()+" *:"+s.port+" (LISTEN)").join("\n")+"\n");
+  };
+
+  C.mount = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(!ops.length) return ok(vm.mounts.map(m => m.dev+" on "+m.at+" type "+m.fs+" ("+m.opts+")").join("\n")+"\n");
+    const r = needRoot(); if(r) return bad("mount: only root can do that");
+    const [dev, at] = ops;
+    if(!vm.blockdev.includes(dev)) return bad("mount: "+dev+": special device does not exist");
+    if(!lookup(at).node) return bad("mount: mount point "+at+" does not exist");
+    if(vm.mounts.some(m => m.at === at)) return bad("mount: "+at+": already mounted");
+    vm.mounts.push({dev, at, fs:"ext4", opts:"rw,relatime"});
+    K.put(at + "/lost+found/.keep", "", 0o644, "root", "root");
+    return ok("");
+  };
+  C.umount = (argv) => {
+    const t = argv.filter(a=>!a.startsWith("-"))[0];
+    const i = vm.mounts.findIndex(m => m.at === t || m.dev === t);
+    if(i < 0) return bad("umount: "+t+": not mounted");
+    if(i < 2) return bad("umount: "+t+": target is busy");
+    vm.mounts.splice(i,1); return ok("");
+  };
+
+  C.scp = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(ops.length < 2) return bad("usage: scp source ... target");
+    const [src, dst] = ops;
+    if(!/:/.test(dst) && !/:/.test(src)) return bad("scp: no remote host given — the destination looks like host:/path");
+    if(/:/.test(dst)){
+      const r = lookup(src);
+      if(!r.node) return bad("scp: "+src+": No such file or directory");
+      const [host] = dst.split(":");
+      const h = host.includes("@") ? host.split("@")[1] : host;
+      if(!vm.dns[h]) return bad("ssh: Could not resolve hostname "+h);
+      return ok(baseOf(src)+"      100%  "+sizeOf(r.node)+"     1.2MB/s   00:00\n");
+    }
+    return bad("scp: pulling from a remote host is not simulated here");
+  };
+
+  C.make = (argv) => {
+    if(!lookup("Makefile").node && !lookup("makefile").node)
+      return bad("make: *** No targets specified and no makefile found.  Stop.");
+    return ok("cc -c -o main.o main.c\ncc -c -o util.o util.c\ncc -o app main.o util.o\n");
+  };
+
+  C.stat = (argv) => {
+    const {ops} = splitFlags(argv);
+    if(!ops.length) return bad("stat: missing operand");
+    const out = [];
+    for(const p of ops){
+      const r = lookup(p, true);
+      if(!r.node) return bad("stat: cannot statx '"+p+"': No such file or directory");
+      const n = r.node;
+      out.push("  File: "+p+"\n  Size: "+sizeOf(n)+"\tBlocks: "+Math.ceil(sizeOf(n)/512)+
+        "\t"+(n.t==="d"?"directory":n.t==="l"?"symbolic link":"regular file")+
+        "\nAccess: ("+(n.mode & 0o7777).toString(8).padStart(4,"0")+"/"+modeStr(n)+")  Uid: ( "+
+        (vm.users[n.owner]?vm.users[n.owner].uid:0)+"/"+n.owner+")   Gid: ( 0/"+n.group+")\n"+
+        "Modify: "+dateStr(n.mt)+"\n Links: "+(n.links||1));
+    }
+    return ok(out.join("\n")+"\n");
+  };
+
+  C.file = (argv) => {
+    const {ops} = splitFlags(argv);
+    const out = [];
+    for(const p of ops){
+      const r = lookup(p, true);
+      if(!r.node){ out.push(p+": cannot open (No such file or directory)"); continue; }
+      const n = r.node;
+      let kind = "ASCII text";
+      if(n.t==="d") kind = "directory";
+      else if(n.t==="l") kind = "symbolic link to "+n.tgt;
+      else if(n.c.startsWith("#!ELF")) kind = "ELF 64-bit LSB executable, x86-64";
+      else if(/^#!/.test(n.c)) kind = "a "+n.c.split("\n")[0].replace(/^#!\s*/,"")+" script, ASCII text executable";
+      else if(n.c === "") kind = "empty";
+      else { try{ if(JSON.parse(n.c).fmt) kind = JSON.parse(n.c).fmt+" compressed data"; }catch(e){} }
+      out.push(p+": "+kind);
+    }
+    return ok(join(out));
+  };
+
   C.man = (argv) => {
     const n = argv[0];
     if(!n) return bad("What manual page do you want?");
@@ -3277,10 +3777,69 @@ function attachShell(K){
   C.help = () => ok("This is a simulated machine. Available commands:\n\n"+
     Object.keys(C).sort().join("  ")+"\n\nType 'tasks' to see what the current lab asks for.\n");
 
+  /* ---------------- expansion ----------------
+     bash order: variables and $( ) first, then ~ , then globbing. Single
+     quotes suppress all three; double quotes suppress ~ and globbing only. */
+  const tilde = s => s === "~" ? vm.HOME : s.startsWith("~/") ? vm.HOME + s.slice(1) : s;
+
+  function varExpand(s){
+    // $(cmd) and `cmd`
+    s = s.replace(/\$\(([^]*?)\)|`([^`]*)`/g, (m, a, b) =>
+      run(a != null ? a : b).out.replace(/\n+$/, "").replace(/\n/g, " "));
+    // $?  ${VAR}  $VAR
+    s = s.replace(/\$\?/g, () => String(vm.lastStatus));
+    s = s.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (m, k) => vm.env[k] != null ? vm.env[k] : "");
+    s = s.replace(/\$([A-Za-z_][A-Za-z0-9_]*)/g, (m, k) => vm.env[k] != null ? vm.env[k] : "");
+    return s;
+  }
+
+  /* {a,b,c} and {1..5}, which bash expands before anything else */
+  function braceExpand(s){
+    const m = s.match(/^(.*?)\{([^{}]*)\}(.*)$/);
+    if(!m) return [s];
+    const [, pre, body, post] = m;
+    let parts;
+    const range = body.match(/^(-?\d+)\.\.(-?\d+)$/);
+    if(range){
+      const a = Number(range[1]), b = Number(range[2]);
+      parts = [];
+      for(let i = a; a <= b ? i <= b : i >= b; a <= b ? i++ : i--) parts.push(String(i));
+    } else if(body.includes(",")) parts = body.split(",");
+    else return [s];                              // {x} on its own is literal
+    return parts.flatMap(p => braceExpand(pre + p + post));
+  }
+
+  function expandToken(t){
+    if(t.q === "'") return [t.v];                 // literal, no expansion at all
+    if(t.q === '"') return [varExpand(t.v)];      // variables only
+    return braceExpand(t.v).flatMap(b => glob(tilde(varExpand(b))));
+  }
+
   /* ---------------- shell execution ---------------- */
   function runSimple(argv, stdin){
     if(!argv.length) return ok("");
     let cmd = argv[0], args = argv.slice(1);
+
+    // NAME=value as a command sets a shell variable
+    if(/^[A-Za-z_][A-Za-z0-9_]*=/.test(cmd) && !args.length){
+      const i = cmd.indexOf("=");
+      vm.env[cmd.slice(0, i)] = cmd.slice(i + 1);
+      return ok("");
+    }
+    // ./script.sh runs a file that carries the execute bit
+    if(/^[.~/]/.test(cmd) && !C[cmd]){
+      const r = lookup(cmd);
+      if(!r.node) return {out:"", err:"bash: "+cmd+": No such file or directory\n", code:127};
+      if(r.node.t === "d") return {out:"", err:"bash: "+cmd+": Is a directory\n", code:126};
+      if(!K.canExec(r.node)) return {out:"", err:"bash: "+cmd+": Permission denied\n", code:126};
+      let o = "", e = "", cd = 0;
+      for(const ln of r.node.c.split("\n")){
+        const line = ln.trim();
+        if(!line || line.startsWith("#")) continue;
+        const rr = run(line); o += rr.out; e += rr.err; cd = rr.code;
+      }
+      return {out:o, err:e, code:cd};
+    }
     let elevated = false;
     if(cmd==="sudo"){
       if(!args.length) return bad("usage: sudo command");
@@ -3314,12 +3873,9 @@ function attachShell(K){
       if(t.v==="2>&1"){ errToOut = true; continue; }
       stages[stages.length-1].push(t);
     }
-    // the shell expands ~ and globs before the command ever sees the argument,
-    // so commands report the expanded path — exactly as bash does
-    const tilde = s => s === "~" ? vm.HOME : s.startsWith("~/") ? vm.HOME + s.slice(1) : s;
     let stdin = "", out = "", err = "", code = 0, clear = false, editor = null;
     for(const stage of stages){
-      const argv = stage.flatMap(t => t.q ? [t.v] : glob(tilde(t.v)));
+      const argv = stage.flatMap(expandToken);
       const r = runSimple(argv, stdin);
       stdin = r.out; out = r.out; err = r.err || ""; code = r.code;
       clear = clear || !!r.clear; editor = r.editor || editor;
@@ -3349,8 +3905,15 @@ function attachShell(K){
   }
 
   function run(input){
-    const src = String(input).trim();
+    let src = String(input).trim();
     if(!src) return {out:"", err:"", code:0};
+    // history expansion happens before anything else, and what gets recorded
+    // in history is the expanded line — same as bash
+    if(src.includes("!!")){
+      const prev = vm.hist[vm.hist.length-1];
+      if(!prev) return {out:"", err:"bash: !!: event not found\n", code:1};
+      src = src.split("!!").join(prev);
+    }
     vm.hist.push(src);
     const toks = tokenize(src);
     // split on && and ; keeping short-circuit semantics
@@ -3548,6 +4111,77 @@ function seedVM(K){
   ];
   vm.cron = [];
   vm.allGroups = ["root","sudo","www-data","users","analyst","adm","shadow"];
+
+  /* ---- packages: one database behind pacman / apt / dnf / zypper ---- */
+  vm.repo = {
+    firefox:  {ver:"128.0-1", desc:"Fast, private and safe web browser",
+               deps:["gtk3","nss"], files:["/usr/bin/firefox"], size:212},
+    nmap:     {ver:"7.95-1", desc:"Utility for network discovery and security auditing",
+               deps:["lua"], files:["/usr/bin/nmap","/usr/bin/ncat"], size:26},
+    htop:     {ver:"3.3.0-1", desc:"Interactive process viewer", deps:[], files:["/usr/bin/htop"], size:1},
+    nginx:    {ver:"1.27.0-1", desc:"Lightweight HTTP server and reverse proxy",
+               deps:["pcre2"], files:["/usr/bin/nginx"], size:8},
+    git:      {ver:"2.45.2-1", desc:"Fast distributed version control system", deps:[], files:["/usr/bin/git"], size:24},
+    tcpdump:  {ver:"4.99.4-1", desc:"Powerful command-line packet analyser",
+               deps:["libpcap"], files:["/usr/bin/tcpdump"], size:2},
+    gtk3:     {ver:"3.24.42-1", desc:"GObject-based multi-platform GUI toolkit", deps:[], files:[], size:48},
+    nss:      {ver:"3.101-1", desc:"Network Security Services", deps:[], files:[], size:6},
+    lua:      {ver:"5.4.6-1", desc:"Powerful lightweight programming language", deps:[], files:[], size:1},
+    pcre2:    {ver:"10.44-1", desc:"Perl compatible regular expressions library", deps:[], files:[], size:2},
+    libpcap:  {ver:"1.10.4-1", desc:"Portable packet capture library", deps:[], files:[], size:1},
+    coreutils:{ver:"9.5-1", desc:"The basic file, shell and text manipulation utilities",
+               deps:[], files:["/usr/bin/ls","/usr/bin/cat"], size:15},
+    bash:     {ver:"5.2.032-1", desc:"The GNU Bourne Again shell", deps:[], files:["/usr/bin/bash"], size:8},
+    openssh:  {ver:"9.8p1-1", desc:"SSH protocol implementation for remote login",
+               deps:[], files:["/usr/bin/ssh","/usr/bin/ssh-keygen"], size:9},
+    "shadow": {ver:"4.16.0-1", desc:"Password and account management tool suite",
+               deps:[], files:["/usr/bin/passwd"], size:2}
+  };
+  vm.installed = {};
+  ["coreutils","bash","openssh","git","shadow","nginx","pcre2"].forEach(n => {
+    vm.installed[n] = Object.assign({}, vm.repo[n], {auto: n === "pcre2"});
+  });
+  vm.pkgCache = 148;
+
+  /* ---- login history for last / lastb ---- */
+  vm.logins = [
+    {user:"analyst", tty:"pts/0", from:"10.0.0.24",     when:"Mon Aug 31 08:58   still logged in"},
+    {user:"analyst", tty:"pts/1", from:"10.0.0.24",     when:"Sun Aug 30 14:02 - 16:41  (02:39)"},
+    {user:"root",    tty:"tty1",  from:"-",             when:"Sun Aug 30 09:15 - 09:22  (00:07)"},
+    {user:"admin",   tty:"ssh",   from:"91.240.118.44", when:"Sun Aug 30 03:11 - 03:11  (00:00)", bad:true},
+    {user:"admin",   tty:"ssh",   from:"91.240.118.44", when:"Sun Aug 30 03:10 - 03:10  (00:00)", bad:true},
+    {user:"analyst", tty:"pts/0", from:"10.0.0.24",     when:"Fri Aug 28 08:02 - 17:30  (09:28)"}
+  ];
+
+  /* ---- mount table and block devices ---- */
+  vm.mounts = [
+    {dev:"/dev/sda2", at:"/",     fs:"ext4",  opts:"rw,relatime"},
+    {dev:"/dev/sda1", at:"/boot", fs:"vfat",  opts:"rw,noatime"},
+    {dev:"tmpfs",     at:"/dev/shm", fs:"tmpfs", opts:"rw,nosuid,nodev"}
+  ];
+  vm.blockdev = ["/dev/sda","/dev/sda1","/dev/sda2","/dev/sdb","/dev/sdb1"];
+  mkdirp("/mnt", 0o755);
+
+  /* Spread modification times out so -mtime and -newer mean something, and
+     give a couple of files real bulk so -size does too. */
+  const DAY = 86400;
+  const age = (p, days) => { const n = K.lookup(p).node; if(n) n.mt = vm.now - days*DAY; };
+  age(H+"/notes.txt", 0);
+  age(H+"/urls.txt", 1);
+  age(H+"/hosts.txt", 3);
+  age(H+"/deploy.sh", 6);
+  age(H+"/temp.log", 12);
+  age(H+"/id_rsa", 40);
+  age(H+"/reports/old.conf", 400);
+  age(H+"/reports/report.txt", 200);
+  age(H+"/projects/README.md", 30);
+  age(H+"/.bashrc", 365);
+  age(H+"/cache/tmp1.tmp", 2);
+  age(H+"/cache/tmp2.tmp", 9);
+  // a big file, so `find -size +1M` and `du -h` have something to find
+  put(H+"/logs/big-capture.pcap", "[binary capture data]\n", 0o644, "analyst", "analyst");
+  K.lookup(H+"/logs/big-capture.pcap").node.sz = 3 * 1024 * 1024;
+  age(H+"/logs/big-capture.pcap", 5);
   return K;
 }
 
@@ -3560,8 +4194,8 @@ function attachPython(K){
 
   class PyFloat { constructor(v){ this.v = v; } }
   class PyTuple { constructor(a){ this.a = a; } }
-  class PyFunc  { constructor(name, params, defaults, body, closure){
-    Object.assign(this, {name, params, defaults, body, closure}); } }
+  class PyFunc  { constructor(name, params, defaults, body, closure, rest){
+    Object.assign(this, {name, params, defaults, body, closure, rest}); } }
   class PyFile  { constructor(path, mode){ this.path = path; this.mode = mode; this.buf = ""; this.closed = false; } }
   class PyErr extends Error { constructor(type, msg){ super(msg); this.pytype = type; this.pymsg = msg; } }
   const err = (t,m) => { throw new PyErr(t,m); };
@@ -3743,20 +4377,28 @@ function attachPython(K){
           case "def": {
             p++; const name = eat("NAME").v; eat("OP","(");
             const params = [], defaults = {};
+            let rest = null;
             while(!at("OP",")")){
+              if(at("OP","*")){ p++; rest = eat("NAME").v; if(!opt("OP",",")) break; continue; }
               const pn = eat("NAME").v;
               if(opt("OP","=")) defaults[pn] = expr();
               params.push(pn);
               if(!opt("OP",",")) break;
             }
             eat("OP",")"); eat("OP",":");
-            return {k:"def", name, params, defaults, body:block()};
+            return {k:"def", name, params, defaults, rest, body:block()};
           }
           case "return": { p++; const v = (at("NL")||at("EOF")) ? null : expr(); opt("NL"); return {k:"return", v}; }
           case "break": p++; opt("NL"); return {k:"break"};
           case "continue": p++; opt("NL"); return {k:"continue"};
           case "pass": p++; opt("NL"); return {k:"pass"};
-          case "import": case "from": { while(!at("NL")&&!at("EOF")) p++; opt("NL"); return {k:"pass"}; }
+          case "import": case "from": {
+            // record the names so using them gives a clear message rather than
+            // a confusing NameError
+            const names = [];
+            while(!at("NL")&&!at("EOF")){ if(at("NAME")) names.push(peek().v); p++; }
+            opt("NL"); return {k:"import", names};
+          }
           case "with": {
             p++; const ctx = expr(); eat("KW","as"); const name = eat("NAME").v; eat("OP",":");
             return {k:"with", ctx, name, body:block()};
@@ -3827,10 +4469,16 @@ function attachPython(K){
       let e = atom();
       for(;;){
         if(at("OP","(")){
-          p++; const args = [];
-          while(!at("OP",")")){ args.push(expr()); if(!opt("OP",",")) break; }
+          p++; const args = [], kwargs = {};
+          while(!at("OP",")")){
+            // name=value is a keyword argument; name==value is a comparison
+            if(peek().t==="NAME" && peek(1).t==="OP" && peek(1).v==="="){
+              const kw = eat("NAME").v; eat("OP","="); kwargs[kw] = expr();
+            } else args.push(expr());
+            if(!opt("OP",",")) break;
+          }
           eat("OP",")");
-          e = {k:"call", fn:e, args};
+          e = {k:"call", fn:e, args, kwargs};
         } else if(at("OP","[")){
           p++;
           let lo = at("OP",":") ? null : expr();
@@ -3871,8 +4519,20 @@ function attachPython(K){
         eat("OP",")"); return first;
       }
       if(at("OP","[")){
-        p++; const items = [];
-        while(!at("OP","]")){ items.push(expr()); if(!opt("OP",",")) break; }
+        p++;
+        if(at("OP","]")){ p++; return {k:"list", items:[]}; }
+        const first = expr();
+        if(at("KW","for")){                       // [expr for x in xs if cond]
+          p++; const names = [eat("NAME").v];
+          while(opt("OP",",")) names.push(eat("NAME").v);
+          eat("KW","in"); const iter = expr();
+          let cond = null;
+          if(at("KW","if")){ p++; cond = expr(); }
+          eat("OP","]");
+          return {k:"comp", body:first, names, iter, cond};
+        }
+        const items = [first];
+        while(opt("OP",",")){ if(at("OP","]")) break; items.push(expr()); }
         eat("OP","]"); return {k:"list", items};
       }
       if(at("OP","{")){
@@ -3980,8 +4640,9 @@ function attachPython(K){
       round: a => { const d = a[1]===undefined ? 0 : num(a[1]);
         const r = Math.round(num(a[0]) * Math.pow(10,d)) / Math.pow(10,d);
         return d===0 ? Math.round(num(a[0])) : new PyFloat(r); },
-      sorted: a => { const l = BUILTINS.list([a[0]]).slice();
+      sorted: (a, kw) => { const l = BUILTINS.list([a[0]]).slice();
         l.sort((x,y)=> isNum(x)&&isNum(y) ? num(x)-num(y) : String(x)<String(y)?-1:String(x)>String(y)?1:0);
+        if(kw && kw.reverse !== undefined && truthy(kw.reverse)) l.reverse();
         return l; },
       reversed: a => BUILTINS.list([a[0]]).slice().reverse(),
       enumerate: a => BUILTINS.list([a[0]]).map((v,i)=> new PyTuple([i,v])),
@@ -4034,7 +4695,12 @@ function attachPython(K){
           join: a => BUILTINS.list([a[0]]).map(str).join(obj),
           title: () => obj.replace(/\w\S*/g, w=>w[0].toUpperCase()+w.slice(1).toLowerCase()),
           capitalize: () => obj.charAt(0).toUpperCase()+obj.slice(1).toLowerCase(),
-          isdigit: () => /^\d+$/.test(obj), isalpha: () => /^[A-Za-z]+$/.test(obj)
+          isdigit: () => /^\d+$/.test(obj), isalpha: () => /^[A-Za-z]+$/.test(obj),
+          format: (a) => { let i = 0;
+            return obj.replace(/\{(\d*)(?::([^}]*))?\}/g, (m, idx, spec) => {
+              const v = a[idx === "" ? i++ : Number(idx)];
+              if(spec && /^\.\d+f$/.test(spec)) return num(v).toFixed(parseInt(spec.slice(1),10));
+              return str(v); }); }
         };
         if(S[name]) return {__method:S[name]};
         err("AttributeError","'str' object has no attribute '"+name+"'");
@@ -4047,8 +4713,9 @@ function attachPython(K){
             if(i<0) err("ValueError","list.remove(x): x not in list"); obj.splice(i,1); return null; },
           pop: a => { if(!obj.length) err("IndexError","pop from empty list");
             return a && a.length ? obj.splice(num(a[0]),1)[0] : obj.pop(); },
-          sort: () => { obj.sort((x,y)=> isNum(x)&&isNum(y) ? num(x)-num(y)
-            : String(x)<String(y)?-1:String(x)>String(y)?1:0); return null; },
+          sort: (a, kw) => { obj.sort((x,y)=> isNum(x)&&isNum(y) ? num(x)-num(y)
+            : String(x)<String(y)?-1:String(x)>String(y)?1:0);
+            if(kw && kw.reverse !== undefined && truthy(kw.reverse)) obj.reverse(); return null; },
           reverse: () => { obj.reverse(); return null; },
           index: a => { const i = obj.findIndex(x=>eqVal(x,a[0]));
             if(i<0) err("ValueError",repr(a[0])+" is not in list"); return i; },
@@ -4097,6 +4764,8 @@ function attachPython(K){
         if(F[name]) return {__method:F[name]};
         err("AttributeError","'TextIOWrapper' object has no attribute '"+name+"'");
       }
+      if(obj && obj.__module)
+        err("ModuleNotFoundError", "'"+obj.__module+"' is not available — this trainer has no modules, only the built-ins");
       if(obj && obj.__type !== undefined && name === "__name__") return obj.__type;
       err("AttributeError","'"+typeName(obj)+"' object has no attribute '"+name+"'");
     }
@@ -4120,6 +4789,15 @@ function attachPython(K){
         if(Array.isArray(a) && Array.isArray(b)) return a.concat(b);
         if(isNum(a) && isNum(b)) return (isFloat(a)||isFloat(b)) ? new PyFloat(num(a)+num(b)) : a+b;
         err("TypeError","unsupported operand type(s) for +: '"+typeName(a)+"' and '"+typeName(b)+"'");
+      }
+      if(op === "%" && isStr(a)){
+        const vals = b instanceof PyTuple ? b.a : [b];
+        let i = 0;
+        return a.replace(/%([sd]|\.\d+f)/g, (m, kind) => {
+          const v = vals[i++];
+          if(kind === "d") return String(Math.trunc(num(v)));
+          if(kind.endsWith("f")) return num(v).toFixed(parseInt(kind.slice(1),10));
+          return str(v); });
       }
       if(op === "*"){
         if(isStr(a) && isInt(b)) return a.repeat(Math.max(0,b));
@@ -4224,32 +4902,51 @@ function attachPython(K){
           if(lo<0) lo += L; if(hi<0) hi += L;
           return isStr(o) ? o.slice(lo,hi) : seq.slice(lo,hi);
         }
+        case "comp": {
+          const inner = new Map(scope);           // the loop name stays local
+          const out = [];
+          for(const item of iterate(evalNode(n.iter, scope))){
+            if(n.names.length === 1) inner.set(n.names[0], item);
+            else { const vs = iterate(item); n.names.forEach((nm,i)=>inner.set(nm, vs[i])); }
+            if(n.cond && !truthy(evalNode(n.cond, inner))) continue;
+            out.push(evalNode(n.body, inner));
+          }
+          return out;
+        }
         case "call": {
           const args = n.args.map(a=>evalNode(a,scope));
+          const kw = {};
+          for(const k in (n.kwargs||{})) kw[k] = evalNode(n.kwargs[k], scope);
           const fnNode = n.fn;
           if(fnNode.k === "attr"){
             const m = getAttr(evalNode(fnNode.obj,scope), fnNode.name);
-            if(m && m.__method) return m.__method(args);
+            if(m && m.__method) return m.__method(args, kw);
             err("TypeError","'"+typeName(m)+"' object is not callable");
           }
           const f = evalNode(fnNode, scope);
-          if(f && f.__builtin) return BUILTINS[f.__builtin](args);
-          if(f instanceof PyFunc) return callFunc(f, args);
+          if(f && f.__builtin) return BUILTINS[f.__builtin](args, kw);
+          if(f instanceof PyFunc) return callFunc(f, args, kw);
+          if(f && f.__module) err("TypeError","'"+f.__module+"' is not available — this trainer has no modules, only the built-ins");
           err("TypeError","'"+typeName(f)+"' object is not callable");
         }
       }
       err("SyntaxError","cannot evaluate node "+n.k);
     }
 
-    function callFunc(f, args){
+    function callFunc(f, args, kw){
+      kw = kw || {};
       const local = new Map(f.closure);
       f.params.forEach((pn,i)=>{
         if(i < args.length) local.set(pn, args[i]);
+        else if(kw[pn] !== undefined) local.set(pn, kw[pn]);
         else if(f.defaults[pn] !== undefined) local.set(pn, evalNode(f.defaults[pn], local));
         else err("TypeError",f.name+"() missing required positional argument: '"+pn+"'");
       });
-      if(args.length > f.params.length)
+      if(f.rest) local.set(f.rest, new PyTuple(args.slice(f.params.length)));
+      else if(args.length > f.params.length)
         err("TypeError",f.name+"() takes "+f.params.length+" positional arguments but "+args.length+" were given");
+      for(const k in kw) if(!f.params.includes(k))
+        err("TypeError",f.name+"() got an unexpected keyword argument '"+k+"'");
       const r = execBlock(f.body, local);
       return r instanceof Ret ? r.v : null;
     }
@@ -4285,6 +4982,7 @@ function attachPython(K){
     function execStmt(st, scope){
       switch(st.k){
         case "pass": return null;
+        case "import": st.names.forEach(n => scope.set(n, {__module:n})); return null;
         case "expr": evalNode(st.e, scope); return null;
         case "assign": assign(st.target, evalNode(st.value, scope), scope); return null;
         case "aug": {
@@ -4317,7 +5015,7 @@ function attachPython(K){
           }
           return null;
         }
-        case "def": scope.set(st.name, new PyFunc(st.name, st.params, st.defaults, st.body, scope)); return null;
+        case "def": scope.set(st.name, new PyFunc(st.name, st.params, st.defaults, st.body, scope, st.rest)); return null;
         case "return": return new Ret(st.v ? evalNode(st.v, scope) : null);
         case "break": return BREAK;
         case "continue": return CONT;
@@ -4416,7 +5114,7 @@ function makeLabCtx(K, hist){
 
 function buildCourse(){
   return [
-{wk:36, n:1, date:"Mon 31 Aug", title:"Introduktion, Linux grunder, CLI, användare",
+{wk:36, n:1, date:"Mon 31 Aug", iso:"2026-08-31", title:"Introduktion, Linux grunder, CLI, användare",
  topics:"Projektförberedelser, Linux intro, filsystem, kommandoraden, användare",
  brief:"Get your bearings: where am I, what is here, and how do I make and move things. Everything below happens on the simulated machine to the right.",
  tasks:[
@@ -4430,8 +5128,8 @@ function buildCourse(){
   {q:"Create the directory tree <code>~/kurs/v36/lab1</code> with a single command.",
    hint:"mkdir needs one option to create missing parents.",
    check:c => c.isDir("/home/analyst/kurs/v36/lab1")},
-  {q:"Inside <code>lab1</code>, create three empty files: <code>a.txt</code>, <code>b.txt</code> and <code>c.txt</code>.",
-   hint:"touch accepts more than one filename at a time.",
+  {q:"Inside <code>~/kurs/v36/lab1</code>, create three empty files: <code>a.txt</code>, <code>b.txt</code> and <code>c.txt</code>.",
+   hint:"cd into the directory first, or give touch the full paths — it takes more than one filename at a time.",
    check:c => ["a","b","c"].every(n => c.exists("/home/analyst/kurs/v36/lab1/"+n+".txt"))},
   {q:"Copy <code>a.txt</code> into <code>~/kurs</code> and give the copy the name <code>first.txt</code>.",
    hint:"Either cp then mv, or cp straight to the new path.",
@@ -4449,7 +5147,7 @@ function buildCourse(){
   ["Why does <code>ls</code> hide <code>.bashrc</code> by default?",
    "A leading dot is the convention for hidden files. It is naming, not security — <code>ls -a</code> shows everything."]]},
 
-{wk:36, n:2, date:"Thu 3 Sep", title:"Nätverk",
+{wk:36, n:2, date:"Thu 3 Sep", iso:"2026-09-03", title:"Nätverk",
  topics:"Interfaces, adresser, routing, namnuppslagning, portar",
  brief:"This machine sits on 10.0.0.0/24 behind a gateway. Find out its address, how it reaches the outside, and what it is listening on.",
  tasks:[
@@ -4475,7 +5173,7 @@ function buildCourse(){
   ["You can ping 10.0.0.1 but names do not resolve. What is broken?",
    "DNS, not routing. Check <code>/etc/resolv.conf</code>."]]},
 
-{wk:37, n:3, date:"Mon 7 Sep", title:"SELinux, SUID/SGID, permissions, user & group management",
+{wk:37, n:3, date:"Mon 7 Sep", iso:"2026-09-07", title:"SELinux, SUID/SGID, permissions, user & group management",
  topics:"Rättigheter, ägarskap, specialbitar, konton och grupper",
  brief:"Permissions are the topic students lose the most marks on. Do every step here and read the ls -l output each time.",
  tasks:[
@@ -4495,7 +5193,8 @@ function buildCourse(){
    check:c => c.isDir("/srv/projekt") && c.group("/srv/projekt")==="projekt" && (c.mode("/srv/projekt") & 0o2777)===0o2775},
   {q:"Find every SUID binary on the system, discarding the permission errors.",
    hint:"find from /, by permission bits, with stderr sent to /dev/null.",
-   check:c => c.said(/\/opt\/legacy-helper/)},
+   check:c => c.hist.some(h => /\bfind\b/.test(h.cmd) && /2\s*>\s*\/dev\/null/.test(h.cmd) &&
+     /\/opt\/legacy-helper/.test(h.out))},
   {q:"Check whether SELinux is enforcing on this machine.", hint:"One word.",
    check:c => c.said(/Enforcing/)}],
  check:[
@@ -4506,7 +5205,7 @@ function buildCourse(){
   ["<code>/opt/legacy-helper</code> is SUID root. Why is that worth investigating?",
    "It runs as root no matter who launches it. An unexplained SUID root binary is a standard privilege-escalation route."]]},
 
-{wk:37, n:4, date:"Thu 10 Sep", title:"Networking, Firewalls, Subnetting, Update policy",
+{wk:37, n:4, date:"Thu 10 Sep", iso:"2026-09-10", title:"Networking, Firewalls, Subnetting, Update policy",
  topics:"Subnät, brandväggsregler, härdning, uppdateringsrutiner",
  brief:"Subnetting is arithmetic you must be able to do without a calculator. Work each answer out on paper, then echo it into the terminal to check yourself.",
  tasks:[
@@ -4536,14 +5235,14 @@ function buildCourse(){
   ["What is the difference between a service bound to <code>127.0.0.1</code> and one bound to <code>0.0.0.0</code>?",
    "<code>127.0.0.1</code> only accepts connections from the machine itself. <code>0.0.0.0</code> accepts them from any interface — that is what the network can reach."]]},
 
-{wk:38, n:5, date:"Mon 14 Sep", title:"Boot process, systemd, cron, ssh",
+{wk:38, n:5, date:"Mon 14 Sep", iso:"2026-09-14", title:"Boot process, systemd, cron, ssh",
  topics:"Uppstart, units, schemalagda jobb, nycklar",
  brief:"systemctl to see state, journalctl to find out why. This pair answers most 'it is broken' questions on a modern system.",
  tasks:[
   {q:"Check whether the <code>sshd</code> service is running.", hint:"The systemd control command plus the obvious sub-command.",
    check:c => c.hist.some(h => /sshd/.test(h.out) && /active \(running\)/.test(h.out))},
   {q:"List the units that have <b>failed</b>.", hint:"list-units with a long option.",
-   check:c => c.said(/bluetooth/)},
+   check:c => c.hist.some(h => /--failed/.test(h.cmd) && /bluetooth/.test(h.out))},
   {q:"Start the <code>docker</code> service now <b>and</b> make it start at every boot, in one command.",
    hint:"enable handles boot; one option also starts it immediately.",
    check:c => c.unit("docker") && c.unit("docker").enabled && c.unit("docker").state==="running"},
@@ -4565,7 +5264,7 @@ function buildCourse(){
   ["Which permissions does SSH demand on <code>~/.ssh</code> and a private key?",
    "<code>700</code> on the directory and <code>600</code> on the key, or it refuses to use them."]]},
 
-{wk:38, n:6, date:"Thu 17 Sep", title:"Logs, database, webserver, intro to security",
+{wk:38, n:6, date:"Thu 17 Sep", iso:"2026-09-17", title:"Logs, database, webserver, intro to security",
  topics:"Loggar, tjänster, grundläggande härdning",
  brief:"There is a real attack in this machine's auth log. Find it, count it, and identify where it came from.",
  tasks:[
@@ -4594,7 +5293,7 @@ function buildCourse(){
   ["What does <code>curl -I</code> do that plain <code>curl</code> does not?",
    "Sends a HEAD request — status line and headers, no body."]]},
 
-{wk:39, n:7, date:"Mon 21 Sep", title:"Backup, rsync, git, linuxadministration",
+{wk:39, n:7, date:"Mon 21 Sep", iso:"2026-09-21", title:"Backup, rsync, git, linuxadministration",
  topics:"Säkerhetskopiering, synkronisering, versionshantering",
  brief:"A backup you have never restored is not a backup. Every task here ends with proving the data came back.",
  tasks:[
@@ -4611,7 +5310,8 @@ function buildCourse(){
    hint:"Create the destination first. -a is archive mode, -v is verbose.",
    check:c => c.exists("/tmp/bak/webshop/app.conf") || c.exists("/tmp/bak/projects/webshop/app.conf")},
   {q:"Compute the SHA-256 checksum of your archive.", hint:"The algorithm name plus 'sum'.",
-   check:c => c.hist.some(h => /sha256sum/.test(h.cmd) && /[0-9a-f]{64}/.test(h.out))},
+   check:c => c.hist.some(h => /sha256sum/.test(h.cmd) && /backup\.tar\.gz/.test(h.cmd) &&
+     /[0-9a-f]{64}/.test(h.out))},
   {q:"Turn <code>~/projects</code> into a git repository, stage everything, and make a first commit.",
    hint:"Three commands: init, add, commit with a message.",
    check:c => c.git() && c.git().commits.length >= 1},
@@ -4626,7 +5326,7 @@ function buildCourse(){
   ["What is the difference between <code>git add</code> and <code>git commit</code>?",
    "<code>add</code> stages what you want included; <code>commit</code> records the staged set as a snapshot with a message."]]},
 
-{wk:39, n:8, date:"Thu 24 Sep", title:"Datacenter, moln, hybrid — on-prem och cloudlösningar",
+{wk:39, n:8, date:"Thu 24 Sep", iso:"2026-09-24", title:"Datacenter, moln, hybrid — on-prem och cloudlösningar",
  topics:"Driftsformer, ansvarsfördelning, kostnad",
  brief:"A written week. Use the terminal as your notebook: write the answers to files, which is also good practice with redirection.",
  tasks:[
@@ -4654,7 +5354,7 @@ function buildCourse(){
   ["Name one cloud cost people forget.",
    "Egress. Data in is usually free; data out, or between regions, is billed."]]},
 
-{wk:40, n:9, date:"Thu 1 Oct", title:"Logging and Auditing, setting up Python",
+{wk:40, n:9, date:"Thu 1 Oct", iso:"2026-10-01", title:"Logging and Auditing, setting up Python",
  topics:"Journalen, revision, Python-miljö",
  brief:"Finish the logging half, then check the Python toolchain works — everything from here on needs it.",
  tasks:[
@@ -4682,7 +5382,7 @@ function buildCourse(){
   ["Why use a virtual environment?",
    "It keeps a project's dependencies separate and stops pip fighting your distribution's package manager."]]},
 
-{wk:41, n:10, date:"Mon 5 Oct", title:"Introduction to Python 1",
+{wk:41, n:10, date:"Mon 5 Oct", iso:"2026-10-05", title:"Introduction to Python 1",
  topics:"Variabler, typer, aritmetik, boolesk logik, strängar, utskrift",
  brief:"Write each script with <code>edit &lt;file&gt;</code>, save it, then run it with <code>python3 &lt;file&gt;</code>. The checks below run your file and read its output.",
  tasks:[
@@ -4715,7 +5415,7 @@ function buildCourse(){
   ["What happens with <code>\"5\" + 5</code>?",
    "A TypeError. Python will not silently mix a string and an int — convert one first."]]},
 
-{wk:41, n:11, date:"Thu 8 Oct", title:"Introduction to Python 2",
+{wk:41, n:11, date:"Thu 8 Oct", iso:"2026-10-08", title:"Introduction to Python 2",
  topics:"Listor, dictionaries, sets, if/then, loopar, funktioner",
  brief:"The four containers and the three control structures. Everything you write from here uses these.",
  tasks:[
@@ -4758,7 +5458,7 @@ function buildCourse(){
   ["What does a function return with no <code>return</code> statement?",
    "<code>None</code> — a common surprise when you print the result of a function that only prints."]]},
 
-{wk:42, n:12, date:"Mon 12 Oct", title:"Introduction to Python 3 — files",
+{wk:42, n:12, date:"Mon 12 Oct", iso:"2026-10-12", title:"Introduction to Python 3 — files",
  topics:"Läsa och skriva filer, felhantering",
  brief:"Files are where Python meets the sysadmin work from the first half of the course. The machine's real log files are here to practise on.",
  tasks:[
@@ -4792,7 +5492,7 @@ function buildCourse(){
   ["Which exception does opening a missing file raise?",
    "<code>FileNotFoundError</code>. Catch that specifically rather than a bare <code>except:</code>."]]},
 
-{wk:42, n:13, date:"Thu 15 Oct", title:"Repetition och tentaförberedelse",
+{wk:42, n:13, date:"Thu 15 Oct", iso:"2026-10-15", title:"Repetition och tentaförberedelse",
  topics:"Genomgång inför tentan — börjar 10:00",
  brief:"A mixed set drawn from the whole course, with no hints pointing at a single command. If one of these stalls you, go back to that week's lab.",
  tasks:[
@@ -4825,16 +5525,53 @@ function buildCourse(){
 
 /* =================== course plan tab ===================
    A lab per lecture, worked on a simulated machine that lives in the page.
-   Task completion is checked against machine state and persists; the machine
-   itself resets on reload, which is what you want when practising. */
+   Each lecture keeps its own machine and its own scrollback, so switching
+   away and back does not throw your work away. */
 const COURSE = buildCourse();
-const CS = {K:null, lec:-1, hist:[], hp:0, editing:null};
+const CS = {K:null, lec:-1, hist:[], hp:0, editing:null, machines:{}, screens:{}, histories:{}};
 const ckey = (li, ti) => "L" + COURSE[li].n + ":" + ti;
 const lecDone = li => COURSE[li].tasks.filter((_,ti)=>S.lab[ckey(li,ti)]).length;
 
-function bootMachine(){
-  CS.K = attachPython(seedVM(attachShell(makeVM())));
-  CS.hist = []; CS.hp = 0;
+/* which lecture is happening now, so the tab opens somewhere useful */
+function currentLecture(){
+  const today = new Date().toISOString().slice(0,10);
+  for(let i=0;i<COURSE.length;i++) if(COURSE[i].iso >= today) return i;
+  return COURSE.length - 1;
+}
+
+function bootMachine(li){
+  CS.machines[li] = attachPython(seedVM(attachShell(makeVM())));
+  CS.histories[li] = [];
+  delete CS.screens[li];
+  CS.K = CS.machines[li]; CS.hist = CS.histories[li]; CS.hp = 0;
+}
+
+/* Machines are small enough to keep, so work survives a reload. Hard links
+   share one node in memory; a save/restore cycle turns them into two files. */
+function serializeMachines(){
+  const out = {};
+  for(const li in CS.machines){
+    const K = CS.machines[li];
+    out[li] = {root:K.vm.root, cwd:K.vm.cwd, units:K.vm.units, env:K.vm.env, git:K.vm.git,
+               installed:K.vm.installed, cron:K.vm.cron, mounts:K.vm.mounts, procs:K.vm.procs,
+               hist:(CS.histories[li]||[]).slice(-60).map(h=>({cmd:h.cmd, out:h.out, err:h.err, code:h.code})),
+               screen:(CS.screens[li]||"").slice(-40000)};
+  }
+  return out;
+}
+function restoreMachines(saved){
+  if(!saved) return;
+  for(const li in saved){
+    try{
+      const s = saved[li];
+      const K = attachPython(seedVM(attachShell(makeVM())));
+      ["root","cwd","units","env","git","installed","cron","mounts","procs"].forEach(k=>{
+        if(s[k] !== undefined) K.vm[k] = s[k]; });
+      CS.machines[li] = K;
+      CS.histories[li] = s.hist || [];
+      if(s.screen) CS.screens[li] = s.screen;
+    }catch(e){ /* a corrupt entry just means that lecture starts fresh */ }
+  }
 }
 
 function cline(html, cls){
@@ -4850,7 +5587,7 @@ function cps1(){
 }
 function cprompt(){ $("c-ps1").innerHTML = cps1(); }
 
-/* run everything the current lecture asks for and tick off what is now true */
+/* run every check for this lecture and tick off what is now true */
 function recheck(){
   const lec = COURSE[CS.lec];
   const ctx = makeLabCtx(CS.K, CS.hist);
@@ -4872,15 +5609,46 @@ function paintTasks(){
     if(!el) return;
     const done = !!S.lab[ckey(CS.lec,ti)];
     el.className = "ltask" + (done ? " done" : "");
+    el.setAttribute("aria-checked", String(done));
     el.querySelector(".lstat").textContent = done ? "done" : "";
   });
   const n = lecDone(CS.lec), tot = lec.tasks.length;
   const bar = $("c-progress");
-  if(bar){
-    bar.innerHTML = '<b>'+n+"</b> / "+tot+" tasks" +
-      (n===tot ? ' &nbsp;<span class="allgood">lab complete</span>' : "");
-  }
+  if(bar) bar.innerHTML = "<b>"+n+"</b> / "+tot+" tasks" +
+    (n===tot ? ' &nbsp;<span class="allgood">lab complete</span>' : "");
   renderCourseNav();
+}
+
+/* ---------- Tab completion, which the module guide promises ---------- */
+function completions(input){
+  const frag = (input.match(/(\S*)$/) || [""])[0];
+  const firstWord = /^\s*[^\s]*$/.test(input);
+  if(firstWord && !frag.includes("/"))
+    return {frag, list: Object.keys(CS.K.C).filter(c => c.startsWith(frag)).sort()};
+  const home = CS.K.vm.HOME;
+  const abs = frag.startsWith("~/") ? home + frag.slice(1) : frag === "~" ? home : frag;
+  const dir = abs.includes("/") ? (abs.replace(/\/[^/]*$/,"") || "/") : ".";
+  const base = abs.includes("/") ? abs.split("/").pop() : abs;
+  const r = CS.K.lookup(dir);
+  if(!r.node || r.node.t !== "d") return {frag, list: []};
+  const prefix = frag.includes("/") ? frag.replace(/[^/]*$/,"") : "";
+  const list = Object.keys(r.node.ch)
+    .filter(n => n.startsWith(base) && (base.startsWith(".") || !n.startsWith(".")))
+    .sort()
+    .map(n => prefix + n + (r.node.ch[n].t === "d" ? "/" : ""));
+  return {frag, list};
+}
+function applyCompletion(el){
+  const {frag, list} = completions(el.value);
+  if(!list.length) return;
+  const commonPrefix = list.reduce((a,b)=>{ let i=0; while(i<a.length && a[i]===b[i]) i++; return a.slice(0,i); });
+  const replaceWith = list.length === 1 ? list[0] + " " : commonPrefix;
+  const keep = el.value.slice(0, el.value.length - frag.length);
+  if(replaceWith.length >= frag.length) el.value = keep + replaceWith;
+  if(list.length > 1){
+    cline(cps1()+" "+esc(el.value), "cmd");
+    cline(list.map(esc).join("   "), "note");
+  }
 }
 
 async function csubmit(raw){
@@ -4897,7 +5665,7 @@ async function csubmit(raw){
     return;
   }
   if(/^reset$/i.test(input)){
-    CS.hist.pop(); bootMachine();
+    CS.hist.pop(); bootMachine(CS.lec);
     $("c-screen").innerHTML = "";
     cline("machine reset — your completed tasks are kept", "note");
     cprompt(); return;
@@ -4919,6 +5687,7 @@ async function csubmit(raw){
   const newly = recheck();
   newly.forEach(ti => cline("task "+(ti+1)+" complete — "+
     esc(COURSE[CS.lec].tasks[ti].q.replace(/<[^>]+>/g,"").slice(0,68)), "ok"));
+  CS.screens[CS.lec] = $("c-screen").innerHTML;
 }
 
 /* ---------- the editor pane, for writing scripts and crontabs ---------- */
@@ -4936,6 +5705,7 @@ function closeEditor(saveIt){
     if(node && node.t === "f") node.c = $("ed-body").value;
     cline("saved "+esc(CS.editing), "note");
     recheck();
+    CS.screens[CS.lec] = $("c-screen").innerHTML;
   }
   $("c-editor").style.display = "none";
   CS.editing = null;
@@ -4944,9 +5714,11 @@ function closeEditor(saveIt){
 
 function renderCourseNav(){
   const box = $("modlist"); box.innerHTML = "";
+  const now = currentLecture();
   COURSE.forEach((s,i)=>{
     const b = document.createElement("button");
-    b.className = "mod"; b.setAttribute("aria-current", i===CS.lec);
+    b.className = "mod" + (i === now ? " isnow" : "");
+    b.setAttribute("aria-current", i===CS.lec);
     b.innerHTML = '<span class="n">v'+s.wk+'</span><span>F'+s.n+": "+esc(s.title)+'</span>'+
       '<span class="done">'+lecDone(i)+"/"+s.tasks.length+"</span>";
     b.onclick = ()=>{ S.c = i; renderCourse(); save(); };
@@ -4960,14 +5732,20 @@ function renderCourseNav(){
 }
 
 function renderCourse(){
+  if(S.c == null || S.c < 0) S.c = currentLecture();
   const li = Math.min(S.c|0, COURSE.length-1);
   const lec = COURSE[li];
-  if(CS.lec !== li){ CS.lec = li; bootMachine(); }
+  const firstVisit = CS.lec !== li;
+  CS.lec = li;
+  // reuse this lecture's machine if it already has one
+  if(CS.machines[li]){ CS.K = CS.machines[li]; CS.hist = CS.histories[li]; CS.hp = CS.hist.length; }
+  else bootMachine(li);
 
   let h =
     '<div class="cw"><div class="chead">'+
       '<div class="cmeta"><span class="wk">Vecka '+lec.wk+'</span>'+
-        '<span class="dt">'+esc(lec.date)+'</span><span>Föreläsning '+lec.n+'</span></div>'+
+        '<span class="dt">'+esc(lec.date)+'</span><span>Föreläsning '+lec.n+'</span>'+
+        (li === currentLecture() ? '<span class="nowtag">next up</span>' : "")+"</div>"+
       "<h1>"+esc(lec.title)+"</h1>"+
       '<p class="topics">'+esc(lec.topics)+"</p>"+
       '<p class="cbrief">'+esc(lec.brief)+"</p>"+
@@ -4976,16 +5754,14 @@ function renderCourse(){
       '<ol class="ltasks">';
   lec.tasks.forEach((t,ti)=>{
     const done = !!S.lab[ckey(li,ti)];
-    h += '<li class="ltask'+(done?" done":"")+'" id="t'+ti+'">'+
+    h += '<li class="ltask'+(done?" done":"")+'" id="t'+ti+'" role="checkbox" aria-checked="'+done+'">'+
       '<span class="lnum">'+(ti+1)+"</span>"+
       '<span class="lbody"><span class="ltext">'+t.q+"</span>"+
-        '<button class="lhint" data-h="'+ti+'">hint</button>'+
+        '<button class="lhint" data-h="'+ti+'" aria-expanded="false" aria-controls="h'+ti+'">hint</button>'+
         '<span class="lhinttext" id="h'+ti+'" hidden>'+esc(t.hint)+"</span></span>"+
       '<span class="lstat">'+(done?"done":"")+"</span></li>";
   });
-  h += "</ol>"+
-    '<p class="cprog" id="c-progress"></p>'+
-    "</div>"+
+  h += "</ol><p class=\"cprog\" id=\"c-progress\"></p></div>"+
     '<div class="csec"><h2>Check yourself — answers are hidden until you open them</h2>';
   lec.check.forEach(([q,a])=>{
     h += '<details class="chk"><summary>'+q+'</summary><div class="ans">'+a+"</div></details>";
@@ -4996,18 +5772,17 @@ function renderCourse(){
     '<div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>'+
       '<span class="title">bash — analyst@workstation-07 (simulated)</span>'+
       '<button class="tbtn" id="c-reset">reset machine</button></div>'+
-    '<div class="screen" id="c-screen"></div>'+
+    '<div class="screen" id="c-screen" role="log" aria-live="polite" aria-label="Terminal output"></div>'+
     '<div class="inputline"><span class="ps1" id="c-ps1"></span>'+
       '<input id="c-entry" autocomplete="off" autocapitalize="off" spellcheck="false" '+
-      'aria-label="Type a command" placeholder="type a command — try: ls, help, tasks"></div>'+
+      'aria-label="Type a command" placeholder="type a command — Tab completes, try: ls, help, tasks"></div>'+
     '<div class="editor" id="c-editor" style="display:none">'+
-      '<div class="edhead">editing <b id="ed-path"></b>'+
-        '<span class="edhint">Ctrl+Enter saves</span></div>'+
-      '<textarea id="ed-body" spellcheck="false"></textarea>'+
+      '<div class="edhead"><label for="ed-body">editing <b id="ed-path"></b></label>'+
+        '<span class="edhint">Ctrl+Enter saves · Esc cancels</span></div>'+
+      '<textarea id="ed-body" spellcheck="false" aria-label="File contents"></textarea>'+
       '<div class="edfoot"><button class="nextbtn" id="ed-save">Save</button>'+
         '<button class="tbtn" id="ed-cancel">Cancel</button></div>'+
-    "</div>"+
-    "</section>";
+    "</div></section>";
 
   h += '<div class="cnav">'+
     '<button class="tbtn" id="c-prev">← Previous</button>'+
@@ -5015,18 +5790,26 @@ function renderCourse(){
 
   $("courseview").innerHTML = h;
 
-  $("c-screen").innerHTML = "";
-  cline("Simulated Arch machine. Your home is /home/analyst. Nothing here can break anything.", "note");
-  cline("Type <b>help</b> for the command list, <b>tasks</b> to re-read the lab, <b>reset</b> to start the machine over.", "note");
+  // restore this lecture's scrollback, or print the banner on a first visit
+  if(CS.screens[li]) $("c-screen").innerHTML = CS.screens[li];
+  else {
+    cline("Simulated Arch machine. Your home is /home/analyst. Nothing here can break anything.", "note");
+    cline("Type <b>help</b> for the command list, <b>tasks</b> to re-read the lab, <b>reset</b> to start over.", "note");
+    CS.screens[li] = $("c-screen").innerHTML;
+  }
+  $("c-screen").scrollTop = $("c-screen").scrollHeight;
   cprompt();
 
   $("c-entry").addEventListener("keydown", e=>{
     if(e.key==="Enter"){ const v=e.target.value; e.target.value=""; csubmit(v); }
+    else if(e.key==="Tab"){ e.preventDefault(); applyCompletion(e.target); }
     else if(e.key==="ArrowUp"){ e.preventDefault();
       if(CS.hp>0){ CS.hp--; e.target.value = CS.hist[CS.hp] ? CS.hist[CS.hp].cmd : ""; } }
     else if(e.key==="ArrowDown"){ e.preventDefault();
       if(CS.hp < CS.hist.length-1){ CS.hp++; e.target.value = CS.hist[CS.hp].cmd; }
       else { CS.hp = CS.hist.length; e.target.value=""; } }
+    else if(e.key==="l" && e.ctrlKey){ e.preventDefault();
+      $("c-screen").innerHTML=""; CS.screens[CS.lec]=""; }
   });
   $("c-screen").addEventListener("click", ()=>$("c-entry").focus());
   $("c-reset").onclick = ()=>csubmit("reset");
@@ -5042,7 +5825,9 @@ function renderCourse(){
   });
   $("courseview").querySelectorAll(".lhint").forEach(b=>{
     b.onclick = ()=>{ const el = $("h"+b.dataset.h);
-      el.hidden = !el.hidden; b.textContent = el.hidden ? "hint" : "hide hint"; };
+      el.hidden = !el.hidden;
+      b.setAttribute("aria-expanded", String(!el.hidden));
+      b.textContent = el.hidden ? "hint" : "hide hint"; };
   });
   $("c-prev").onclick = ()=>{ if(S.c>0){ S.c--; renderCourse(); save(); } };
   $("c-next").onclick = ()=>{ if(S.c<COURSE.length-1){ S.c++; renderCourse(); save(); } };
@@ -5054,6 +5839,13 @@ function renderCourse(){
 }
 
 /* ===== END simulated machine ===== */
+
+
+
+
+
+
+
 
 
 
@@ -5171,7 +5963,11 @@ function setMode(m){
   $("m-quiz").setAttribute("aria-pressed", String(quiz));
   $("m-course").setAttribute("aria-pressed", String(course));
   $("sectlabel").textContent = drill ? "Modules" : quiz ? "Quiz sections" : "Course weeks";
+  // the distro picker only affects the drill, so don't leave it live elsewhere
   $("distro").style.opacity = drill ? "1" : ".35";
+  $("distro").setAttribute("aria-hidden", String(!drill));
+  $("distro").querySelectorAll("button").forEach(b=>{
+    b.disabled = !drill; b.style.cursor = drill ? "pointer" : "default"; });
   if(drill) renderTask(); else if(quiz) renderQuiz(); else renderCourse();
   save();
 }

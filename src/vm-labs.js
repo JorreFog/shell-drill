@@ -23,7 +23,7 @@ function makeLabCtx(K, hist){
 
 function buildCourse(){
   return [
-{wk:36, n:1, date:"Mon 31 Aug", title:"Introduktion, Linux grunder, CLI, användare",
+{wk:36, n:1, date:"Mon 31 Aug", iso:"2026-08-31", title:"Introduktion, Linux grunder, CLI, användare",
  topics:"Projektförberedelser, Linux intro, filsystem, kommandoraden, användare",
  brief:"Get your bearings: where am I, what is here, and how do I make and move things. Everything below happens on the simulated machine to the right.",
  tasks:[
@@ -37,8 +37,8 @@ function buildCourse(){
   {q:"Create the directory tree <code>~/kurs/v36/lab1</code> with a single command.",
    hint:"mkdir needs one option to create missing parents.",
    check:c => c.isDir("/home/analyst/kurs/v36/lab1")},
-  {q:"Inside <code>lab1</code>, create three empty files: <code>a.txt</code>, <code>b.txt</code> and <code>c.txt</code>.",
-   hint:"touch accepts more than one filename at a time.",
+  {q:"Inside <code>~/kurs/v36/lab1</code>, create three empty files: <code>a.txt</code>, <code>b.txt</code> and <code>c.txt</code>.",
+   hint:"cd into the directory first, or give touch the full paths — it takes more than one filename at a time.",
    check:c => ["a","b","c"].every(n => c.exists("/home/analyst/kurs/v36/lab1/"+n+".txt"))},
   {q:"Copy <code>a.txt</code> into <code>~/kurs</code> and give the copy the name <code>first.txt</code>.",
    hint:"Either cp then mv, or cp straight to the new path.",
@@ -56,7 +56,7 @@ function buildCourse(){
   ["Why does <code>ls</code> hide <code>.bashrc</code> by default?",
    "A leading dot is the convention for hidden files. It is naming, not security — <code>ls -a</code> shows everything."]]},
 
-{wk:36, n:2, date:"Thu 3 Sep", title:"Nätverk",
+{wk:36, n:2, date:"Thu 3 Sep", iso:"2026-09-03", title:"Nätverk",
  topics:"Interfaces, adresser, routing, namnuppslagning, portar",
  brief:"This machine sits on 10.0.0.0/24 behind a gateway. Find out its address, how it reaches the outside, and what it is listening on.",
  tasks:[
@@ -82,7 +82,7 @@ function buildCourse(){
   ["You can ping 10.0.0.1 but names do not resolve. What is broken?",
    "DNS, not routing. Check <code>/etc/resolv.conf</code>."]]},
 
-{wk:37, n:3, date:"Mon 7 Sep", title:"SELinux, SUID/SGID, permissions, user & group management",
+{wk:37, n:3, date:"Mon 7 Sep", iso:"2026-09-07", title:"SELinux, SUID/SGID, permissions, user & group management",
  topics:"Rättigheter, ägarskap, specialbitar, konton och grupper",
  brief:"Permissions are the topic students lose the most marks on. Do every step here and read the ls -l output each time.",
  tasks:[
@@ -102,7 +102,8 @@ function buildCourse(){
    check:c => c.isDir("/srv/projekt") && c.group("/srv/projekt")==="projekt" && (c.mode("/srv/projekt") & 0o2777)===0o2775},
   {q:"Find every SUID binary on the system, discarding the permission errors.",
    hint:"find from /, by permission bits, with stderr sent to /dev/null.",
-   check:c => c.said(/\/opt\/legacy-helper/)},
+   check:c => c.hist.some(h => /\bfind\b/.test(h.cmd) && /2\s*>\s*\/dev\/null/.test(h.cmd) &&
+     /\/opt\/legacy-helper/.test(h.out))},
   {q:"Check whether SELinux is enforcing on this machine.", hint:"One word.",
    check:c => c.said(/Enforcing/)}],
  check:[
@@ -113,7 +114,7 @@ function buildCourse(){
   ["<code>/opt/legacy-helper</code> is SUID root. Why is that worth investigating?",
    "It runs as root no matter who launches it. An unexplained SUID root binary is a standard privilege-escalation route."]]},
 
-{wk:37, n:4, date:"Thu 10 Sep", title:"Networking, Firewalls, Subnetting, Update policy",
+{wk:37, n:4, date:"Thu 10 Sep", iso:"2026-09-10", title:"Networking, Firewalls, Subnetting, Update policy",
  topics:"Subnät, brandväggsregler, härdning, uppdateringsrutiner",
  brief:"Subnetting is arithmetic you must be able to do without a calculator. Work each answer out on paper, then echo it into the terminal to check yourself.",
  tasks:[
@@ -143,14 +144,14 @@ function buildCourse(){
   ["What is the difference between a service bound to <code>127.0.0.1</code> and one bound to <code>0.0.0.0</code>?",
    "<code>127.0.0.1</code> only accepts connections from the machine itself. <code>0.0.0.0</code> accepts them from any interface — that is what the network can reach."]]},
 
-{wk:38, n:5, date:"Mon 14 Sep", title:"Boot process, systemd, cron, ssh",
+{wk:38, n:5, date:"Mon 14 Sep", iso:"2026-09-14", title:"Boot process, systemd, cron, ssh",
  topics:"Uppstart, units, schemalagda jobb, nycklar",
  brief:"systemctl to see state, journalctl to find out why. This pair answers most 'it is broken' questions on a modern system.",
  tasks:[
   {q:"Check whether the <code>sshd</code> service is running.", hint:"The systemd control command plus the obvious sub-command.",
    check:c => c.hist.some(h => /sshd/.test(h.out) && /active \(running\)/.test(h.out))},
   {q:"List the units that have <b>failed</b>.", hint:"list-units with a long option.",
-   check:c => c.said(/bluetooth/)},
+   check:c => c.hist.some(h => /--failed/.test(h.cmd) && /bluetooth/.test(h.out))},
   {q:"Start the <code>docker</code> service now <b>and</b> make it start at every boot, in one command.",
    hint:"enable handles boot; one option also starts it immediately.",
    check:c => c.unit("docker") && c.unit("docker").enabled && c.unit("docker").state==="running"},
@@ -172,7 +173,7 @@ function buildCourse(){
   ["Which permissions does SSH demand on <code>~/.ssh</code> and a private key?",
    "<code>700</code> on the directory and <code>600</code> on the key, or it refuses to use them."]]},
 
-{wk:38, n:6, date:"Thu 17 Sep", title:"Logs, database, webserver, intro to security",
+{wk:38, n:6, date:"Thu 17 Sep", iso:"2026-09-17", title:"Logs, database, webserver, intro to security",
  topics:"Loggar, tjänster, grundläggande härdning",
  brief:"There is a real attack in this machine's auth log. Find it, count it, and identify where it came from.",
  tasks:[
@@ -201,7 +202,7 @@ function buildCourse(){
   ["What does <code>curl -I</code> do that plain <code>curl</code> does not?",
    "Sends a HEAD request — status line and headers, no body."]]},
 
-{wk:39, n:7, date:"Mon 21 Sep", title:"Backup, rsync, git, linuxadministration",
+{wk:39, n:7, date:"Mon 21 Sep", iso:"2026-09-21", title:"Backup, rsync, git, linuxadministration",
  topics:"Säkerhetskopiering, synkronisering, versionshantering",
  brief:"A backup you have never restored is not a backup. Every task here ends with proving the data came back.",
  tasks:[
@@ -218,7 +219,8 @@ function buildCourse(){
    hint:"Create the destination first. -a is archive mode, -v is verbose.",
    check:c => c.exists("/tmp/bak/webshop/app.conf") || c.exists("/tmp/bak/projects/webshop/app.conf")},
   {q:"Compute the SHA-256 checksum of your archive.", hint:"The algorithm name plus 'sum'.",
-   check:c => c.hist.some(h => /sha256sum/.test(h.cmd) && /[0-9a-f]{64}/.test(h.out))},
+   check:c => c.hist.some(h => /sha256sum/.test(h.cmd) && /backup\.tar\.gz/.test(h.cmd) &&
+     /[0-9a-f]{64}/.test(h.out))},
   {q:"Turn <code>~/projects</code> into a git repository, stage everything, and make a first commit.",
    hint:"Three commands: init, add, commit with a message.",
    check:c => c.git() && c.git().commits.length >= 1},
@@ -233,7 +235,7 @@ function buildCourse(){
   ["What is the difference between <code>git add</code> and <code>git commit</code>?",
    "<code>add</code> stages what you want included; <code>commit</code> records the staged set as a snapshot with a message."]]},
 
-{wk:39, n:8, date:"Thu 24 Sep", title:"Datacenter, moln, hybrid — on-prem och cloudlösningar",
+{wk:39, n:8, date:"Thu 24 Sep", iso:"2026-09-24", title:"Datacenter, moln, hybrid — on-prem och cloudlösningar",
  topics:"Driftsformer, ansvarsfördelning, kostnad",
  brief:"A written week. Use the terminal as your notebook: write the answers to files, which is also good practice with redirection.",
  tasks:[
@@ -261,7 +263,7 @@ function buildCourse(){
   ["Name one cloud cost people forget.",
    "Egress. Data in is usually free; data out, or between regions, is billed."]]},
 
-{wk:40, n:9, date:"Thu 1 Oct", title:"Logging and Auditing, setting up Python",
+{wk:40, n:9, date:"Thu 1 Oct", iso:"2026-10-01", title:"Logging and Auditing, setting up Python",
  topics:"Journalen, revision, Python-miljö",
  brief:"Finish the logging half, then check the Python toolchain works — everything from here on needs it.",
  tasks:[
@@ -289,7 +291,7 @@ function buildCourse(){
   ["Why use a virtual environment?",
    "It keeps a project's dependencies separate and stops pip fighting your distribution's package manager."]]},
 
-{wk:41, n:10, date:"Mon 5 Oct", title:"Introduction to Python 1",
+{wk:41, n:10, date:"Mon 5 Oct", iso:"2026-10-05", title:"Introduction to Python 1",
  topics:"Variabler, typer, aritmetik, boolesk logik, strängar, utskrift",
  brief:"Write each script with <code>edit &lt;file&gt;</code>, save it, then run it with <code>python3 &lt;file&gt;</code>. The checks below run your file and read its output.",
  tasks:[
@@ -322,7 +324,7 @@ function buildCourse(){
   ["What happens with <code>\"5\" + 5</code>?",
    "A TypeError. Python will not silently mix a string and an int — convert one first."]]},
 
-{wk:41, n:11, date:"Thu 8 Oct", title:"Introduction to Python 2",
+{wk:41, n:11, date:"Thu 8 Oct", iso:"2026-10-08", title:"Introduction to Python 2",
  topics:"Listor, dictionaries, sets, if/then, loopar, funktioner",
  brief:"The four containers and the three control structures. Everything you write from here uses these.",
  tasks:[
@@ -365,7 +367,7 @@ function buildCourse(){
   ["What does a function return with no <code>return</code> statement?",
    "<code>None</code> — a common surprise when you print the result of a function that only prints."]]},
 
-{wk:42, n:12, date:"Mon 12 Oct", title:"Introduction to Python 3 — files",
+{wk:42, n:12, date:"Mon 12 Oct", iso:"2026-10-12", title:"Introduction to Python 3 — files",
  topics:"Läsa och skriva filer, felhantering",
  brief:"Files are where Python meets the sysadmin work from the first half of the course. The machine's real log files are here to practise on.",
  tasks:[
@@ -399,7 +401,7 @@ function buildCourse(){
   ["Which exception does opening a missing file raise?",
    "<code>FileNotFoundError</code>. Catch that specifically rather than a bare <code>except:</code>."]]},
 
-{wk:42, n:13, date:"Thu 15 Oct", title:"Repetition och tentaförberedelse",
+{wk:42, n:13, date:"Thu 15 Oct", iso:"2026-10-15", title:"Repetition och tentaförberedelse",
  topics:"Genomgång inför tentan — börjar 10:00",
  brief:"A mixed set drawn from the whole course, with no hints pointing at a single command. If one of these stalls you, go back to that week's lab.",
  tasks:[
