@@ -301,13 +301,17 @@ body.picking .wrap{visibility:hidden}
 
 /* ---------- menu atmosphere ---------- */
 .picker::after{
-  /* Static, and faded with a gradient layer rather than mask-image. A mask
-     takes the layer off the fast paint path in Gecko, and this one was also
-     animating for ever with will-change:transform, so the compositor kept a
-     full-viewport masked layer alive the whole time the menu was open. The
-     top background layer paints the page colour back over the edges, which
-     gives the same fade for the cost of one more gradient. */
-  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  /* Static and unmasked. A mask takes the layer off the fast paint path in
+     Gecko, and this one also animated for ever with will-change:transform, so
+     the compositor kept a full-viewport masked layer alive the whole time the
+     menu was open. The first background layer paints the page colour back over
+     the edges, which fades the grid for the cost of one more gradient.
+
+     z-index:-1 matters: ::after paints above the element's children, so
+     without it that fade layer washes black over the cards and dims half the
+     menu. .picker sets z-index:150 and so makes a stacking context, which
+     keeps -1 behind the cards but still above the picker's own background. */
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;z-index:-1;
   background-image:radial-gradient(760px 520px at 50% 6%,transparent 34%,var(--void) 80%),
                    linear-gradient(rgba(92,207,230,.045) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(92,207,230,.045) 1px,transparent 1px);
@@ -586,6 +590,17 @@ body::after{content:none}
 .ccard.ready.prov:hover{border-left-color:var(--warn)}
 .ccard.planned:hover{border-left-color:var(--dim)}
 .csoon{color:var(--dim)}
+
+/* The menu cards sat at 1.05:1 against the page — the same tone, separated
+   only by a 1px border, which is why the whole front page read as one flat
+   dark sheet. Lifting the surface to about 1.3:1 is what makes a card look
+   like a card. The section rules gain the same treatment so the page has
+   some structure to it rather than one continuous black. */
+.ccard{background:#19212C;border-color:#2A3646}
+.ccard:hover{background:#1F2937}
+.ccard.planned{background:#141A23}
+.sect-hd{border-color:#2A3646}
+.term .bar{background:#161D27}
 
 .nlmap{max-width:100%;height:auto}
 
