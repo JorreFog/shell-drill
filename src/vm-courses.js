@@ -64,8 +64,8 @@ const PROGRAMME = {
   /* Standalone practice, not tied to one course's schedule. */
   tools: [
   {id:"tool-drill", title:"Terminal drill",
-   blurb:{sv:"123 uppgifter i tio moduler. Du skriver det riktiga kommandot, och får veta vad som var fel när det inte stämmer.",
-         en:"123 tasks across ten modules. You type the real command; it tells you what was "+
+   blurb:{sv:"99 uppgifter i tio moduler. Du skriver det riktiga kommandot, och får veta vad som var fel när det inte stämmer.",
+         en:"99 tasks across ten modules. You type the real command; it tells you what was "+
          "wrong when you don't."},
    ready:true, modes:["drill"], entry:"drill"},
 
@@ -190,7 +190,17 @@ function enterCourse(id){
     const b = $("m-"+m);
     if(b) b.style.display = modes.includes(m) ? "" : "none";
   });
-  $("m-course").textContent = c.id === "grund-it" ? c.title : "Course plan";
+  // chrome that only means something with a terminal behind it: an entry with no
+  // drill tab has no distro to choose, and one with no terminal at all has no
+  // commands to look up. Hiding the distro row also drops the tour step that
+  // points at it, since showStep() skips steps whose target has no height.
+  const hasDrill = modes.includes("drill");
+  const hasTerminal = hasDrill || modes.includes("course");
+  $("distro").style.display  = hasDrill ? "" : "none";
+  $("openref").style.display = hasTerminal ? "" : "none";
+  if(!hasTerminal) $("drawer").classList.remove("open");
+
+  $("m-course").textContent = c.id === "grund-it" ? c.title : t("courseLab");
   $("here").textContent = c.title;
   setMode(returning && modes.includes(S.mode) ? S.mode : (c.entry || modes[0]));
   save();

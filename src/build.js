@@ -66,8 +66,10 @@ ${CSS_MARK}
 .ltask .ltext code{font-family:var(--mono);font-size:12.5px;background:rgba(92,207,230,.1);
   color:var(--cyan);padding:1px 5px}
 .ltask .lstat{flex:0 0 auto;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--lime)}
+/* these read as inline links but are still tap targets; the padding buys a
+   comfortable touch area without changing where the underline sits */
 .lhint{margin-top:7px;background:none;border:0;border-bottom:1px dotted var(--dim);color:var(--dim);
-  font-family:var(--mono);font-size:11.5px;cursor:pointer;padding:0}
+  font-family:var(--mono);font-size:11.5px;cursor:pointer;padding:0 0 5px}
 .lhint:hover{color:var(--amber);border-color:var(--amber)}
 .lhinttext{display:block;margin-top:7px;font-family:var(--sans);font-size:13px;color:var(--amber);
   padding-left:10px;border-left:2px solid rgba(255,180,84,.4)}
@@ -373,6 +375,14 @@ main.viewin{animation:viewIn .26s cubic-bezier(.2,.7,.3,1) both}
   transition:color .14s ease,border-color .14s ease;
 }
 .langbtn:hover{color:var(--cyan);border-color:var(--cyan)}
+/* Each header control is its own class with its own padding and font-size, which
+   left four different box heights sitting on the same row (menu 30.8, pills 27.6,
+   lang 28, cheatsheet 28.8). Give them one height and centre the contents rather
+   than trying to reconcile four sets of padding. */
+.top .menubtn,.top .pill,.top .langbtn,.top .refbtn{
+  min-height:30px;display:inline-flex;align-items:center;justify-content:center;
+  padding-top:0;padding-bottom:0;
+}
 .cmeta .nowtag{color:var(--lime);border:1px solid var(--lime);padding:1px 7px;font-size:10px}
 .mod.isnow .n{color:var(--lime);opacity:1}
 /* the closed drawer sits off-canvas; without this it widens the document */

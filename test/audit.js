@@ -47,6 +47,26 @@ for(const k in T){
   });
 }
 
+/* 4b. t() called inside a scope where a callback parameter shadows it. This has
+   bitten three times now (renderQuiz, quizStep, renderCourse): the parameter is
+   the loop item, so t("key") calls that item and throws at render time. */
+for(const f of srcFiles){
+  const text = fs.readFileSync(base + 'src/' + f, 'utf8');
+  const lines = text.split(/\r?\n/);
+  let shadowLine = -1, depth = 0;
+  lines.forEach((ln, i) => {
+    if(shadowLine < 0 && /(?:function\s*)?\(\s*t\s*(?:,[^)]*)?\)\s*=>|function\s*\(\s*t\s*[,)]/.test(ln)){
+      shadowLine = i; depth = 0;
+    }
+    if(shadowLine >= 0){
+      depth += (ln.match(/\{/g) || []).length - (ln.match(/\}/g) || []).length;
+      if(/\bt\(\s*["']/.test(ln) && i > shadowLine)
+        flag('high', 'js', f + ':' + (i+1) + ' calls t("...") inside a callback whose parameter t shadows it (opened line ' + (shadowLine+1) + ')');
+      if(depth <= 0 && i > shadowLine) shadowLine = -1;
+    }
+  });
+}
+
 /* 5. ids referenced in JS that never appear in generated or static markup */
 const ids = new Set();
 for(const m of html.matchAll(/id="([^"]+)"/g)) ids.add(m[1]);

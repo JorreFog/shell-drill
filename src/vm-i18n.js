@@ -126,6 +126,17 @@ const T = {
                        "typing the command yourself is what sticks."},
   adviceHintsOnly: {sv:"Ledtrådar använda: {n}, svar: inga. Bra läge inför tentan.",
                     en:"Hints used: {n}, answers: none. Good place to be for the exam."},
+  courseLab:       {sv:"Kurslabb",         en:"Course lab"},
+  adviceUnstarted: {sv:"Inget avklarat här än — börja med uppgift 1 och arbeta dig neråt. "+
+                       "{n} uppgifter väntar.",
+                    en:"Nothing done here yet — start at task 1 and work down. "+
+                       "{n} tasks are waiting."},
+  adviceUnstartedQuiz:{sv:"Inga frågor besvarade än. Kör igenom de {n} frågorna — "+
+                       "förklaringen visas efter varje svar.",
+                    en:"No questions answered yet. Work through the {n} questions — "+
+                       "each one explains itself once you answer."},
+  adviceInProgress:{sv:"Inga problem hittills. {n} uppgifter kvar i den här labben — kör vidare.",
+                    en:"No trouble so far. {n} tasks left in this lab — keep going."},
   adviceClean:     {sv:"Hela labben utan ledtrådar eller svar, {n} av {n}. Den här veckan sitter.",
                     en:"The whole lab with no hints and no answers, {n} of {n}. This week is solid."},
   adviceReadErrors:{sv:"{n}% av dina kommandon gav fel. Läs felmeddelandet innan nästa försök — "+
@@ -156,8 +167,8 @@ const T = {
   drillTasks:      {sv:"lösta terminaluppgifter", en:"solved drill tasks"},
   quizAnswers:     {sv:"besvarade quizfrågor",    en:"answered quiz questions"},
   labTasks:        {sv:"klarade labbuppgifter",   en:"completed lab tasks"},
-  machinesFor:     {sv:"de simulerade maskinerna för", en:"the simulated machines for"},
-  lectures:        {sv:"föreläsningar, med filerna du skapat", en:"lectures, with any files you made"}
+  machinesFor:     {sv:"simulerade maskiner, med filerna du skapat",
+                    en:"simulated machines, with any files you made"}
 };
 
 const t = key => L(T[key] || key);

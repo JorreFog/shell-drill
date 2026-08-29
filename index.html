@@ -116,6 +116,11 @@ aside{position:sticky;top:20px}
   padding:5px 12px;font-size:11.5px;cursor:pointer;border-radius:2px;transition:all .12s;
 }
 .ghost:hover{border-color:var(--amber);color:var(--amber)}
+/* the tour row mixes .ghost with .nextbtn, which carries a margin-top and its own
+   padding — the same mismatch the lecture nav had. One size for the whole row. */
+.tournav button{margin:0;padding:7px 16px;font-size:11.5px;line-height:1.25;
+  min-height:30px;border:1px solid transparent}
+.tournav .ghost{border-color:var(--line)}
 .hintbox{
   margin-top:13px;border-left:2px solid var(--cyan);background:rgba(92,207,230,.06);
   padding:9px 14px;font-size:13px;color:#B8CBD8;font-family:var(--sans);
@@ -154,11 +159,20 @@ aside{position:sticky;top:20px}
 .ps1 .path{color:var(--amber)}
 /* every terminal input, not just the drill's — the lab terminal has its own id */
 .inputline input{
+  /* a flex item defaults to min-width:auto, so size=20 gave the input a 220px
+     floor it would not shrink below and the page scrolled sideways on a phone */
+  min-width:0;
   flex:1;background:none;border:0;color:var(--bone);font-family:var(--mono);
   font-size:13.5px;padding:0;caret-color:var(--amber);
 }
 .inputline input:focus{outline:none}
 .inputline input::placeholder{color:#3E4C5C}
+@media(max-width:560px){
+  /* a long prompt leaves the input a sliver; give it the full next line instead.
+     This must follow .inputline input, or that rule wins on source order. */
+  .inputline{flex-wrap:wrap}
+  .inputline input{flex:1 1 100%}
+}
 
 /* ---------- breakdown (signature) ---------- */
 .breakdown{
@@ -362,11 +376,16 @@ aside{position:sticky;top:20px}
 .lab .txt code{font-family:var(--mono);font-size:12.5px;background:rgba(92,207,230,.1);
   color:var(--cyan);padding:1px 5px}
 .chk{border:1px solid var(--line);background:var(--panel-2);margin-bottom:8px}
-.chk summary{padding:10px 13px;cursor:pointer;font-family:var(--sans);font-size:14px;
-  list-style:none;display:flex;gap:10px;align-items:flex-start}
+/* This was display:flex to hang the "?" at the left, but in a flex container each
+   run of text and each <code> becomes its own item, so the question rendered as
+   gapped columns instead of a sentence. Position the marker instead and let the
+   text flow. The 34px indent lines the question up with .ans below it. */
+.chk summary{padding:10px 13px 10px 34px;cursor:pointer;font-family:var(--sans);font-size:14px;
+  list-style:none;position:relative;line-height:1.55}
 .chk summary::-webkit-details-marker{display:none}
-.chk summary::before{content:"?";flex:0 0 auto;color:var(--amber);font-family:var(--mono);
-  font-weight:700;font-size:13px}
+.chk summary::before{content:"?";position:absolute;left:13px;top:10px;color:var(--amber);
+  font-family:var(--mono);font-weight:700;font-size:13px}
+.chk summary code{font-family:var(--mono);font-size:12.5px;color:var(--amber)}
 .chk summary:hover{background:var(--panel)}
 .chk[open] summary{border-bottom:1px solid var(--line)}
 .chk .ans{padding:11px 13px 13px 34px;font-family:var(--sans);font-size:13.5px;
@@ -396,8 +415,10 @@ aside{position:sticky;top:20px}
 .ltask .ltext code{font-family:var(--mono);font-size:12.5px;background:rgba(92,207,230,.1);
   color:var(--cyan);padding:1px 5px}
 .ltask .lstat{flex:0 0 auto;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--lime)}
+/* these read as inline links but are still tap targets; the padding buys a
+   comfortable touch area without changing where the underline sits */
 .lhint{margin-top:7px;background:none;border:0;border-bottom:1px dotted var(--dim);color:var(--dim);
-  font-family:var(--mono);font-size:11.5px;cursor:pointer;padding:0}
+  font-family:var(--mono);font-size:11.5px;cursor:pointer;padding:0 0 5px}
 .lhint:hover{color:var(--amber);border-color:var(--amber)}
 .lhinttext{display:block;margin-top:7px;font-family:var(--sans);font-size:13px;color:var(--amber);
   padding-left:10px;border-left:2px solid rgba(255,180,84,.4)}
@@ -703,6 +724,14 @@ main.viewin{animation:viewIn .26s cubic-bezier(.2,.7,.3,1) both}
   transition:color .14s ease,border-color .14s ease;
 }
 .langbtn:hover{color:var(--cyan);border-color:var(--cyan)}
+/* Each header control is its own class with its own padding and font-size, which
+   left four different box heights sitting on the same row (menu 30.8, pills 27.6,
+   lang 28, cheatsheet 28.8). Give them one height and centre the contents rather
+   than trying to reconcile four sets of padding. */
+.top .menubtn,.top .pill,.top .langbtn,.top .refbtn{
+  min-height:30px;display:inline-flex;align-items:center;justify-content:center;
+  padding-top:0;padding-bottom:0;
+}
 .cmeta .nowtag{color:var(--lime);border:1px solid var(--lime);padding:1px 7px;font-size:10px}
 .mod.isnow .n{color:var(--lime);opacity:1}
 /* the closed drawer sits off-canvas; without this it widens the document */
@@ -720,6 +749,7 @@ html,body{overflow-x:hidden}
   .ltask .ltext{font-size:13.5px}
 }
 /* ---------- end course lab ---------- */
+
 
 
 
@@ -1029,7 +1059,7 @@ tasks:[
 
 /* ---------- cheatsheet shown in the drawer ---------- */
 const SHEET = [
-["In the Course plan machine",[
+["In the course lab machine",[
 ["edit FILE","Open the editor pane to write a script or a crontab"],
 ["python3 FILE","Run a Python file you wrote with edit"],
 ["python3 -c 'CODE'","Run one line of Python without a file"],
@@ -2199,7 +2229,7 @@ $("reset").onclick = ()=>{
   if(drill) rows.push(t("drillTasks") + ": " + drill);
   if(quiz)  rows.push(t("quizAnswers") + ": " + quiz);
   if(labs)  rows.push(t("labTasks") + ": " + labs);
-  if(machines) rows.push(t("machinesFor") + " " + machines + " " + t("lectures"));
+  if(machines) rows.push(t("machinesFor") + ": " + machines);
 
   confirmDialog({
     title: t("resetTitle"),
@@ -2253,7 +2283,7 @@ const TOUR = [
  {el:"openref", t:"Keep the cheatsheet open",
   b:"Every command in the course with a plain-English explanation, filterable. Leave it open beside you while you work — looking things up is normal, memorising comes later."},
  {el:"m-quiz", t:"Three ways to practise",
-  b:"<b>Terminal drill</b> is typing real commands. <b>Knowledge quiz</b> is 34 multiple-choice questions on the concepts behind them. <b>Course plan</b> is a lab per lecture, worked on a full simulated machine."},
+  b:"<b>Terminal drill</b> is typing real commands. <b>Knowledge quiz</b> is 34 multiple-choice questions on the concepts behind them. The <b>course lab</b> is one lab per lecture, worked on a full simulated machine."},
  {el:"m-course", t:"The course plan",
   b:"One lab per lecture, following the weeks 36–42 schedule. Each task is checked against the simulated machine, so it ticks off when you actually do it. The machine has a real filesystem, permissions and a small Python — nothing there can break anything."},
  {el:"modlist", t:"Modules, in order",
@@ -2285,13 +2315,18 @@ function showStep(dir){
   if(el){ el.classList.add("tourlit"); el.style.outline="2px solid var(--amber)"; el.style.outlineOffset="4px";
     el.scrollIntoView({block:"center", behavior: reduced?"auto":"smooth"}); }
   const c = tourCard();
+  // steps whose target is hidden are skipped, so count only the ones that will
+  // actually be shown — otherwise the tour claims more steps than it has
+  const shown = TOUR.map(x=>{ const e = $(x.el); return !!(e && e.getBoundingClientRect().height > 0); });
+  const nTotal = shown.filter(Boolean).length;
+  const nHere  = shown.slice(0, ti + 1).filter(Boolean).length;
   c.innerHTML = '<div style="font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-bottom:7px">'+
-    "Step "+(ti+1)+" of "+TOUR.length+'</div><div style="font-family:var(--sans);font-size:17px;font-weight:500;margin-bottom:7px">'+
+    "Step "+nHere+" of "+nTotal+'</div><div style="font-family:var(--sans);font-size:17px;font-weight:500;margin-bottom:7px">'+
     s.t+'</div><div style="font-family:var(--sans);font-size:13.5px;color:#A9B8C6;line-height:1.6">'+s.b+"</div>"+
-    '<div style="display:flex;gap:8px;margin-top:14px;align-items:center">'+
+    '<div class="tournav" style="display:flex;gap:8px;margin-top:14px;align-items:center">'+
       '<button class="ghost" id="t-skip">Skip tour</button><span style="flex:1"></span>'+
       (ti>0?'<button class="ghost" id="t-back">Back</button>':"")+
-      '<button class="nextbtn" style="margin:0;padding:7px 16px" id="t-next">'+(ti===TOUR.length-1?"Start":"Next")+"</button></div>";
+      '<button class="nextbtn" id="t-next">'+(nHere===nTotal?"Start":"Next")+"</button></div>";
   const r = el ? el.getBoundingClientRect() : {bottom:80,left:20,width:0};
   const top = window.scrollY + Math.min(r.bottom + 14, window.innerHeight - 200);
   const left = Math.max(14, Math.min(window.scrollX + r.left, window.innerWidth - 360));
@@ -6135,7 +6170,7 @@ function recheck(){
   const lec = COURSE[CS.lec];
   const ctx = makeLabCtx(CS.K, CS.hist);
   const newly = [];
-  lec.tasks.forEach((t,ti)=>{
+  lec.tasks.forEach((tk,ti)=>{
     if(S.lab[ckey(CS.lec,ti)]) return;
     let done = false;
     try{ done = !!t.check(ctx); }catch(e){ done = false; }
@@ -6151,7 +6186,7 @@ function recheck(){
 
 function paintTasks(){
   const lec = COURSE[CS.lec];
-  lec.tasks.forEach((t,ti)=>{
+  lec.tasks.forEach((tk,ti)=>{
     const el = $("t"+ti);
     if(!el) return;
     const done = !!S.lab[ckey(CS.lec,ti)];
@@ -6324,16 +6359,17 @@ function renderCourse(){
     "</div>"+
     '<div class="csec"><h2>Lab — the terminal below is a real simulated machine</h2>'+
       '<ol class="ltasks">';
-  lec.tasks.forEach((t,ti)=>{
+  // named tk, not t: t is the translation function and this callback would shadow it
+  lec.tasks.forEach((tk,ti)=>{
     const done = !!S.lab[ckey(li,ti)];
     h += '<li class="ltask'+(done?" done":"")+'" id="t'+ti+'" role="checkbox" aria-checked="'+done+'">'+
       '<span class="lnum">'+(ti+1)+"</span>"+
-      '<span class="lbody"><span class="ltext">'+t.q+"</span>"+
+      '<span class="lbody"><span class="ltext">'+tk.q+"</span>"+
         '<span class="lbtns">'+
-          '<button class="lhint" data-h="'+ti+'" aria-expanded="false" aria-controls="h'+ti+'">hint</button>'+
-          '<button class="lhint lans" data-a="'+ti+'" aria-expanded="false" aria-controls="a'+ti+'">show answer</button>'+
+          '<button class="lhint" data-h="'+ti+'" aria-expanded="false" aria-controls="h'+ti+'">'+t("hint")+'</button>'+
+          '<button class="lhint lans" data-a="'+ti+'" aria-expanded="false" aria-controls="a'+ti+'">'+t("showAnswer")+'</button>'+
         "</span>"+
-        '<span class="lhinttext" id="h'+ti+'" hidden>'+esc(t.hint)+"</span>"+
+        '<span class="lhinttext" id="h'+ti+'" hidden>'+esc(tk.hint)+"</span>"+
         '<span class="lanstext" id="a'+ti+'" hidden>'+answerHtml(li, ti)+"</span></span>"+
       '<span class="lstat">'+(done?"done":"")+"</span></li>";
   });
@@ -6552,6 +6588,17 @@ const T = {
                        "typing the command yourself is what sticks."},
   adviceHintsOnly: {sv:"Ledtrådar använda: {n}, svar: inga. Bra läge inför tentan.",
                     en:"Hints used: {n}, answers: none. Good place to be for the exam."},
+  courseLab:       {sv:"Kurslabb",         en:"Course lab"},
+  adviceUnstarted: {sv:"Inget avklarat här än — börja med uppgift 1 och arbeta dig neråt. "+
+                       "{n} uppgifter väntar.",
+                    en:"Nothing done here yet — start at task 1 and work down. "+
+                       "{n} tasks are waiting."},
+  adviceUnstartedQuiz:{sv:"Inga frågor besvarade än. Kör igenom de {n} frågorna — "+
+                       "förklaringen visas efter varje svar.",
+                    en:"No questions answered yet. Work through the {n} questions — "+
+                       "each one explains itself once you answer."},
+  adviceInProgress:{sv:"Inga problem hittills. {n} uppgifter kvar i den här labben — kör vidare.",
+                    en:"No trouble so far. {n} tasks left in this lab — keep going."},
   adviceClean:     {sv:"Hela labben utan ledtrådar eller svar, {n} av {n}. Den här veckan sitter.",
                     en:"The whole lab with no hints and no answers, {n} of {n}. This week is solid."},
   adviceReadErrors:{sv:"{n}% av dina kommandon gav fel. Läs felmeddelandet innan nästa försök — "+
@@ -6582,8 +6629,8 @@ const T = {
   drillTasks:      {sv:"lösta terminaluppgifter", en:"solved drill tasks"},
   quizAnswers:     {sv:"besvarade quizfrågor",    en:"answered quiz questions"},
   labTasks:        {sv:"klarade labbuppgifter",   en:"completed lab tasks"},
-  machinesFor:     {sv:"de simulerade maskinerna för", en:"the simulated machines for"},
-  lectures:        {sv:"föreläsningar, med filerna du skapat", en:"lectures, with any files you made"}
+  machinesFor:     {sv:"simulerade maskiner, med filerna du skapat",
+                    en:"simulated machines, with any files you made"}
 };
 
 const t = key => L(T[key] || key);
@@ -7630,8 +7677,8 @@ const PROGRAMME = {
   /* Standalone practice, not tied to one course's schedule. */
   tools: [
   {id:"tool-drill", title:"Terminal drill",
-   blurb:{sv:"123 uppgifter i tio moduler. Du skriver det riktiga kommandot, och får veta vad som var fel när det inte stämmer.",
-         en:"123 tasks across ten modules. You type the real command; it tells you what was "+
+   blurb:{sv:"99 uppgifter i tio moduler. Du skriver det riktiga kommandot, och får veta vad som var fel när det inte stämmer.",
+         en:"99 tasks across ten modules. You type the real command; it tells you what was "+
          "wrong when you don't."},
    ready:true, modes:["drill"], entry:"drill"},
 
@@ -7756,7 +7803,17 @@ function enterCourse(id){
     const b = $("m-"+m);
     if(b) b.style.display = modes.includes(m) ? "" : "none";
   });
-  $("m-course").textContent = c.id === "grund-it" ? c.title : "Course plan";
+  // chrome that only means something with a terminal behind it: an entry with no
+  // drill tab has no distro to choose, and one with no terminal at all has no
+  // commands to look up. Hiding the distro row also drops the tour step that
+  // points at it, since showStep() skips steps whose target has no height.
+  const hasDrill = modes.includes("drill");
+  const hasTerminal = hasDrill || modes.includes("course");
+  $("distro").style.display  = hasDrill ? "" : "none";
+  $("openref").style.display = hasTerminal ? "" : "none";
+  if(!hasTerminal) $("drawer").classList.remove("open");
+
+  $("m-course").textContent = c.id === "grund-it" ? c.title : t("courseLab");
   $("here").textContent = c.title;
   setMode(returning && modes.includes(S.mode) ? S.mode : (c.entry || modes[0]));
   save();
@@ -7941,22 +7998,31 @@ function labAdvice(r){
   if(s.notFound >= 2)  out.push({k:"adviceNotFound", n:s.notFound});
   if(s.denied >= 2)    out.push({k:"adviceDenied", n:s.denied});
   if(s.noSuchFile >= 2) out.push({k:"advicePaths", n:s.noSuchFile});
-  if(r.revealed.length) out.push({k:"adviceReveals", n:r.revealed.length});
+  // nothing done at all is not a clean run — say so rather than congratulating
+  if(r.done === 0) out.push({k:"adviceUnstarted", n:r.total});
+  else if(r.revealed.length) out.push({k:"adviceReveals", n:r.revealed.length});
   else if(r.hinted.length) out.push({k:"adviceHintsOnly", n:r.hinted.length});
   else if(r.done === r.total) out.push({k:"adviceClean", n:r.total});
   if(s.total && s.failed / s.total > 0.4)
     out.push({k:"adviceReadErrors", n:Math.round(s.failed / s.total * 100)});
 
-  // with nothing else to say, point at what comes next rather than padding
+  // with nothing else to say, point at what comes next rather than padding — but
+  // only once the lecture is actually finished, or it reads as "you are done"
   if(!out.length){
-    const next = COURSE[r.li + 1];
-    out.push(next ? {k:"adviceNextLecture", tier:L(next.title)} : {k:"adviceLastLecture"});
+    if(r.done < r.total){
+      out.push({k:"adviceInProgress", n:r.total - r.done});
+    } else {
+      const next = COURSE[r.li + 1];
+      out.push(next ? {k:"adviceNextLecture", tier:L(next.title)} : {k:"adviceLastLecture"});
+    }
   }
   return out;
 }
 
 function quizAdvice(r){
   const out = [];
+  // an untouched quiz has nothing to analyse; say that instead of showing no advice
+  if(r.done === 0) return [{k:"adviceUnstartedQuiz", n:r.total}];
   const weakest = r.perTier.filter(p => p.done).sort((a,b) => b.slips - a.slips)[0];
   if(weakest && weakest.slips >= 2) out.push({k:"adviceWeakTier", tier:L(weakest.tier.tier), n:weakest.slips});
   if(r.missed.length === 0 && r.done) out.push({k:"adviceQuizClean", n:r.done});
@@ -8015,7 +8081,10 @@ function reportHtml(r){
     h += section(t("repFocus"), "", list(adv.map(a =>
       t(a.k).split("{n}").join(a.n).split("{tier}").join(a.tier || ""))));
 
-  h += '<div class="rnext">' + t("repNext") + "</div>";
+  /* the closing line points at the "revisit these" section, so only show it when
+     that section is actually in the report — otherwise it names nothing */
+  const hasRevisit = r.kind === "lab" ? r.revealed.length > 0 : r.missed.length > 0;
+  if(hasRevisit) h += '<div class="rnext">' + t("repNext") + "</div>";
   h += '<button class="tbtn rclose" id="rep-close">' + t("close") + "</button></div>";
   return h;
 }
@@ -8039,6 +8108,13 @@ function toggleLabReport(){ showReport(labReport(CS.lec)); }
 function toggleQuizReport(){ showReport(quizReport()); }
 
 /* ===== END simulated machine ===== */
+
+
+
+
+
+
+
 
 
 

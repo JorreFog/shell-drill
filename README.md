@@ -49,7 +49,7 @@ explanations.
 
 ## Inside a course
 
-- **Terminal drill** — 123 tasks across ten modules. You type the real command;
+- **Terminal drill** — 99 tasks across ten modules. You type the real command;
   it tells you what was wrong when you don't.
 - **Knowledge quiz** — 34 multiple-answer questions with explanations.
 - **Grundläggande IT och nätverk** — one lab per lecture, following the weeks

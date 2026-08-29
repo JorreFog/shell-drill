@@ -67,7 +67,7 @@ function recheck(){
   const lec = COURSE[CS.lec];
   const ctx = makeLabCtx(CS.K, CS.hist);
   const newly = [];
-  lec.tasks.forEach((t,ti)=>{
+  lec.tasks.forEach((tk,ti)=>{
     if(S.lab[ckey(CS.lec,ti)]) return;
     let done = false;
     try{ done = !!t.check(ctx); }catch(e){ done = false; }
@@ -83,7 +83,7 @@ function recheck(){
 
 function paintTasks(){
   const lec = COURSE[CS.lec];
-  lec.tasks.forEach((t,ti)=>{
+  lec.tasks.forEach((tk,ti)=>{
     const el = $("t"+ti);
     if(!el) return;
     const done = !!S.lab[ckey(CS.lec,ti)];
@@ -256,16 +256,17 @@ function renderCourse(){
     "</div>"+
     '<div class="csec"><h2>Lab — the terminal below is a real simulated machine</h2>'+
       '<ol class="ltasks">';
-  lec.tasks.forEach((t,ti)=>{
+  // named tk, not t: t is the translation function and this callback would shadow it
+  lec.tasks.forEach((tk,ti)=>{
     const done = !!S.lab[ckey(li,ti)];
     h += '<li class="ltask'+(done?" done":"")+'" id="t'+ti+'" role="checkbox" aria-checked="'+done+'">'+
       '<span class="lnum">'+(ti+1)+"</span>"+
-      '<span class="lbody"><span class="ltext">'+t.q+"</span>"+
+      '<span class="lbody"><span class="ltext">'+tk.q+"</span>"+
         '<span class="lbtns">'+
-          '<button class="lhint" data-h="'+ti+'" aria-expanded="false" aria-controls="h'+ti+'">hint</button>'+
-          '<button class="lhint lans" data-a="'+ti+'" aria-expanded="false" aria-controls="a'+ti+'">show answer</button>'+
+          '<button class="lhint" data-h="'+ti+'" aria-expanded="false" aria-controls="h'+ti+'">'+t("hint")+'</button>'+
+          '<button class="lhint lans" data-a="'+ti+'" aria-expanded="false" aria-controls="a'+ti+'">'+t("showAnswer")+'</button>'+
         "</span>"+
-        '<span class="lhinttext" id="h'+ti+'" hidden>'+esc(t.hint)+"</span>"+
+        '<span class="lhinttext" id="h'+ti+'" hidden>'+esc(tk.hint)+"</span>"+
         '<span class="lanstext" id="a'+ti+'" hidden>'+answerHtml(li, ti)+"</span></span>"+
       '<span class="lstat">'+(done?"done":"")+"</span></li>";
   });

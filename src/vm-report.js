@@ -67,22 +67,31 @@ function labAdvice(r){
   if(s.notFound >= 2)  out.push({k:"adviceNotFound", n:s.notFound});
   if(s.denied >= 2)    out.push({k:"adviceDenied", n:s.denied});
   if(s.noSuchFile >= 2) out.push({k:"advicePaths", n:s.noSuchFile});
-  if(r.revealed.length) out.push({k:"adviceReveals", n:r.revealed.length});
+  // nothing done at all is not a clean run — say so rather than congratulating
+  if(r.done === 0) out.push({k:"adviceUnstarted", n:r.total});
+  else if(r.revealed.length) out.push({k:"adviceReveals", n:r.revealed.length});
   else if(r.hinted.length) out.push({k:"adviceHintsOnly", n:r.hinted.length});
   else if(r.done === r.total) out.push({k:"adviceClean", n:r.total});
   if(s.total && s.failed / s.total > 0.4)
     out.push({k:"adviceReadErrors", n:Math.round(s.failed / s.total * 100)});
 
-  // with nothing else to say, point at what comes next rather than padding
+  // with nothing else to say, point at what comes next rather than padding — but
+  // only once the lecture is actually finished, or it reads as "you are done"
   if(!out.length){
-    const next = COURSE[r.li + 1];
-    out.push(next ? {k:"adviceNextLecture", tier:L(next.title)} : {k:"adviceLastLecture"});
+    if(r.done < r.total){
+      out.push({k:"adviceInProgress", n:r.total - r.done});
+    } else {
+      const next = COURSE[r.li + 1];
+      out.push(next ? {k:"adviceNextLecture", tier:L(next.title)} : {k:"adviceLastLecture"});
+    }
   }
   return out;
 }
 
 function quizAdvice(r){
   const out = [];
+  // an untouched quiz has nothing to analyse; say that instead of showing no advice
+  if(r.done === 0) return [{k:"adviceUnstartedQuiz", n:r.total}];
   const weakest = r.perTier.filter(p => p.done).sort((a,b) => b.slips - a.slips)[0];
   if(weakest && weakest.slips >= 2) out.push({k:"adviceWeakTier", tier:L(weakest.tier.tier), n:weakest.slips});
   if(r.missed.length === 0 && r.done) out.push({k:"adviceQuizClean", n:r.done});
@@ -141,7 +150,10 @@ function reportHtml(r){
     h += section(t("repFocus"), "", list(adv.map(a =>
       t(a.k).split("{n}").join(a.n).split("{tier}").join(a.tier || ""))));
 
-  h += '<div class="rnext">' + t("repNext") + "</div>";
+  /* the closing line points at the "revisit these" section, so only show it when
+     that section is actually in the report — otherwise it names nothing */
+  const hasRevisit = r.kind === "lab" ? r.revealed.length > 0 : r.missed.length > 0;
+  if(hasRevisit) h += '<div class="rnext">' + t("repNext") + "</div>";
   h += '<button class="tbtn rclose" id="rep-close">' + t("close") + "</button></div>";
   return h;
 }
