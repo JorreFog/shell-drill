@@ -523,11 +523,13 @@ ${PV_MARK}
   --warn:    #E3B341;   /* provisional — caveated, not broken */
 }
 
-/* the scanline wash, kept faint and neutral so it darkens rather than tints */
+/* Scanlines only. There was a vignette layered under these, and because this
+   element is position:fixed it darkened the bottom of the viewport rather than
+   the bottom of the page — so text dimmed as it scrolled down and brightened
+   again as it passed the middle. A full-page effect cannot live on a fixed
+   layer. */
 body::after{
-  background:
-    repeating-linear-gradient(to bottom,rgba(255,255,255,.016) 0 1px,transparent 1px 3px),
-    radial-gradient(1200px 700px at 50% 0%,transparent 58%,rgba(0,0,0,.45) 100%);
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.016) 0 1px,transparent 1px 3px);
 }
 
 /* glow only where it means something, and only on small text */
