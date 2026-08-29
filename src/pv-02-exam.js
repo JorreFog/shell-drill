@@ -11,23 +11,54 @@
 const PV_EXAM_SIZES = [10, 20, 30];
 const PV_EXAM_MINUTES = {10: 10, 20: 20, 30: 30};
 
-/* deterministic shuffle from a seed, so a test can be described by its seed
-   alone and Math.random stays out of the saved state */
+/* Deterministic shuffle from a seed, so a test is described by its seed alone
+   and Math.random stays out of saved state.
+
+   The index is taken from the HIGH bits of the generator, not with s % (i+1).
+   A linear congruential generator modulo 2^32 has famously poor low bits — the
+   lowest bit alternates, the low k bits repeat every 2^k — so the modulo form
+   biased the draw badly: measured over 4000 runs it returned a mean of 8.8
+   Linux questions per 20 where 6.42 was expected, and as many as 15. */
 function pvShuffle(list, seed){
   const a = list.slice();
   let s = seed >>> 0;
   for(let i = a.length - 1; i > 0; i--){
     s = (s * 1664525 + 1013904223) >>> 0;
-    const j = s % (i + 1);
+    const j = Math.floor((s / 4294967296) * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
 
+/* An unbiased draw still leaves the Linux set at 32% of the pool, because it
+   holds 34 questions against 8 for each course — so a "mixed" test came out a
+   third Linux. Draw round-robin across the courses instead: every course is
+   represented before any course is drawn from twice, which is what makes it a
+   test of the programme rather than a test of Linux. */
+function pvDraw(pool, n, seed){
+  const groups = new Map();
+  pool.forEach(q => {
+    const k = q.setId || "";
+    if(!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(q);
+  });
+  const decks = pvShuffle([...groups.keys()], seed ^ 0x5bf03635)
+    .map((k, i) => pvShuffle(groups.get(k), seed + i * 7919));
+  const out = [];
+  for(let round = 0; out.length < n; round++){
+    let took = 0;
+    for(const deck of decks){
+      if(out.length >= n) break;
+      if(deck.length > round){ out.push(deck[round]); took++; }
+    }
+    if(!took) break;   // every deck exhausted
+  }
+  return pvShuffle(out, seed ^ 0x2545f491).slice(0, n);
+}
 function pvStartExam(n){
   const pool = pvAllQuizzes();
   const seed = Date.now() & 0x7fffffff;
-  const picked = pvShuffle(pool, seed).slice(0, Math.min(n, pool.length));
+  const picked = pvDraw(pool, Math.min(n, pool.length), seed);
   PV.exam = {
     n: picked.length,
     minutes: PV_EXAM_MINUTES[n] || n,

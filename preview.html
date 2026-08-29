@@ -840,6 +840,88 @@ html,body{overflow-x:hidden}
 .pvlogrow b{color:var(--bone);font-weight:500;font-family:var(--mono)}
 .pvlogrow em{font-style:normal;color:var(--amber);font-family:var(--mono);font-size:11.5px}
 
+/* ============ phosphor theme ============
+   Green on black, but the green is the accent, not the whole page. Tinting the
+   surfaces, the body text and the highlights all green passed contrast checks
+   on luminance and still read as mud, because everything sat in one narrow
+   band of hue. Terminal themes that stay readable for hours do the opposite:
+   neutral near-black surfaces, near-white text, and green reserved for the
+   things that carry meaning.
+
+   Roles stay separated by hue as well as brightness — light green marks what is
+   active, deeper green what is finished, teal what is a link, red what broke. */
+:root{
+  --void:    #070A0C;   /* page — neutral near-black, no green cast */
+  --panel:   #0D1117;
+  --panel-2: #121821;
+  --line:    #233041;
+  --bone:    #E6EDF3;   /* body text — neutral, so the greens stay legible next to it */
+  --dim:     #97A4B2;   /* secondary text */
+  --amber:   #7EE787;   /* active, headings, hints */
+  --lime:    #3FB950;   /* done, prompt, success */
+  --cyan:    #56D4DD;   /* links, mode pills, code */
+  --rose:    #FF7B72;   /* errors and danger */
+}
+
+/* the scanline wash, kept faint and neutral so it darkens rather than tints */
+body::after{
+  background:
+    repeating-linear-gradient(to bottom,rgba(255,255,255,.016) 0 1px,transparent 1px 3px),
+    radial-gradient(1200px 700px at 50% 0%,transparent 58%,rgba(0,0,0,.45) 100%);
+}
+
+/* glow only where it means something, and only on small text */
+.brand{text-shadow:0 0 16px rgba(126,231,135,.30)}
+.ps1{text-shadow:0 0 10px rgba(63,185,80,.45)}
+.pvclock{text-shadow:0 0 14px rgba(126,231,135,.35)}
+
+/* the terminal reads as a screen rather than a panel */
+.term .screen{background:linear-gradient(180deg,rgba(63,185,80,.045),transparent 140px),var(--void)}
+.term{box-shadow:0 0 0 1px rgba(35,48,65,.9), 0 18px 50px -32px rgba(63,185,80,.45)}
+
+/* menu wash and the faint grid a network map is drawn on */
+.picker::before{
+  background:radial-gradient(900px 480px at 50% -8%,rgba(126,231,135,.09),transparent 70%),
+             radial-gradient(700px 420px at 92% 108%,rgba(86,212,221,.06),transparent 70%);
+}
+.pwrap::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background-image:linear-gradient(rgba(35,48,65,.55) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(35,48,65,.55) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(760px 460px at 50% 20%,#000 30%,transparent 78%);
+  -webkit-mask-image:radial-gradient(760px 460px at 50% 20%,#000 30%,transparent 78%);
+}
+
+/* the title led on near-white, which made the biggest thing on the page grey */
+/* the background shorthand resets background-clip, so the clip has to be
+   restated here or the heading paints as a solid bar over its own text */
+.phead h1{
+  background:linear-gradient(96deg,var(--amber) 6%,var(--bone) 44%,var(--cyan) 96%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* Red is for things that broke. "Provisional" and "not built yet" are neither —
+   they are states of the material, so they read in neutral grey and stop
+   competing with the errors the terminal actually reports. */
+.provnote{border-color:var(--line);border-left-color:var(--dim);
+  background:rgba(151,164,178,.06)}
+.provnote h2{color:var(--dim)}
+.ccard.prov .cstate{color:var(--dim)}
+.ccard.prov{border-left-color:rgba(151,164,178,.35)}
+.ccard.ready.prov:hover{border-left-color:var(--dim)}
+.ccard.planned:hover{border-left-color:var(--dim)}
+.csoon{color:var(--dim)}
+
+/* the preview banner is not an error either */
+.pvflag{border-color:var(--line);background:rgba(126,231,135,.05)}
+.pvflag b{color:var(--amber)}
+
+/* the palette tags: lab was red for no reason */
+.pvpalkind.k-lab{color:var(--lime)}
+
+.nlmap{max-width:100%;height:auto}
+
 /* the tour card, widened for the contents step */
 /* the tour card sets its width in an inline style, which a class cannot beat */
 #tourcard.wide{width:min(560px,92vw)!important}
@@ -8618,23 +8700,54 @@ pvLoad().then(() => {
 const PV_EXAM_SIZES = [10, 20, 30];
 const PV_EXAM_MINUTES = {10: 10, 20: 20, 30: 30};
 
-/* deterministic shuffle from a seed, so a test can be described by its seed
-   alone and Math.random stays out of the saved state */
+/* Deterministic shuffle from a seed, so a test is described by its seed alone
+   and Math.random stays out of saved state.
+
+   The index is taken from the HIGH bits of the generator, not with s % (i+1).
+   A linear congruential generator modulo 2^32 has famously poor low bits — the
+   lowest bit alternates, the low k bits repeat every 2^k — so the modulo form
+   biased the draw badly: measured over 4000 runs it returned a mean of 8.8
+   Linux questions per 20 where 6.42 was expected, and as many as 15. */
 function pvShuffle(list, seed){
   const a = list.slice();
   let s = seed >>> 0;
   for(let i = a.length - 1; i > 0; i--){
     s = (s * 1664525 + 1013904223) >>> 0;
-    const j = s % (i + 1);
+    const j = Math.floor((s / 4294967296) * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
 
+/* An unbiased draw still leaves the Linux set at 32% of the pool, because it
+   holds 34 questions against 8 for each course — so a "mixed" test came out a
+   third Linux. Draw round-robin across the courses instead: every course is
+   represented before any course is drawn from twice, which is what makes it a
+   test of the programme rather than a test of Linux. */
+function pvDraw(pool, n, seed){
+  const groups = new Map();
+  pool.forEach(q => {
+    const k = q.setId || "";
+    if(!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(q);
+  });
+  const decks = pvShuffle([...groups.keys()], seed ^ 0x5bf03635)
+    .map((k, i) => pvShuffle(groups.get(k), seed + i * 7919));
+  const out = [];
+  for(let round = 0; out.length < n; round++){
+    let took = 0;
+    for(const deck of decks){
+      if(out.length >= n) break;
+      if(deck.length > round){ out.push(deck[round]); took++; }
+    }
+    if(!took) break;   // every deck exhausted
+  }
+  return pvShuffle(out, seed ^ 0x2545f491).slice(0, n);
+}
 function pvStartExam(n){
   const pool = pvAllQuizzes();
   const seed = Date.now() & 0x7fffffff;
-  const picked = pvShuffle(pool, seed).slice(0, Math.min(n, pool.length));
+  const picked = pvDraw(pool, Math.min(n, pool.length), seed);
   PV.exam = {
     n: picked.length,
     minutes: PV_EXAM_MINUTES[n] || n,
@@ -10035,6 +10148,12 @@ if(typeof showStep === "function"){
 }
 
 /* ===== END simulated machine ===== */
+
+
+
+
+
+
 
 
 
