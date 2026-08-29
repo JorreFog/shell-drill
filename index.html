@@ -29,11 +29,13 @@ body{
   font-family:var(--mono);font-size:15px;line-height:1.5;
   -webkit-font-smoothing:antialiased;
 }
-/* faint CRT wash — decorative only */
+/* faint CRT wash — decorative only.
+   A blended full-screen layer puts every scroll and repaint through the
+   blending path. At this alpha the blend mode is imperceptible, so it is gone
+   and the alpha is nudged up instead. */
 body::after{
   content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
-  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.014) 0 1px,transparent 1px 3px);
-  mix-blend-mode:screen;
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);
 }
 a{color:var(--cyan)}
 button{font-family:inherit}
@@ -434,7 +436,10 @@ aside{position:sticky;top:20px}
   white-space:pre;line-height:1.5}
 /* ---------- course & tool menu ---------- */
 body.picking{overflow:hidden}
-body.picking .wrap{filter:blur(3px) saturate(.6);opacity:.25;pointer-events:none}
+/* The picker is opaque and covers the viewport, so anything behind it is
+   invisible. Blurring it cost a full-subtree rasterisation for nothing;
+   taking it out of rendering entirely is free and looks identical. */
+body.picking .wrap{visibility:hidden}
 .picker{
   position:fixed;inset:0;z-index:150;overflow-y:auto;background:var(--void);
   animation:pickerIn .28s ease both;
@@ -599,16 +604,22 @@ body.picking .wrap{filter:blur(3px) saturate(.6);opacity:.25;pointer-events:none
 
 /* ---------- menu atmosphere ---------- */
 .picker::after{
-  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  /* oversized so it can be translated without exposing an edge */
+  content:"";position:fixed;top:-52px;left:-52px;right:-52px;bottom:-52px;
+  pointer-events:none;opacity:.5;
   background-image:linear-gradient(rgba(92,207,230,.045) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(92,207,230,.045) 1px,transparent 1px);
   background-size:52px 52px;
   mask-image:radial-gradient(760px 520px at 50% 6%,#000 0%,transparent 78%);
   -webkit-mask-image:radial-gradient(760px 520px at 50% 6%,#000 0%,transparent 78%);
-  animation:gridDrift 34s linear infinite;
+  /* transform rather than background-position: the compositor can move a
+     layer without repainting the grid every single frame */
+  animation:gridDrift 34s linear infinite;will-change:transform;
 }
-@keyframes gridDrift{to{background-position:52px 52px,52px 52px}}
-.phead h1{background-size:220% 100%;animation:sheen 9s ease-in-out infinite}
+@keyframes gridDrift{to{transform:translate3d(52px,52px,0)}}
+/* animating background-position on background-clip:text repaints the text on
+   every frame, so this runs twice on arrival instead of forever */
+.phead h1{background-size:220% 100%;animation:sheen 4.5s ease-in-out 2}
 @keyframes sheen{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
 
 /* cards: a line traces the left edge on hover, and the whole card lifts */
@@ -704,6 +715,7 @@ html,body{overflow-x:hidden}
   .ltask .ltext{font-size:13.5px}
 }
 /* ---------- end course lab ---------- */
+
 
 
 
@@ -8022,6 +8034,8 @@ function toggleLabReport(){ showReport(labReport(CS.lec)); }
 function toggleQuizReport(){ showReport(quizReport()); }
 
 /* ===== END simulated machine ===== */
+
+
 
 
 
