@@ -520,6 +520,7 @@ ${PV_MARK}
   --lime:    #3FB950;   /* done, prompt, success */
   --cyan:    #56D4DD;   /* links, mode pills, code */
   --rose:    #FF7B72;   /* errors and danger */
+  --warn:    #E3B341;   /* provisional — caveated, not broken */
 }
 
 /* the scanline wash, kept faint and neutral so it darkens rather than tints */
@@ -560,24 +561,19 @@ body::after{
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 
-/* Red is for things that broke. "Provisional" and "not built yet" are neither —
-   they are states of the material, so they read in neutral grey and stop
-   competing with the errors the terminal actually reports. */
-.provnote{border-color:var(--line);border-left-color:var(--dim);
-  background:rgba(151,164,178,.06)}
-.provnote h2{color:var(--dim)}
-.ccard.prov .cstate{color:var(--dim)}
-.ccard.prov{border-left-color:rgba(151,164,178,.35)}
-.ccard.ready.prov:hover{border-left-color:var(--dim)}
+/* Red is for things that broke. Provisional material is not broken, it is
+   caveated — yellow is the ordinary sign for "usable, with a warning", and it
+   keeps the badge visible without borrowing the colour the terminal uses for
+   real errors. Courses that are not built at all stay grey: those are not a
+   caution, there is simply nothing there yet. */
+.provnote{border-color:var(--line);border-left-color:var(--warn);
+  background:rgba(227,179,65,.06)}
+.provnote h2{color:var(--warn)}
+.ccard.prov .cstate{color:var(--warn)}
+.ccard.prov{border-left-color:rgba(227,179,65,.38)}
+.ccard.ready.prov:hover{border-left-color:var(--warn)}
 .ccard.planned:hover{border-left-color:var(--dim)}
 .csoon{color:var(--dim)}
-
-/* the preview banner is not an error either */
-.pvflag{border-color:var(--line);background:rgba(126,231,135,.05)}
-.pvflag b{color:var(--amber)}
-
-/* the palette tags: lab was red for no reason */
-.pvpalkind.k-lab{color:var(--lime)}
 
 .nlmap{max-width:100%;height:auto}
 
@@ -625,6 +621,7 @@ body::after{
 .pvflag .tbtn{margin-left:auto}
 @media(max-width:560px){.pvpal{padding:6vh 10px 10px}.pvpalsub{display:none}}
 
+
 /* the banner that says this is not the published site */
 .pvflag{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px;
   padding:10px 14px;border:1px solid var(--rose);background:rgba(240,113,120,.07)}
@@ -637,6 +634,14 @@ body::after{
   .pvnav button{flex:1 1 auto}
   .pvrbar{flex-basis:52px}
 }
+
+/* Last in the sheet on purpose. These override rules defined further up and CSS
+   settles ties on source order, so anywhere earlier simply loses — which is
+   exactly what happened the first two times. The preview banner and the palette
+   tags were using the error colour for things that are not errors. */
+.pvflag{border-color:var(--line);background:rgba(126,231,135,.05)}
+.pvflag b{color:var(--amber)}
+.pvpalkind.k-lab{color:var(--lime)}
 ${PV_END}
 `;
   const pa = html.indexOf(PV_MARK);
