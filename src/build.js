@@ -90,8 +90,13 @@ ${CSS_MARK}
 #ed-body{flex:1;width:100%;background:var(--void);color:var(--bone);border:0;resize:none;
   font-family:var(--mono);font-size:13.5px;line-height:1.6;padding:13px;outline:none;tab-size:4}
 .edfoot{padding:9px 13px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center}
-.cnav{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap}
-.cnav .tbtn{margin-left:0;padding:9px 15px;font-size:12px}
+.cnav{display:flex;gap:9px;margin-top:14px;flex-wrap:wrap;align-items:center}
+/* .tbtn and .nextbtn disagree on padding, font-size, border and margin-top, which
+   in a flex row made these three boxes different heights and left Next sitting
+   lower than its neighbours. Size every button in the row identically instead. */
+.cnav button,.edfoot button{margin:0;padding:9px 16px;font-size:12px;line-height:1.25;
+  border:1px solid transparent}
+.cnav .tbtn,.edfoot .tbtn{margin-left:0;border-color:var(--line)}
 .lbtns{display:flex;gap:14px;margin-top:7px;flex-wrap:wrap}
 .lbtns .lhint{margin-top:0}
 .lans{border-bottom-color:#3B5063}
