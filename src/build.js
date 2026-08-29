@@ -9,6 +9,10 @@ if(!target){ console.error('usage: node build.js <path to index.html>'); process
 const read = f => fs.readFileSync(path.join(scratch, f), 'utf8');
 let html = fs.readFileSync(target, 'utf8');
 
+/* preview-only engine files, in load order */
+const PREVIEW = /preview\.html$/i.test(target);
+const PREVIEW_FILES = fs.readdirSync(scratch).filter(f => /^pv-.*\.js$/.test(f)).sort();
+
 const BEGIN = '/* ===== BEGIN simulated machine — generated, see src/vm-*.js ===== */';
 const FINISH = '/* ===== END simulated machine ===== */';
 const END = '/* ---------- quiz state & rendering ---------- */';
@@ -41,6 +45,11 @@ const engine = BEGIN + '\n' +
   read('vm-courses.js') + '\n' +
   read('vm-fx.js') + '\n' +
   read('vm-report.js') + '\n' +
+  /* Anything named pv-*.js is preview-only: it is spliced into preview.html and
+     left out of index.html, so new work can be tried on the live-ish page
+     without shipping it. The preview files build their own DOM rather than
+     needing markup, which keeps preview.html a plain copy of index.html. */
+  (PREVIEW ? PREVIEW_FILES.map(f => read(f)).join('\n') + '\n' : '') +
   FINISH + '\n\n';
 
 html = html.slice(0, a) + engine + html.slice(b);
@@ -409,6 +418,154 @@ ${CSS_END}
   } else {
     html = html.replace('</style>', css + '</style>');
   }
+}
+
+/* ---- preview-only CSS, spliced between its own sentinels ---- */
+if(PREVIEW){
+  const PV_MARK = '/* ---------- preview ---------- */';
+  const PV_END  = '/* ---------- end preview ---------- */';
+  const pvcss = `
+${PV_MARK}
+.pvcard{border:1px solid var(--line);background:var(--panel-2);padding:18px 20px;margin-bottom:14px}
+.pvcard h2{font-family:var(--sans);font-size:21px;margin:0 0 6px;font-weight:500;line-height:1.35}
+.pvcard h3{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  margin:0 0 12px;font-weight:500}
+.pvlead{font-family:var(--sans);font-size:13.5px;color:var(--dim);line-height:1.6;margin:0 0 14px}
+.pvintro{margin:0 0 14px}
+.pvmuted{font-family:var(--sans);font-size:12.5px;color:var(--dim);margin:10px 0 0}
+.pvmeta{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+.pvempty{text-align:center;padding:40px 20px}
+
+/* the size picker that starts a test */
+.pvsizes{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.pvsize{flex:1 1 130px;background:var(--panel);border:1px solid var(--line);color:var(--bone);
+  padding:16px 12px;cursor:pointer;display:flex;flex-direction:column;gap:3px;align-items:center;
+  transition:border-color .14s ease,transform .14s ease}
+.pvsize:hover{border-color:var(--amber);transform:translateY(-2px)}
+.pvsize b{font-size:26px;font-weight:700;color:var(--amber);font-family:var(--mono)}
+.pvsize span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.pvsize em{font-style:normal;font-size:11.5px;color:var(--dim);opacity:.8}
+
+/* the running-test bar */
+.pvbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;
+  padding:10px 14px;border:1px solid var(--line);background:var(--panel)}
+/* .pvmuted and friends carry a margin-top for the contexts they usually sit in,
+   which inside this row knocked them off the baseline. Same trap as .nextbtn. */
+.pvbar > *{margin:0}
+.pvbar .pvright{margin-left:auto}
+.pvclock{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--amber);
+  font-variant-numeric:tabular-nums}
+.pvprog{font-size:12px;color:var(--dim);letter-spacing:.04em;font-family:var(--mono)}
+.pvbar .tbtn{margin-left:auto}
+
+.pvgrid{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.pvdot{width:28px;height:28px;border:1px solid var(--line);background:var(--panel);
+  color:var(--dim);font-family:var(--mono);font-size:11px;cursor:pointer;padding:0;
+  transition:border-color .12s,color .12s}
+.pvdot:hover{color:var(--bone);border-color:#3B5063}
+.pvdot.ans{color:var(--bone);border-color:#3B5063;background:var(--panel-2)}
+.pvdot.now{border-color:var(--amber);color:var(--amber)}
+.pvdot.flag{box-shadow:inset 0 -3px 0 var(--rose)}
+
+.pvopts{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.pvopts .qopt{width:100%;text-align:left}
+.pvexpl{font-family:var(--sans);font-size:13.5px;color:var(--dim);line-height:1.6;
+  padding-left:11px;border-left:2px solid var(--amber);margin:14px 0 0}
+.pvnav{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.pvnav button{margin:0;padding:9px 16px;font-size:12px;line-height:1.25;min-height:34px;
+  border:1px solid transparent}
+.pvnav .ghost,.pvnav .tbtn{border-color:var(--line);margin-left:0}
+.pvreveal{margin:12px 0 0;padding-left:11px;border-left:2px solid var(--lime)}
+.pvans{color:var(--lime)}
+
+/* progress overview */
+.pvbig{margin:6px 0 12px}
+.pvmeter{height:6px;background:var(--panel);border:1px solid var(--line);overflow:hidden}
+.pvmeter i{display:block;height:100%;background:var(--amber);transition:width .5s ease}
+.pvrows{display:flex;flex-direction:column;gap:6px}
+.pvrow{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:none;
+  border:0;border-left:2px solid transparent;color:var(--dim);padding:7px 10px;cursor:pointer;
+  font-size:12.5px;transition:color .12s,border-color .12s,background .12s}
+.pvrow:hover{color:var(--bone);border-left-color:var(--amber);background:rgba(255,255,255,.03)}
+.pvrname{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;font-family:var(--sans)}
+.pvrbar{flex:0 0 90px;height:4px;background:var(--panel);overflow:hidden}
+.pvrbar i{display:block;height:100%;background:var(--lime)}
+.pvrnum{flex:0 0 auto;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+.pvweak{color:var(--amber)}
+
+.pvlog{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.pvlogrow{display:flex;gap:12px;align-items:center;padding:5px 0;font-size:12.5px;color:var(--dim)}
+.pvlogrow span{flex:1 1 auto;font-family:var(--mono);font-size:11.5px}
+.pvlogrow b{color:var(--bone);font-weight:500;font-family:var(--mono)}
+.pvlogrow em{font-style:normal;color:var(--amber);font-family:var(--mono);font-size:11.5px}
+
+/* the tour card, widened for the contents step */
+/* the tour card sets its width in an inline style, which a class cannot beat */
+#tourcard.wide{width:min(560px,92vw)!important}
+.pvtl{max-height:56vh;overflow-y:auto;margin-top:2px}
+.pvtlintro{font-family:var(--sans);font-size:13px;color:var(--dim);line-height:1.6;margin:0 0 14px}
+.pvtlgroup{margin-bottom:14px}
+.pvtlgroup h4{margin:0 0 7px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--amber);font-weight:500}
+.pvtlrow{display:flex;gap:10px;align-items:baseline;padding:3px 0;font-size:12.5px;line-height:1.5}
+.pvtlrow b{flex:0 0 34%;color:var(--bone);font-weight:500;font-family:var(--mono);font-size:12px}
+.pvtlrow span{flex:1 1 auto;color:var(--dim);font-family:var(--sans)}
+.pvtlfoot{font-family:var(--sans);font-size:12px;color:var(--dim);margin:12px 0 0;
+  padding-top:10px;border-top:1px solid var(--line)}
+@media(max-width:560px){.pvtlrow{flex-direction:column;gap:1px}.pvtlrow b{flex:none}}
+
+/* command palette */
+.pvpal{position:fixed;inset:0;z-index:300;background:rgba(4,7,11,.72);
+  display:flex;align-items:flex-start;justify-content:center;padding:12vh 16px 16px}
+.pvpal[hidden]{display:none}
+.pvpalbox{width:min(680px,100%);background:var(--panel-2);border:1px solid var(--amber);
+  box-shadow:0 30px 80px -20px #000;display:flex;flex-direction:column;max-height:70vh}
+#pv-palq{width:100%;background:var(--void);border:0;border-bottom:1px solid var(--line);
+  color:var(--bone);font-family:var(--mono);font-size:15px;padding:15px 17px;outline:none}
+#pv-palq::placeholder{color:#3E4C5C}
+.pvpalhits{overflow-y:auto;flex:1;min-height:0}
+.pvpalhit{display:flex;gap:11px;align-items:baseline;width:100%;text-align:left;
+  background:none;border:0;border-left:2px solid transparent;color:var(--bone);
+  padding:9px 15px;cursor:pointer;font-size:13px;font-family:var(--sans)}
+.pvpalhit:hover{background:rgba(255,255,255,.03)}
+.pvpalhit.sel{background:rgba(255,180,84,.09);border-left-color:var(--amber)}
+.pvpalkind{flex:0 0 62px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim)}
+.pvpalkind.k-cmd{color:var(--lime)} .pvpalkind.k-go{color:var(--amber)}
+.pvpalkind.k-quiz{color:var(--cyan)} .pvpalkind.k-lab{color:var(--rose)}
+.pvpallab{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pvpalsub{flex:0 0 auto;max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--dim);font-size:11.5px;font-family:var(--mono)}
+.pvpalnone{padding:22px 17px;color:var(--dim);font-family:var(--sans);font-size:13px;margin:0}
+.pvpalfoot{border-top:1px solid var(--line);padding:8px 15px;color:var(--dim);
+  font-size:11px;font-family:var(--mono);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pvpalfoot span{border:1px solid var(--line);padding:1px 6px;color:var(--bone)}
+.pvflag .tbtn{margin-left:auto}
+@media(max-width:560px){.pvpal{padding:6vh 10px 10px}.pvpalsub{display:none}}
+
+/* the banner that says this is not the published site */
+.pvflag{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px;
+  padding:10px 14px;border:1px solid var(--rose);background:rgba(240,113,120,.07)}
+.pvflag b{color:var(--rose);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase}
+.pvflag span{font-family:var(--sans);font-size:12.5px;color:var(--dim)}
+
+@media(max-width:560px){
+  .pvcard{padding:15px 14px}
+  .pvbar{padding:9px 11px}
+  .pvnav button{flex:1 1 auto}
+  .pvrbar{flex-basis:52px}
+}
+${PV_END}
+`;
+  const pa = html.indexOf(PV_MARK);
+  if(pa >= 0){
+    const pb = html.indexOf(PV_END);
+    html = html.slice(0, pa) + pvcss.trim() + '\n' + html.slice(pb + PV_END.length + 1);
+  } else {
+    html = html.replace('</style>', pvcss + '</style>');
+  }
+  html = html.replace(/<title>[^<]*<\/title>/,
+    '<title>Sec·lab preview — exam mode, review, progress</title>');
 }
 
 fs.writeFileSync(target, html);

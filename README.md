@@ -87,6 +87,43 @@ tasks survive a reload. `reset` starts a lecture's machine over.
 Nothing here needs a Linux computer, a VM, or an internet connection beyond
 loading the page.
 
+## preview.html
+
+`preview.html` is a second, self-contained copy of the site carrying work that
+is not on the published page yet. It is generated the same way index.html is:
+
+    node src/build.js preview.html
+
+Anything named `src/pv-*.js` is spliced into preview.html and left out of
+index.html, so the published site cannot pick it up by accident. The preview
+files build their own DOM and save under their own storage key, which keeps
+preview.html a plain copy of index.html and means testing it cannot corrupt
+progress saved by the real site.
+
+It currently adds:
+
+- **Network lab** — the simulated machine gets a LAN. `ip`, `ping`, `ss`,
+  `arp`, `dig`, `host`, `nmap`, `nc`, `traceroute`, `curl`, `ufw` and
+  `iptables` all read one shared state, so a `ufw deny` you add really does
+  stop the next ping and drops the host out of the next scan. Seven
+  self-checking tasks build on it: sweep the subnet, find the host running
+  telnet, block it, prove it is blocked. A network map drawn from the same
+  state sits beside the terminal.
+- **Exam mode** — a timed test of 10/20/30 questions mixed across every quiz
+  on the site, with no feedback until you hand in, then a per-course result.
+  Week 42 of the schedule is exam preparation and nothing rehearsed it.
+- **Review** — every question answered wrong and every lab answer revealed,
+  handed back one at a time. An item leaves only by being answered correctly
+  with no help.
+- **Progress** — one view of the whole programme, and a JSON backup that
+  restores here or on another machine. Everything else lives in one browser.
+- **Ctrl+K** — searches all ~460 courses, commands, tasks and questions and
+  jumps to the one you pick. Subsequence matching, so `grpr` finds `grep -rn`.
+- **A contents page as the tutorial's first step**, listing what the site
+  holds with counts read from the data rather than typed in.
+
+    node test/nettest.js               #  83 network + firewall tests
+
 ## Running locally
 
 Open `index.html` in any browser. No build step, no server.
@@ -106,3 +143,4 @@ Tests run on plain Node with no dependencies:
     node test/solutions.js              # works every task; 85 near-miss cases must NOT pass
     node test/selfcheck.js index.html   # drill + quiz integrity
     node test/audit.js                  # duplicate declarations, i18n gaps, data integrity
+    node test/nettest.js                # network engine + the network lab's checks

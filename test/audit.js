@@ -85,6 +85,13 @@ for(const m of script.matchAll(/\$\("([a-z][\w-]*)"\)/g)) referenced.add(m[1]);
 /* 7. source files present in the build */
 const buildJs = fs.readFileSync(base + 'src/build.js', 'utf8');
 srcFiles.filter(f => f !== 'build.js').forEach(f => {
+  /* pv-*.js are picked up by a readdir glob for preview.html rather than named
+     one by one, so their absence from the vm-* list is the design, not a gap */
+  if(/^pv-.*\.js$/.test(f)){
+    if(!/pv-.*\\\.js|\^pv-/.test(buildJs))
+      flag('high','build', 'preview files exist but build.js has no pv-*.js rule');
+    return;
+  }
   if(!buildJs.includes("read('" + f + "')")) flag('high','build', f + ' is in src/ but not spliced by build.js');
 });
 
