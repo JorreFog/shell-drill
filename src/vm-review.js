@@ -53,21 +53,25 @@ function pvRenderReview(){
   if(it.kind === "quiz") pvWireReviewQuiz(v, it, items); else pvWireReviewLab(v, it, items);
 }
 
+/* Quiz text is authored with <code> markup in it and the published quiz has
+   always rendered it raw for that reason. Escaping it here showed the tags
+   as literal text: "What is <code>/dev/null</code> used for?". The strings
+   come from the site's own data, never from anything a user typed. */
 function pvReviewQuiz(it){
   const checked = PVR.checked;
   const right = checked && pvIsRight(it.item, PVR.picked);
   return '<div class="pvcard">'+
     '<div class="pvmeta">' + esc(L(it.course)) + " · " +
       t("repSlips").split("{n}").join(it.wrong) + "</div>"+
-    "<h2>" + esc(L(it.item.q)) + "</h2>"+
+    "<h2>" + L(it.item.q) + "</h2>"+
     '<div class="pvopts">' + it.item.o.map((o,i) => {
       const picked = PVR.picked.has(i);
       let cls = "qopt" + (picked ? " picked" : "");
       if(checked){ if(o.c) cls += " good"; else if(picked) cls += " bad"; }
       return '<button class="' + cls + '" data-o="' + i + '"' + (checked?" disabled":"") + ">"+
-        '<span class="qbox"></span>' + esc(L(o.t)) + "</button>";
+        '<span class="qbox"></span>' + L(o.t) + "</button>";
     }).join("") + "</div>"+
-    (checked ? '<p class="pvexpl">' + esc(L(it.item.e)) + "</p>" : "")+
+    (checked ? '<p class="pvexpl">' + L(it.item.e) + "</p>" : "")+
     '<div class="pvnav">'+
       (checked
         ? '<button class="nextbtn" id="pv-r-next">' + (right ? t("pvGotIt") : t("pvStillUnsure")) + " →</button>"

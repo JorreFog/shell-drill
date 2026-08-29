@@ -128,3 +128,4 @@ Tests run on plain Node with no dependencies:
     node test/audit.js                  # duplicate declarations, i18n gaps, data integrity
     node test/nettest.js                #  83 network engine + network lab checks
     node test/pvtest.js                 # exam sampling: bias and course spread
+    node test/deepaudit.js              # dead code, i18n, data integrity, a11y, hygiene

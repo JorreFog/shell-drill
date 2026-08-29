@@ -118,7 +118,7 @@ function pickerCard(c, i){
     '<span class="cmain">'+
       '<span class="ctitle">'+esc(L(c.title))+"</span>"+
       '<span class="cblurb">'+esc(L(c.blurb))+"</span>"+
-      (engOnly ? '<span class="cnote">'+t("englishOnly")+"</span>" : "")+
+      (engOnly && t("englishOnly") ? '<span class="cnote">'+t("englishOnly")+"</span>" : "")+
       (p ? '<span class="cbar"><span class="cbar-fill" style="width:'+pct+'%"></span></span>'+
            '<span class="cprogtext">'+p.done+" / "+p.total+" "+L(p.unit)+"</span>" : "")+
     "</span>"+
@@ -175,6 +175,27 @@ function openPicker(){
   $("picker").scrollTop = 0;
 }
 
+/* Each entry can bring a quiz of a different shape, and Q.tier / Q.i are kept
+   across the switch so you return where you left off. The Linux set has five
+   sections and the course sets have two, so coming from section 4 of the
+   former into either of the latter asked for a section that does not exist and
+   threw on activeQuiz()[Q.tier].items. Kept pure so it can be tested. */
+function clampQuizPos(quiz, tier, i){
+  if(!quiz || !quiz.length) return {tier:0, i:0};
+  let t = (tier|0) < 0 ? 0 : (tier|0);
+  if(t >= quiz.length) t = 0;
+  const items = (quiz[t] && quiz[t].items) || [];
+  let n = (i|0) < 0 ? 0 : (i|0);
+  if(n >= items.length) n = 0;
+  return {tier:t, i:n};
+}
+if (typeof globalThis !== "undefined") globalThis.clampQuizPos = clampQuizPos;
+
+function clampQuiz(){
+  const p = clampQuizPos(activeQuiz(), Q.tier, Q.i);
+  Q.tier = p.tier; Q.i = p.i;
+}
+
 function enterCourse(id){
   const c = courseById(id);
   if(!c || !c.ready) return;
@@ -202,6 +223,7 @@ function enterCourse(id){
 
   $("m-course").textContent = c.id === "grund-it" ? c.title : t("courseLab");
   $("here").textContent = c.title;
+  clampQuiz();   // the new entry may have fewer quiz sections than the last one
   setMode(returning && modes.includes(S.mode) ? S.mode : (c.entry || modes[0]));
   save();
 }

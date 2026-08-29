@@ -770,6 +770,7 @@ html,body{overflow-x:hidden}
 
 
 
+
 /* ---------- preview ---------- */
 .pvcard{border:1px solid var(--line);background:var(--panel-2);padding:18px 20px;margin-bottom:14px}
 .pvcard h2{font-family:var(--sans);font-size:21px;margin:0 0 6px;font-weight:500;line-height:1.35}
@@ -931,6 +932,11 @@ body::after{content:none}
 .sect-hd{border-color:#2A3646}
 .term .bar{background:#161D27}
 
+/* shown once if the browser refuses to store progress */
+.savewarn{margin-bottom:16px;padding:11px 15px;border:1px solid var(--warn);
+  border-left:3px solid var(--warn);background:rgba(227,179,65,.08);
+  font-family:var(--sans);font-size:13px;color:var(--bone);line-height:1.55}
+
 .nlmap{max-width:100%;height:auto}
 
 /* the tour card, widened for the contents step */
@@ -999,6 +1005,7 @@ body::after{content:none}
 .pvflag b{color:var(--amber)}
 .pvpalkind.k-lab{color:var(--lime)}
 /* ---------- end preview ---------- */
+
 </style>
 </head>
 <body>
@@ -1064,7 +1071,7 @@ body::after{content:none}
     <h2>Cheatsheet</h2>
     <div class="sub">Every command in the course, with what it actually does.</div>
     <button class="closex" id="closeref" aria-label="Close cheatsheet">×</button>
-    <input id="refsearch" placeholder="filter — try 'permission', 'grep', 'port'" autocomplete="off">
+    <input id="refsearch" aria-label="Filter the cheatsheet" placeholder="filter — try 'permission', 'grep', 'port'" autocomplete="off">
   </div>
   <div class="reflist" id="reflist"></div>
 </div>
@@ -2025,7 +2032,27 @@ async function save(){
      c:S.c, lab:S.lab, course:S.course, lang:S.lang,
      hints:S.hints, reveals:S.reveals, qWrong:S.qWrong, seen:true,
      mach:(typeof serializeMachines === "function" ? serializeMachines() : undefined)})); }
-  catch(e){ /* quota or serialisation trouble: keep going without saving */ }
+  catch(e){
+    /* Quota or serialisation trouble. Carrying on unsaved is the right
+       behaviour — losing the session would be worse — but doing it silently is
+       not: a student would keep working and find the lot gone after a reload.
+       Say it once, then stay quiet. */
+    saveFailedNotice();
+  }
+}
+let saveWarned = false;
+function saveFailedNotice(){
+  if(saveWarned) return;
+  saveWarned = true;
+  try{
+    const bar = document.createElement("div");
+    bar.className = "savewarn";
+    bar.setAttribute("role", "status");
+    bar.textContent = (typeof t === "function") ? t("saveFailed")
+      : "Progress cannot be saved in this browser right now.";
+    const g = document.querySelector(".grid");
+    if(g && g.parentNode) g.parentNode.insertBefore(bar, g);
+  }catch(_){ /* if even this fails there is nothing sensible left to do */ }
 }
 async function load(){
   try{ const r = await store.get("shelldrill:v1");
@@ -4664,6 +4691,14 @@ function seedVM(K){
   put(H+"/notes.txt", "remember to check the backup job\ncheck disk usage on /var\n", 0o644, "analyst", "analyst");
   put(H+"/.bashrc", "alias ll='ls -la'\nexport EDITOR=nano\nPS1='\\u@\\h:\\w\\$ '\n", 0o644, "analyst", "analyst");
   put(H+"/.profile", "# ~/.profile\n", 0o644, "analyst", "analyst");
+  /* ~/.ssh exists already and is too open, which is the point of the lecture 5
+     task that asks you to fix it. It used to be absent, so the ssh-keygen in the
+     task before created it at 0700 and the fix task then completed itself before
+     the student had done anything. mkdirp leaves an existing directory's mode
+     alone, exactly as the real ssh-keygen does. */
+  mkdirp(H+"/.ssh", 0o755, "analyst", "analyst");
+  put(H+"/.ssh/known_hosts", "srv-web.lan ssh-ed25519 AAAAC3NzaC1lZDI1NTE5\n",
+      0o644, "analyst", "analyst");
   mkdirp(H+"/projects", 0o755, "analyst", "analyst");
   mkdirp(H+"/projects/webshop", 0o755, "analyst", "analyst");
   put(H+"/projects/webshop/index.html", "<h1>webshop</h1>\n", 0o644, "analyst", "analyst");
@@ -6746,8 +6781,15 @@ const T = {
   cardProvisional: {sv:"preliminär",        en:"provisional"},
   cardNoMaterial:  {sv:"Inget material än — den öppnas när kursen börjar.",
                     en:"No material yet — this opens when the course starts."},
+  /* only ever shown when the interface is Swedish, but carrying a real English
+     string rather than "" means the entry survives the guard changing */
+  saveFailed:      {sv:"Framstegen kan inte sparas i den här webbläsaren just nu — "+
+                       "lagringen är full eller avstängd. Det du gör finns kvar tills "+
+                       "du laddar om sidan.",
+                    en:"Progress cannot be saved in this browser right now — storage is "+
+                       "full or switched off. What you do stays until you reload the page."},
   englishOnly:     {sv:"Materialet i den här kursen finns bara på engelska.",
-                    en:""},
+                    en:"The material in this course is in English only."},
   pickerFoot:      {sv:"Kurser utan material är platshållare och öppnas när innehållet finns. "+
                        "LIA, examensarbete och kompetensportfölj saknas — praktik, examensarbete "+
                        "och portföljarbete går inte att öva på här.",
@@ -6822,6 +6864,10 @@ const T = {
                        "typing the command yourself is what sticks."},
   adviceHintsOnly: {sv:"Ledtrådar använda: {n}, svar: inga. Bra läge inför tentan.",
                     en:"Hints used: {n}, answers: none. Good place to be for the exam."},
+  /* the same line while the lab is unfinished would be a verdict on work that
+     has not happened yet, so the half-done case reports and does not judge */
+  adviceHintsSoFar:{sv:"Ledtrådar använda: {n}, inga svar framtagna. {rest} uppgifter kvar.",
+                    en:"Hints used: {n}, no answers revealed. {rest} tasks still to go."},
   courseLab:       {sv:"Kurslabb",         en:"Course lab"},
   adviceUnstarted: {sv:"Inget avklarat här än — börja med uppgift 1 och arbeta dig neråt. "+
                        "{n} uppgifter väntar.",
@@ -7965,7 +8011,7 @@ function pickerCard(c, i){
     '<span class="cmain">'+
       '<span class="ctitle">'+esc(L(c.title))+"</span>"+
       '<span class="cblurb">'+esc(L(c.blurb))+"</span>"+
-      (engOnly ? '<span class="cnote">'+t("englishOnly")+"</span>" : "")+
+      (engOnly && t("englishOnly") ? '<span class="cnote">'+t("englishOnly")+"</span>" : "")+
       (p ? '<span class="cbar"><span class="cbar-fill" style="width:'+pct+'%"></span></span>'+
            '<span class="cprogtext">'+p.done+" / "+p.total+" "+L(p.unit)+"</span>" : "")+
     "</span>"+
@@ -8022,6 +8068,27 @@ function openPicker(){
   $("picker").scrollTop = 0;
 }
 
+/* Each entry can bring a quiz of a different shape, and Q.tier / Q.i are kept
+   across the switch so you return where you left off. The Linux set has five
+   sections and the course sets have two, so coming from section 4 of the
+   former into either of the latter asked for a section that does not exist and
+   threw on activeQuiz()[Q.tier].items. Kept pure so it can be tested. */
+function clampQuizPos(quiz, tier, i){
+  if(!quiz || !quiz.length) return {tier:0, i:0};
+  let t = (tier|0) < 0 ? 0 : (tier|0);
+  if(t >= quiz.length) t = 0;
+  const items = (quiz[t] && quiz[t].items) || [];
+  let n = (i|0) < 0 ? 0 : (i|0);
+  if(n >= items.length) n = 0;
+  return {tier:t, i:n};
+}
+if (typeof globalThis !== "undefined") globalThis.clampQuizPos = clampQuizPos;
+
+function clampQuiz(){
+  const p = clampQuizPos(activeQuiz(), Q.tier, Q.i);
+  Q.tier = p.tier; Q.i = p.i;
+}
+
 function enterCourse(id){
   const c = courseById(id);
   if(!c || !c.ready) return;
@@ -8049,6 +8116,7 @@ function enterCourse(id){
 
   $("m-course").textContent = c.id === "grund-it" ? c.title : t("courseLab");
   $("here").textContent = c.title;
+  clampQuiz();   // the new entry may have fewer quiz sections than the last one
   setMode(returning && modes.includes(S.mode) ? S.mode : (c.entry || modes[0]));
   save();
 }
@@ -8235,7 +8303,9 @@ function labAdvice(r){
   // nothing done at all is not a clean run — say so rather than congratulating
   if(r.done === 0) out.push({k:"adviceUnstarted", n:r.total});
   else if(r.revealed.length) out.push({k:"adviceReveals", n:r.revealed.length});
-  else if(r.hinted.length) out.push({k:"adviceHintsOnly", n:r.hinted.length});
+  else if(r.hinted.length) out.push(r.done === r.total
+    ? {k:"adviceHintsOnly", n:r.hinted.length}
+    : {k:"adviceHintsSoFar", n:r.hinted.length, rest:r.total - r.done});
   else if(r.done === r.total) out.push({k:"adviceClean", n:r.total});
   if(s.total && s.failed / s.total > 0.4)
     out.push({k:"adviceReadErrors", n:Math.round(s.failed / s.total * 100)});
@@ -8313,7 +8383,7 @@ function reportHtml(r){
 
   if(adv.length)
     h += section(t("repFocus"), "", list(adv.map(a =>
-      t(a.k).split("{n}").join(a.n).split("{tier}").join(a.tier || ""))));
+      t(a.k).split("{n}").join(a.n).split("{tier}").join(a.tier || "").split("{rest}").join(a.rest))));
 
   /* the closing line points at the "revisit these" section, so only show it when
      that section is actually in the report — otherwise it names nothing */
@@ -8823,6 +8893,10 @@ function pvFinishExam(timedOut){
   pvRenderExam();
 }
 
+/* Quiz text is authored with <code> markup in it and the published quiz has
+   always rendered it raw for that reason. Escaping it here showed the tags
+   as literal text: "What is <code>/dev/null</code> used for?". The strings
+   come from the site's own data, never from anything a user typed. */
 function pvRenderExam(){
   const v = pvView("pv-examview");
   const e = PV.exam;
@@ -8855,10 +8929,10 @@ function pvRenderExam(){
       (x.flagged?" flag":"") + '" data-i="' + i + '">' + (i+1) + "</button>").join("") + "</div>"+
     '<div class="pvcard">'+
       '<div class="pvmeta">' + esc(L(q.course)) + "</div>"+
-      "<h2>" + esc(L(q.item.q)) + "</h2>"+
+      "<h2>" + L(q.item.q) + "</h2>"+
       '<div class="pvopts">' + q.item.o.map((o,i) =>
         '<button class="qopt' + (q.picked.includes(i)?" picked":"") + '" data-o="' + i + '">'+
-        '<span class="qbox"></span>' + esc(L(o.t)) + "</button>").join("") + "</div>"+
+        '<span class="qbox"></span>' + L(o.t) + "</button>").join("") + "</div>"+
       '<div class="pvnav">'+
         '<button class="ghost" id="pv-prev"' + (e.i===0?" disabled":"") + ">← " + t("previous") + "</button>"+
         '<button class="ghost" id="pv-flag">' + (q.flagged ? t("pvFlagged") : t("pvFlag")) + "</button>"+
@@ -8909,10 +8983,10 @@ function pvExamResultHtml(e){
     "</div></div>"+
     (missed.length ? '<div class="rsec"><h3>' + t("repMissed") + "<span>" + missed.length + "</span></h3>"+
       '<ul class="rlist">' + missed.map(q =>
-        "<li>" + esc(L(q.item.q)) +
-        '<span class="rtake">' + esc(L(q.item.e)) + "</span>"+
+        "<li>" + L(q.item.q) +
+        '<span class="rtake">' + L(q.item.e) + "</span>"+
         '<span class="rtake pvans">' + t("pvCorrect") + ": " +
-          q.item.o.filter(o=>o.c).map(o=>esc(L(o.t))).join(" · ") + "</span></li>").join("") + "</ul></div>" : "")+
+          q.item.o.filter(o=>o.c).map(o=>L(o.t)).join(" · ") + "</span></li>").join("") + "</ul></div>" : "")+
     '<div class="pvnav"><button class="nextbtn" id="pv-again">' + t("pvExam") + " →</button>"+
       '<button class="tbtn" id="pv-toreview">' + t("pvReview") + "</button></div>"+
   "</div>";
@@ -8986,21 +9060,25 @@ function pvRenderReview(){
   if(it.kind === "quiz") pvWireReviewQuiz(v, it, items); else pvWireReviewLab(v, it, items);
 }
 
+/* Quiz text is authored with <code> markup in it and the published quiz has
+   always rendered it raw for that reason. Escaping it here showed the tags
+   as literal text: "What is <code>/dev/null</code> used for?". The strings
+   come from the site's own data, never from anything a user typed. */
 function pvReviewQuiz(it){
   const checked = PVR.checked;
   const right = checked && pvIsRight(it.item, PVR.picked);
   return '<div class="pvcard">'+
     '<div class="pvmeta">' + esc(L(it.course)) + " · " +
       t("repSlips").split("{n}").join(it.wrong) + "</div>"+
-    "<h2>" + esc(L(it.item.q)) + "</h2>"+
+    "<h2>" + L(it.item.q) + "</h2>"+
     '<div class="pvopts">' + it.item.o.map((o,i) => {
       const picked = PVR.picked.has(i);
       let cls = "qopt" + (picked ? " picked" : "");
       if(checked){ if(o.c) cls += " good"; else if(picked) cls += " bad"; }
       return '<button class="' + cls + '" data-o="' + i + '"' + (checked?" disabled":"") + ">"+
-        '<span class="qbox"></span>' + esc(L(o.t)) + "</button>";
+        '<span class="qbox"></span>' + L(o.t) + "</button>";
     }).join("") + "</div>"+
-    (checked ? '<p class="pvexpl">' + esc(L(it.item.e)) + "</p>" : "")+
+    (checked ? '<p class="pvexpl">' + L(it.item.e) + "</p>" : "")+
     '<div class="pvnav">'+
       (checked
         ? '<button class="nextbtn" id="pv-r-next">' + (right ? t("pvGotIt") : t("pvStillUnsure")) + " →</button>"
@@ -10015,7 +10093,7 @@ function pvPalette(){
     box = document.createElement("div");
     box.id = "pv-palette"; box.className = "pvpal"; box.hidden = true;
     box.innerHTML = '<div class="pvpalbox" role="dialog" aria-label="Search">'+
-      '<input id="pv-palq" autocomplete="off" spellcheck="false">'+
+      '<input id="pv-palq" autocomplete="off" spellcheck="false" aria-label="Search the site">'+
       '<div class="pvpalhits" id="pv-palhits"></div>'+
       '<div class="pvpalfoot"><span>&uarr;&darr;</span> '+t("pvPalMove")+
         ' <span>&crarr;</span> '+t("pvPalOpen")+' <span>esc</span> '+t("pvPalClose")+"</div></div>";
@@ -10242,6 +10320,14 @@ if(typeof window !== "undefined" && typeof showStep === "function"){
 
 
 
+
+
+
+
+
+
+
+
 /* ---------- quiz state & rendering ---------- */
 const Q = {tier:0, i:0, picked:new Set(), checked:false};
 /* Each course can bring its own quiz; the Linux set stays the default. Its
@@ -10275,6 +10361,9 @@ function renderQuizNav(){
   $("s-streak").textContent = "—";
 }
 function renderQuiz(){
+  /* belt and braces: enterCourse clamps too, but any other path into a quiz
+     whose shape changed would otherwise read a section that is not there */
+  if(typeof clampQuiz === "function") clampQuiz();
   // `tier`, not `t` — t() is the translation function
   const it = qItem(), tier = activeQuiz()[Q.tier];
   $("quizview").innerHTML =

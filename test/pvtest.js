@@ -97,5 +97,34 @@ const share = (picks, name) => picks.filter(q => q.course === name).length;
   ok('the same seed draws the same test', a === b);
 }
 
+/* ---------- switching between quizzes of different shapes ----------
+   A crash found by clicking through every entry in the browser rather than by
+   reading code: the Linux quiz has five sections, the course quizzes have two,
+   and the position carries across the switch. Section 4 of a two-section quiz
+   does not exist, and activeQuiz()[Q.tier].items threw. */
+{
+  const courses = fs.readFileSync(path.join(base, 'vm-courses.js'), 'utf8');
+  eval(courses.slice(courses.indexOf('function clampQuizPos'),
+                     courses.indexOf('if (typeof globalThis')));
+
+  const five = Array.from({length:5}, () => ({items: Array.from({length:8}, (_,j)=>j)}));
+  const two  = Array.from({length:2}, () => ({items: Array.from({length:4}, (_,j)=>j)}));
+
+  ok('a valid position is left alone',
+     JSON.stringify(clampQuizPos(five, 3, 5)) === JSON.stringify({tier:3, i:5}));
+  ok('a section past the end resets to the first', clampQuizPos(two, 4, 3).tier === 0);
+  ok('a question past the end of its section resets', clampQuizPos(two, 1, 99).i === 0);
+  ok('negatives are clamped',
+     JSON.stringify(clampQuizPos(five, -2, -7)) === JSON.stringify({tier:0, i:0}));
+  ok('an empty quiz does not throw',
+     JSON.stringify(clampQuizPos([], 3, 3)) === JSON.stringify({tier:0, i:0}));
+  ok('a missing quiz does not throw',
+     JSON.stringify(clampQuizPos(null, 1, 1)) === JSON.stringify({tier:0, i:0}));
+  ok('a section with no items resets the question', clampQuizPos([{items:[]}], 0, 4).i === 0);
+  const moved = clampQuizPos(two, 4, 3);
+  ok('the reported crash case lands on a section that exists',
+     !!(two[moved.tier] && moved.i < two[moved.tier].items.length));
+}
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

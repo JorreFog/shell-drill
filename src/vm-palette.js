@@ -97,7 +97,7 @@ function pvPalette(){
     box = document.createElement("div");
     box.id = "pv-palette"; box.className = "pvpal"; box.hidden = true;
     box.innerHTML = '<div class="pvpalbox" role="dialog" aria-label="Search">'+
-      '<input id="pv-palq" autocomplete="off" spellcheck="false">'+
+      '<input id="pv-palq" autocomplete="off" spellcheck="false" aria-label="Search the site">'+
       '<div class="pvpalhits" id="pv-palhits"></div>'+
       '<div class="pvpalfoot"><span>&uarr;&darr;</span> '+t("pvPalMove")+
         ' <span>&crarr;</span> '+t("pvPalOpen")+' <span>esc</span> '+t("pvPalClose")+"</div></div>";

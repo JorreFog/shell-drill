@@ -602,6 +602,11 @@ body::after{content:none}
 .sect-hd{border-color:#2A3646}
 .term .bar{background:#161D27}
 
+/* shown once if the browser refuses to store progress */
+.savewarn{margin-bottom:16px;padding:11px 15px;border:1px solid var(--warn);
+  border-left:3px solid var(--warn);background:rgba(227,179,65,.08);
+  font-family:var(--sans);font-size:13px;color:var(--bone);line-height:1.55}
+
 .nlmap{max-width:100%;height:auto}
 
 /* the tour card, widened for the contents step */

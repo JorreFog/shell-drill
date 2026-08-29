@@ -50,8 +50,15 @@ const T = {
   cardProvisional: {sv:"preliminär",        en:"provisional"},
   cardNoMaterial:  {sv:"Inget material än — den öppnas när kursen börjar.",
                     en:"No material yet — this opens when the course starts."},
+  /* only ever shown when the interface is Swedish, but carrying a real English
+     string rather than "" means the entry survives the guard changing */
+  saveFailed:      {sv:"Framstegen kan inte sparas i den här webbläsaren just nu — "+
+                       "lagringen är full eller avstängd. Det du gör finns kvar tills "+
+                       "du laddar om sidan.",
+                    en:"Progress cannot be saved in this browser right now — storage is "+
+                       "full or switched off. What you do stays until you reload the page."},
   englishOnly:     {sv:"Materialet i den här kursen finns bara på engelska.",
-                    en:""},
+                    en:"The material in this course is in English only."},
   pickerFoot:      {sv:"Kurser utan material är platshållare och öppnas när innehållet finns. "+
                        "LIA, examensarbete och kompetensportfölj saknas — praktik, examensarbete "+
                        "och portföljarbete går inte att öva på här.",
@@ -126,6 +133,10 @@ const T = {
                        "typing the command yourself is what sticks."},
   adviceHintsOnly: {sv:"Ledtrådar använda: {n}, svar: inga. Bra läge inför tentan.",
                     en:"Hints used: {n}, answers: none. Good place to be for the exam."},
+  /* the same line while the lab is unfinished would be a verdict on work that
+     has not happened yet, so the half-done case reports and does not judge */
+  adviceHintsSoFar:{sv:"Ledtrådar använda: {n}, inga svar framtagna. {rest} uppgifter kvar.",
+                    en:"Hints used: {n}, no answers revealed. {rest} tasks still to go."},
   courseLab:       {sv:"Kurslabb",         en:"Course lab"},
   adviceUnstarted: {sv:"Inget avklarat här än — börja med uppgift 1 och arbeta dig neråt. "+
                        "{n} uppgifter väntar.",

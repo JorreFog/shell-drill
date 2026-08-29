@@ -47,6 +47,14 @@ function seedVM(K){
   put(H+"/notes.txt", "remember to check the backup job\ncheck disk usage on /var\n", 0o644, "analyst", "analyst");
   put(H+"/.bashrc", "alias ll='ls -la'\nexport EDITOR=nano\nPS1='\\u@\\h:\\w\\$ '\n", 0o644, "analyst", "analyst");
   put(H+"/.profile", "# ~/.profile\n", 0o644, "analyst", "analyst");
+  /* ~/.ssh exists already and is too open, which is the point of the lecture 5
+     task that asks you to fix it. It used to be absent, so the ssh-keygen in the
+     task before created it at 0700 and the fix task then completed itself before
+     the student had done anything. mkdirp leaves an existing directory's mode
+     alone, exactly as the real ssh-keygen does. */
+  mkdirp(H+"/.ssh", 0o755, "analyst", "analyst");
+  put(H+"/.ssh/known_hosts", "srv-web.lan ssh-ed25519 AAAAC3NzaC1lZDI1NTE5\n",
+      0o644, "analyst", "analyst");
   mkdirp(H+"/projects", 0o755, "analyst", "analyst");
   mkdirp(H+"/projects/webshop", 0o755, "analyst", "analyst");
   put(H+"/projects/webshop/index.html", "<h1>webshop</h1>\n", 0o644, "analyst", "analyst");

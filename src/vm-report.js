@@ -70,7 +70,9 @@ function labAdvice(r){
   // nothing done at all is not a clean run — say so rather than congratulating
   if(r.done === 0) out.push({k:"adviceUnstarted", n:r.total});
   else if(r.revealed.length) out.push({k:"adviceReveals", n:r.revealed.length});
-  else if(r.hinted.length) out.push({k:"adviceHintsOnly", n:r.hinted.length});
+  else if(r.hinted.length) out.push(r.done === r.total
+    ? {k:"adviceHintsOnly", n:r.hinted.length}
+    : {k:"adviceHintsSoFar", n:r.hinted.length, rest:r.total - r.done});
   else if(r.done === r.total) out.push({k:"adviceClean", n:r.total});
   if(s.total && s.failed / s.total > 0.4)
     out.push({k:"adviceReadErrors", n:Math.round(s.failed / s.total * 100)});
@@ -148,7 +150,7 @@ function reportHtml(r){
 
   if(adv.length)
     h += section(t("repFocus"), "", list(adv.map(a =>
-      t(a.k).split("{n}").join(a.n).split("{tier}").join(a.tier || ""))));
+      t(a.k).split("{n}").join(a.n).split("{tier}").join(a.tier || "").split("{rest}").join(a.rest))));
 
   /* the closing line points at the "revisit these" section, so only show it when
      that section is actually in the report — otherwise it names nothing */

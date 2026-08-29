@@ -169,9 +169,37 @@ COURSE.forEach(lec => {
   });
 });
 
+/* Cross-contamination: a task must need its own work, not merely the work of
+   its neighbours. Lecture 5's "set ~/.ssh to the mode SSH insists on" used to
+   pass for free because the task before it ran ssh-keygen, which created the
+   directory at 0700 — so the fix task completed itself in the normal order and
+   the student never typed a chmod. Running every OTHER answer in a lecture and
+   asserting the task still fails is what catches that shape. */
+let contaminated = 0;
+COURSE.forEach((lec, li) => {
+  lec.tasks.forEach((task, ti) => {
+    const K = seedVM(attachShell(makeVM()));
+    lec.tasks.forEach((_, tj) => {
+      if(tj === ti) return;
+      const a = LAB_ANSWERS[(li + 1) + ':' + tj];
+      if(a) (Array.isArray(a) ? a : [a]).forEach(step => {
+        try{ applyStep(K, [], step); }catch(e){ /* a neighbour's answer failing here is fine */ }
+      });
+    });
+    let passed = false;
+    try{ passed = !!task.check(makeLabCtx(K)); }catch(e){}
+    if(passed){
+      contaminated++;
+      console.log('CONTAMINATED [lecture ' + (li+1) + ' task ' + ti + '] passes ' +
+                  'after only its neighbours\' answers: ' + plainQ(task.q));
+    }
+  });
+});
+
 const total = COURSE.reduce((n,l)=>n+l.tasks.length,0);
 const nm = Object.values(NEAR_MISS).reduce((n,v)=>n+v.length,0);
 console.log('\nlectures: ' + COURSE.length + ', tasks: ' + total + ', near-miss cases: ' + nm);
 console.log(pass + ' solvable, ' + fail + ' not satisfied, ' + missing + ' without a solution, ' +
-            falsePass + ' passing untouched, ' + loose + ' accepting a near miss');
-process.exitCode = (fail || missing || falsePass || loose) ? 1 : 0;
+            falsePass + ' passing untouched, ' + loose + ' accepting a near miss, ' +
+            contaminated + ' completed by a neighbour');
+process.exitCode = (fail || missing || falsePass || loose || contaminated) ? 1 : 0;

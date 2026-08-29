@@ -117,6 +117,10 @@ function pvFinishExam(timedOut){
   pvRenderExam();
 }
 
+/* Quiz text is authored with <code> markup in it and the published quiz has
+   always rendered it raw for that reason. Escaping it here showed the tags
+   as literal text: "What is <code>/dev/null</code> used for?". The strings
+   come from the site's own data, never from anything a user typed. */
 function pvRenderExam(){
   const v = pvView("pv-examview");
   const e = PV.exam;
@@ -149,10 +153,10 @@ function pvRenderExam(){
       (x.flagged?" flag":"") + '" data-i="' + i + '">' + (i+1) + "</button>").join("") + "</div>"+
     '<div class="pvcard">'+
       '<div class="pvmeta">' + esc(L(q.course)) + "</div>"+
-      "<h2>" + esc(L(q.item.q)) + "</h2>"+
+      "<h2>" + L(q.item.q) + "</h2>"+
       '<div class="pvopts">' + q.item.o.map((o,i) =>
         '<button class="qopt' + (q.picked.includes(i)?" picked":"") + '" data-o="' + i + '">'+
-        '<span class="qbox"></span>' + esc(L(o.t)) + "</button>").join("") + "</div>"+
+        '<span class="qbox"></span>' + L(o.t) + "</button>").join("") + "</div>"+
       '<div class="pvnav">'+
         '<button class="ghost" id="pv-prev"' + (e.i===0?" disabled":"") + ">← " + t("previous") + "</button>"+
         '<button class="ghost" id="pv-flag">' + (q.flagged ? t("pvFlagged") : t("pvFlag")) + "</button>"+
@@ -203,10 +207,10 @@ function pvExamResultHtml(e){
     "</div></div>"+
     (missed.length ? '<div class="rsec"><h3>' + t("repMissed") + "<span>" + missed.length + "</span></h3>"+
       '<ul class="rlist">' + missed.map(q =>
-        "<li>" + esc(L(q.item.q)) +
-        '<span class="rtake">' + esc(L(q.item.e)) + "</span>"+
+        "<li>" + L(q.item.q) +
+        '<span class="rtake">' + L(q.item.e) + "</span>"+
         '<span class="rtake pvans">' + t("pvCorrect") + ": " +
-          q.item.o.filter(o=>o.c).map(o=>esc(L(o.t))).join(" · ") + "</span></li>").join("") + "</ul></div>" : "")+
+          q.item.o.filter(o=>o.c).map(o=>L(o.t)).join(" · ") + "</span></li>").join("") + "</ul></div>" : "")+
     '<div class="pvnav"><button class="nextbtn" id="pv-again">' + t("pvExam") + " →</button>"+
       '<button class="tbtn" id="pv-toreview">' + t("pvReview") + "</button></div>"+
   "</div>";

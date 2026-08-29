@@ -29,26 +29,13 @@ const flag = (sev, area, msg) => findings.push({sev, area, msg});
   }
 }
 
-/* ---------- 2. identifiers used but never defined ---------- */
-{
-  const globals = new Set(['window','document','console','Math','JSON','Object','Array','String',
-    'Number','Boolean','Set','Map','Date','RegExp','Promise','Error','parseInt','parseFloat',
-    'isNaN','setTimeout','clearTimeout','setInterval','clearInterval','requestAnimationFrame',
-    'localStorage','performance','navigator','location','history','Blob','URL','FileReader',
-    'KeyboardEvent','Event','CustomEvent','globalThis','undefined','NaN','Infinity','structuredClone',
-    'encodeURIComponent','decodeURIComponent','TextEncoder','matchMedia','getComputedStyle','alert']);
-  const defined = new Set(globals);
-  for(const m of script.matchAll(/^(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm)) defined.add(m[1]);
-  for(const m of script.matchAll(/^\s+(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)) defined.add(m[1]);
-  /* destructuring, params and locals are far too noisy to model properly, so this
-     only looks at calls to bare names — the shape that actually broke before */
-  const called = new Set();
-  for(const m of script.matchAll(/(?:^|[^.\w$])([A-Za-z_$][\w$]{2,})\s*\(/g)) called.add(m[1]);
-  const keywords = new Set(['if','for','while','switch','catch','return','typeof','function',
-    'new','delete','void','in','of','do','else','try','finally','case','throw','await','yield']);
-  [...called].filter(n => !defined.has(n) && !keywords.has(n))
-    .forEach(n => flag('high', 'undefined', n + '() is called but never declared at any level'));
-}
+/* ---------- 2. (removed) ----------
+   There was a check here for identifiers called but never declared. A regex
+   cannot do scope analysis: it matched text inside string literals and every
+   nested function, and reported about ninety false positives against zero real
+   ones. Undefined identifiers are caught by the runtime console sweep instead,
+   which actually executes the code. A check that cries wolf is worse than no
+   check, because it trains you to skim past the output. */
 
 /* ---------- 3. every user-visible string is bilingual ---------- */
 {
@@ -107,13 +94,13 @@ const flag = (sev, area, msg) => findings.push({sev, area, msg});
       if(typeof t.check !== 'function') flag('high','course','lecture '+i+' task '+j+' has no check()');
     });
   });
+  /* LAB_ANSWERS is an object keyed "lecture:task" with the lecture 1-based, not
+     an array indexed by lecture */
   if(typeof LAB_ANSWERS !== 'undefined')
-    COURSE.forEach((lec, i) => {
-      const a = LAB_ANSWERS[i];
-      if(!a) { flag('high','course','lecture '+i+' has no answers'); return; }
-      if(a.length !== lec.tasks.length)
-        flag('high','course','lecture '+i+' has '+lec.tasks.length+' tasks but '+a.length+' answers');
-    });
+    COURSE.forEach((lec, i) => lec.tasks.forEach((t, j) => {
+      if(!LAB_ANSWERS[(i + 1) + ':' + j])
+        flag('high','course','no answer for lecture ' + (i+1) + ' task ' + j);
+    }));
 
   /* quizzes */
   let qTotal = 0;
@@ -168,10 +155,14 @@ const flag = (sev, area, msg) => findings.push({sev, area, msg});
   /* buttons built in JS should carry text, not only an icon */
   for(const m of script.matchAll(/<button[^>]*>(\s*)<\/button>/g))
     flag('med','a11y','a button is generated with no text content');
-  /* duplicate ids in the static markup */
-  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
+  /* Only the static markup. Two branches of one render function may reuse an id
+     and never co-exist in the DOM, so scanning the script reports those as
+     clashes when they are not. Real runtime duplicates are caught in the
+     browser sweep, which inspects the live document. */
+  const staticHtml = html.replace(/<script>[\s\S]*?<\/script>/g, '');
+  const ids = [...staticHtml.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
   const dupes = ids.filter((v,i) => ids.indexOf(v) !== i);
-  [...new Set(dupes)].forEach(d => flag('high','dom','id "'+d+'" appears more than once in the markup'));
+  [...new Set(dupes)].forEach(d => flag('high','dom','id "'+d+'" appears twice in the markup'));
   /* the page needs a language and a viewport */
   if(!/<html[^>]*lang=/.test(html)) flag('med','a11y','<html> has no lang attribute');
   if(!/name="viewport"/.test(html)) flag('high','a11y','no viewport meta');
@@ -180,7 +171,11 @@ const flag = (sev, area, msg) => findings.push({sev, area, msg});
 
 /* ---------- 6. hygiene ---------- */
 {
-  ['console.log(', 'debugger', 'TODO', 'FIXME', 'XXX'].forEach(needle => {
+  /* 'debugger' as a bare word appears in prose and in the drill's own debug
+     command, so match the statement rather than the string */
+  const debuggerStatements = (script.match(/(?:^|[;{}\s])debugger\s*;/g) || []).length;
+  if(debuggerStatements) flag('high','hygiene', debuggerStatements + ' debugger statement(s) shipped');
+  ['console.log(', 'TODO', 'FIXME', 'XXX'].forEach(needle => {
     const n = (script.split(needle).length - 1);
     if(n) flag('med','hygiene', needle + ' appears ' + n + ' time(s) in the shipped script');
   });
