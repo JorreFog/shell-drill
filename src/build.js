@@ -39,6 +39,8 @@ const engine = BEGIN + '\n' +
   read('vm-i18n.js') + '\n' +
   read('vm-quizzes.js') + '\n' +
   read('vm-courses.js') + '\n' +
+  read('vm-fx.js') + '\n' +
+  read('vm-report.js') + '\n' +
   FINISH + '\n\n';
 
 html = html.slice(0, a) + engine + html.slice(b);
@@ -194,6 +196,149 @@ body.picking .wrap{filter:blur(3px) saturate(.6);opacity:.25;pointer-events:none
   .picker,.ccard{animation:none}
   body.picking .wrap{filter:none}
 }
+/* ---------- completion report ---------- */
+.report{
+  border:1px solid var(--line);border-top:2px solid var(--cyan);background:var(--panel);
+  margin-bottom:16px;padding:20px 20px 16px;position:relative;
+  animation:reportIn .34s cubic-bezier(.2,.7,.3,1) both;
+}
+.report.full{border-top-color:var(--lime)}
+@keyframes reportIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.rhead{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:4px}
+.rhead h2{
+  margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--cyan);font-weight:600;
+}
+.report.full .rhead h2{color:var(--lime)}
+.rscore{font-family:var(--mono);font-size:26px;color:var(--bone);margin-top:8px;line-height:1}
+.rscore b{font-weight:700}
+.rscore span{font-size:12px;color:var(--dim);margin-left:10px;letter-spacing:.1em}
+.rsub{font-family:var(--sans);font-size:13px;color:var(--dim);margin-top:6px}
+.rsec{padding:14px 0;border-bottom:1px solid rgba(34,48,63,.6)}
+.rsec:last-of-type{border-bottom:0}
+.rsec h3{
+  margin:0 0 9px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);font-weight:500;display:flex;gap:9px;align-items:baseline;
+}
+.rsec h3 span{color:var(--amber);font-family:var(--mono);letter-spacing:0}
+.rlist{margin:0;padding-left:17px;font-family:var(--sans);font-size:13.5px;line-height:1.55}
+.rlist li{margin-bottom:7px;color:var(--bone)}
+.rlist li::marker{color:var(--line)}
+.rtake{display:block;font-size:12.5px;color:var(--dim);margin-top:3px}
+.rline{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--dim)}
+.rtiers{display:flex;flex-direction:column;gap:5px}
+.rtier{
+  display:flex;justify-content:space-between;gap:12px;font-size:13px;font-family:var(--sans);
+  padding:6px 9px;background:var(--panel-2);border-left:2px solid var(--line);
+}
+.rtier b{font-family:var(--mono);font-size:12px;color:var(--lime);font-weight:500;white-space:nowrap}
+.rtier b.warn{color:var(--amber)}
+.rnext{
+  font-family:var(--sans);font-size:13px;color:var(--amber);line-height:1.6;
+  border-left:2px solid var(--amber);padding-left:12px;margin:14px 0 4px;
+}
+.rclose{position:absolute;top:16px;right:16px;margin-left:0}
+@media(max-width:560px){ .rclose{position:static;margin-top:12px;width:100%} }
+
+/* ---------- boot sequence ---------- */
+.boot{
+  position:fixed;inset:0;z-index:300;background:var(--void);
+  display:flex;align-items:center;justify-content:center;
+  animation:bootIn .2s ease both;
+}
+.boot.out{animation:bootOut .34s ease both}
+.boot::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(700px 380px at 50% 42%,rgba(255,180,84,.07),transparent 72%);
+}
+.bwrap{width:min(560px,90vw);padding:0 8px}
+.blines{font-family:var(--mono);font-size:13px;line-height:1.85;min-height:210px}
+.bline{animation:bootLine .18s ease both;color:var(--dim);white-space:pre-wrap}
+.bline .bok{color:var(--lime)}
+.bline.bhead{color:var(--bone);font-size:15px;letter-spacing:.14em;text-transform:uppercase}
+.bline.bready{color:var(--amber);letter-spacing:.1em}
+.bline.bready::after{
+  content:"_";margin-left:3px;animation:caret 1s steps(1) infinite;color:var(--amber);
+}
+.bskip{
+  margin-top:22px;font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--line);
+}
+@keyframes bootIn{from{opacity:0}to{opacity:1}}
+@keyframes bootOut{to{opacity:0;transform:scale(1.02)}}
+@keyframes bootLine{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+@keyframes caret{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+/* ---------- menu atmosphere ---------- */
+.picker::after{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(92,207,230,.045) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(92,207,230,.045) 1px,transparent 1px);
+  background-size:52px 52px;
+  mask-image:radial-gradient(760px 520px at 50% 6%,#000 0%,transparent 78%);
+  -webkit-mask-image:radial-gradient(760px 520px at 50% 6%,#000 0%,transparent 78%);
+  animation:gridDrift 34s linear infinite;
+}
+@keyframes gridDrift{to{background-position:52px 52px,52px 52px}}
+.phead h1{background-size:220% 100%;animation:sheen 9s ease-in-out infinite}
+@keyframes sheen{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
+
+/* cards: a line traces the left edge on hover, and the whole card lifts */
+.ccard::before{
+  content:"";position:absolute;left:-2px;top:0;width:2px;height:0;
+  background:linear-gradient(180deg,var(--amber),var(--cyan));
+  transition:height .26s cubic-bezier(.2,.7,.3,1);
+}
+.ccard.ready:hover::before,.ccard.ready:focus-visible::before{height:100%}
+.ccard.ready:active{transform:translateY(-1px) scale(.996)}
+.ccard.ready .cstate{transition:transform .18s ease}
+.ccard.ready:hover .cstate{transform:translateX(3px)}
+.cbar-fill{animation:barGrow .7s cubic-bezier(.2,.7,.3,1) both}
+@keyframes barGrow{from{transform:scaleX(0);transform-origin:left}to{transform:none}}
+
+/* ---------- view transition ---------- */
+main.viewin{animation:viewIn .26s cubic-bezier(.2,.7,.3,1) both}
+@keyframes viewIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* ---------- a task completing ---------- */
+.ltask{transition:border-color .2s ease,background .2s ease}
+.ltask.justdone{animation:taskDone .75s cubic-bezier(.2,.7,.3,1)}
+@keyframes taskDone{
+  0%{background:rgba(167,217,108,.28);border-color:var(--lime)}
+  100%{background:rgba(167,217,108,.07);border-color:var(--lime)}
+}
+.ltask.done .lnum{position:relative}
+.ltask.justdone .lnum{animation:numPop .5s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes numPop{0%{transform:scale(1)}45%{transform:scale(1.35);color:var(--lime)}100%{transform:scale(1)}}
+.cprog.pulse{animation:progPulse .8s ease}
+@keyframes progPulse{0%{color:var(--lime)}100%{color:var(--dim)}}
+
+/* ---------- terminal ---------- */
+.labterm{transition:border-color .25s ease,box-shadow .25s ease}
+.labterm:focus-within{border-color:#33475C;box-shadow:0 0 0 1px rgba(92,207,230,.16)}
+.labterm.working{box-shadow:0 0 0 1px rgba(167,217,108,.35)}
+.labterm .bar .dot.g{animation:none}
+.labterm.working .bar .dot.g{animation:dotBlink .22s ease 1}
+@keyframes dotBlink{50%{box-shadow:0 0 8px var(--lime)}}
+.ln{animation:lineIn .14s ease both}
+@keyframes lineIn{from{opacity:0}to{opacity:1}}
+
+/* ---------- nav ---------- */
+.mod{position:relative}
+.mod::after{
+  content:"";position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--amber);
+  transition:width .22s cubic-bezier(.2,.7,.3,1);
+}
+.mod[aria-current="true"]::after{width:100%}
+.pill{transition:transform .14s ease,color .14s ease,border-color .14s ease,background .14s ease}
+.pill:hover{transform:translateY(-1px)}
+
+@media(prefers-reduced-motion:reduce){
+  .boot,.bline,.picker::after,.phead h1,.cbar-fill,main.viewin,
+  .ltask.justdone,.ltask.justdone .lnum,.cprog.pulse,.ln{animation:none}
+  .ccard::before{transition:none}
+}
+
 /* provisional-course notice and the language switch */
 .provnote{
   border:1px solid var(--rose);border-left:3px solid var(--rose);

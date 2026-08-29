@@ -87,6 +87,67 @@ const T = {
   wrong:           {sv:"FEL",               en:"WRONG"},
   right:           {sv:"RÄTT",              en:"CORRECT"},
 
+  /* report */
+  hint:            {sv:"ledtråd",           en:"hint"},
+  hideHint:        {sv:"dölj ledtråd",      en:"hide hint"},
+  showAnswer:      {sv:"visa svar",         en:"show answer"},
+  hideAnswer:      {sv:"dölj svar",         en:"hide answer"},
+  close:           {sv:"Stäng",             en:"Close"},
+  reportBtn:       {sv:"Rapport",           en:"Report"},
+  reportDone:      {sv:"Klart — så här gick det", en:"Finished — how it went"},
+  reportProgress:  {sv:"Så här långt",      en:"Where you are"},
+  repSolo:         {sv:"Klarade du på egen hand", en:"Done without help"},
+  repHinted:       {sv:"Behövde en ledtråd", en:"Needed a hint"},
+  repRevealed:     {sv:"Tog fram svaret — repetera dessa", en:"Revealed the answer — revisit these"},
+  repTerminal:     {sv:"Från terminalen",   en:"From the terminal"},
+  repRan:          {sv:"Kommandon körda: {n}", en:"Commands run: {n}"},
+  repFailed:       {sv:"varav fel: {n}",    en:"of those, errors: {n}"},
+  repBySection:    {sv:"Per avsnitt",       en:"By section"},
+  repSlips:        {sv:"{n} fel",           en:"{n} missed"},
+  repMissed:       {sv:"Frågor du missade först", en:"Questions you missed first time"},
+  repFocus:        {sv:"Att fokusera på",   en:"What to focus on"},
+  repNext:         {sv:"Repetera det som står under «repetera dessa» innan nästa föreläsning — "+
+                       "det är där du tappar poäng på tentan.",
+                    en:"Go over anything under \"revisit these\" before the next lecture — "+
+                       "that is where marks get lost on the exam."},
+
+  adviceNotFound:  {sv:"Kommandot fanns inte, {n} gånger. Tryck Tab för att komplettera namn — "+
+                       "stavfel är den vanligaste orsaken.",
+                    en:"Command not found, {n} times. Press Tab to complete names — "+
+                       "a typo is the usual cause."},
+  adviceDenied:    {sv:"Nekad åtkomst, {n} gånger. Fundera på vem som äger sökvägen: "+
+                       "systemkataloger kräver sudo, din hemkatalog gör det inte.",
+                    en:"Permission denied, {n} times. Think about who owns the path: "+
+                       "system directories need sudo, your home directory does not."},
+  advicePaths:     {sv:"Sökvägen fanns inte, {n} gånger. Kontrollera var du står med pwd, "+
+                       "och kom ihåg att ~ betyder din hemkatalog.",
+                    en:"Path did not exist, {n} times. Check where you are with pwd, "+
+                       "and remember ~ means your home directory."},
+  adviceReveals:   {sv:"Svar du tog fram: {n}. Gör om dem utan att titta — "+
+                       "att skriva kommandot själv är det som fastnar.",
+                    en:"Answers revealed: {n}. Redo those without looking — "+
+                       "typing the command yourself is what sticks."},
+  adviceHintsOnly: {sv:"Ledtrådar använda: {n}, svar: inga. Bra läge inför tentan.",
+                    en:"Hints used: {n}, answers: none. Good place to be for the exam."},
+  adviceClean:     {sv:"Hela labben utan ledtrådar eller svar, {n} av {n}. Den här veckan sitter.",
+                    en:"The whole lab with no hints and no answers, {n} of {n}. This week is solid."},
+  adviceReadErrors:{sv:"{n}% av dina kommandon gav fel. Läs felmeddelandet innan nästa försök — "+
+                       "det namnger nästan alltid filen och orsaken.",
+                    en:"{n}% of your commands returned an error. Read the message before the next "+
+                       "attempt — it almost always names the file and the reason."},
+  adviceNextLecture:{sv:"Inget hängde upp sig här. Nästa är {tier} — läs igenom den innan föreläsningen.",
+                    en:"Nothing tripped you up here. Next is {tier} — read through it before the lecture."},
+  adviceLastLecture:{sv:"Sista labben är klar. Kör igenom terminalövningen utan ledtrådar som repetition.",
+                    en:"That was the last lab. Run the terminal drill with no hints as revision."},
+  adviceWeakTier:  {sv:"Svagast avsnitt: {tier} — fel på {n}. Läs förklaringarna där igen.",
+                    en:"Weakest section: {tier} — missed {n}. Re-read the explanations there."},
+  adviceQuizClean: {sv:"Rätt på första försöket: {n} av {n}.",
+                    en:"Right first time: {n} of {n}."},
+  adviceQuizReview:{sv:"Fel på första försöket: {n}. Förklaringarna står kvar ovan.",
+                    en:"Missed first time: {n}. The explanations are above."},
+  adviceQuizRepeat:{sv:"Tog mer än ett försök: {n} — värda en extra genomläsning.",
+                    en:"Took more than one attempt: {n} — worth a second read."},
+
   /* confirm dialog */
   resetTitle:      {sv:"Nollställa alla framsteg?", en:"Reset all progress?"},
   resetIntro:      {sv:"Detta rensar allt som sparats i den här webbläsaren och går inte att ångra:",

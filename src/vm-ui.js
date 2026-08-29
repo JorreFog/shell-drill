@@ -73,7 +73,11 @@ function recheck(){
     try{ done = !!t.check(ctx); }catch(e){ done = false; }
     if(done){ S.lab[ckey(CS.lec,ti)] = 1; newly.push(ti); }
   });
-  if(newly.length){ save(); paintTasks(); }
+  if(newly.length){
+    save(); paintTasks(); newly.forEach(celebrateTask);
+    // finishing the lab brings up the report on its own
+    if(lecDone(CS.lec) === lec.tasks.length) setTimeout(toggleLabReport, 700);
+  }
   return newly;
 }
 
@@ -170,6 +174,7 @@ async function csubmit(raw){
     cprompt(); return;
   }
 
+  pulseTerminal();
   let r;
   try{ r = CS.K.run(input); }
   catch(e){ r = {out:"", err:"internal error: "+e.message+"\n", code:1}; }
@@ -289,7 +294,8 @@ function renderCourse(){
 
   h += '<div class="cnav">'+
     '<button class="tbtn" id="c-prev">← Previous</button>'+
-    '<button class="nextbtn" id="c-next">Next lecture →</button></div>';
+    '<button class="nextbtn" id="c-next">Next lecture →</button>'+
+    '<button class="tbtn" id="c-report">'+t('reportBtn')+'</button></div>';
 
   $("courseview").innerHTML = h;
 
@@ -329,15 +335,18 @@ function renderCourse(){
   $("courseview").querySelectorAll(".lhint[data-h]").forEach(b=>{
     b.onclick = ()=>{ const el = $("h"+b.dataset.h);
       el.hidden = !el.hidden;
+      if(!el.hidden){ S.hints[ckey(CS.lec, +b.dataset.h)] = 1; save(); }
       b.setAttribute("aria-expanded", String(!el.hidden));
-      b.textContent = el.hidden ? "hint" : "hide hint"; };
+      b.textContent = el.hidden ? t("hint") : t("hideHint"); };
   });
   $("courseview").querySelectorAll(".lans[data-a]").forEach(b=>{
     b.onclick = ()=>{ const el = $("a"+b.dataset.a);
       el.hidden = !el.hidden;
+      if(!el.hidden){ S.reveals[ckey(CS.lec, +b.dataset.a)] = 1; save(); }
       b.setAttribute("aria-expanded", String(!el.hidden));
-      b.textContent = el.hidden ? "show answer" : "hide answer"; };
+      b.textContent = el.hidden ? t("showAnswer") : t("hideAnswer"); };
   });
+  $("c-report").onclick = toggleLabReport;
   $("c-prev").onclick = ()=>{ if(S.c>0){ S.c--; renderCourse(); save(); } };
   $("c-next").onclick = ()=>{ if(S.c<COURSE.length-1){ S.c++; renderCourse(); save(); } };
   [["c-prev", li===0], ["c-next", li===COURSE.length-1]].forEach(([id,off])=>{

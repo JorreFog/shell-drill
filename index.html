@@ -524,6 +524,149 @@ body.picking .wrap{filter:blur(3px) saturate(.6);opacity:.25;pointer-events:none
   .picker,.ccard{animation:none}
   body.picking .wrap{filter:none}
 }
+/* ---------- completion report ---------- */
+.report{
+  border:1px solid var(--line);border-top:2px solid var(--cyan);background:var(--panel);
+  margin-bottom:16px;padding:20px 20px 16px;position:relative;
+  animation:reportIn .34s cubic-bezier(.2,.7,.3,1) both;
+}
+.report.full{border-top-color:var(--lime)}
+@keyframes reportIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.rhead{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:4px}
+.rhead h2{
+  margin:0;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--cyan);font-weight:600;
+}
+.report.full .rhead h2{color:var(--lime)}
+.rscore{font-family:var(--mono);font-size:26px;color:var(--bone);margin-top:8px;line-height:1}
+.rscore b{font-weight:700}
+.rscore span{font-size:12px;color:var(--dim);margin-left:10px;letter-spacing:.1em}
+.rsub{font-family:var(--sans);font-size:13px;color:var(--dim);margin-top:6px}
+.rsec{padding:14px 0;border-bottom:1px solid rgba(34,48,63,.6)}
+.rsec:last-of-type{border-bottom:0}
+.rsec h3{
+  margin:0 0 9px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);font-weight:500;display:flex;gap:9px;align-items:baseline;
+}
+.rsec h3 span{color:var(--amber);font-family:var(--mono);letter-spacing:0}
+.rlist{margin:0;padding-left:17px;font-family:var(--sans);font-size:13.5px;line-height:1.55}
+.rlist li{margin-bottom:7px;color:var(--bone)}
+.rlist li::marker{color:var(--line)}
+.rtake{display:block;font-size:12.5px;color:var(--dim);margin-top:3px}
+.rline{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--dim)}
+.rtiers{display:flex;flex-direction:column;gap:5px}
+.rtier{
+  display:flex;justify-content:space-between;gap:12px;font-size:13px;font-family:var(--sans);
+  padding:6px 9px;background:var(--panel-2);border-left:2px solid var(--line);
+}
+.rtier b{font-family:var(--mono);font-size:12px;color:var(--lime);font-weight:500;white-space:nowrap}
+.rtier b.warn{color:var(--amber)}
+.rnext{
+  font-family:var(--sans);font-size:13px;color:var(--amber);line-height:1.6;
+  border-left:2px solid var(--amber);padding-left:12px;margin:14px 0 4px;
+}
+.rclose{position:absolute;top:16px;right:16px;margin-left:0}
+@media(max-width:560px){ .rclose{position:static;margin-top:12px;width:100%} }
+
+/* ---------- boot sequence ---------- */
+.boot{
+  position:fixed;inset:0;z-index:300;background:var(--void);
+  display:flex;align-items:center;justify-content:center;
+  animation:bootIn .2s ease both;
+}
+.boot.out{animation:bootOut .34s ease both}
+.boot::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(700px 380px at 50% 42%,rgba(255,180,84,.07),transparent 72%);
+}
+.bwrap{width:min(560px,90vw);padding:0 8px}
+.blines{font-family:var(--mono);font-size:13px;line-height:1.85;min-height:210px}
+.bline{animation:bootLine .18s ease both;color:var(--dim);white-space:pre-wrap}
+.bline .bok{color:var(--lime)}
+.bline.bhead{color:var(--bone);font-size:15px;letter-spacing:.14em;text-transform:uppercase}
+.bline.bready{color:var(--amber);letter-spacing:.1em}
+.bline.bready::after{
+  content:"_";margin-left:3px;animation:caret 1s steps(1) infinite;color:var(--amber);
+}
+.bskip{
+  margin-top:22px;font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--line);
+}
+@keyframes bootIn{from{opacity:0}to{opacity:1}}
+@keyframes bootOut{to{opacity:0;transform:scale(1.02)}}
+@keyframes bootLine{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+@keyframes caret{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+/* ---------- menu atmosphere ---------- */
+.picker::after{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(92,207,230,.045) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(92,207,230,.045) 1px,transparent 1px);
+  background-size:52px 52px;
+  mask-image:radial-gradient(760px 520px at 50% 6%,#000 0%,transparent 78%);
+  -webkit-mask-image:radial-gradient(760px 520px at 50% 6%,#000 0%,transparent 78%);
+  animation:gridDrift 34s linear infinite;
+}
+@keyframes gridDrift{to{background-position:52px 52px,52px 52px}}
+.phead h1{background-size:220% 100%;animation:sheen 9s ease-in-out infinite}
+@keyframes sheen{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
+
+/* cards: a line traces the left edge on hover, and the whole card lifts */
+.ccard::before{
+  content:"";position:absolute;left:-2px;top:0;width:2px;height:0;
+  background:linear-gradient(180deg,var(--amber),var(--cyan));
+  transition:height .26s cubic-bezier(.2,.7,.3,1);
+}
+.ccard.ready:hover::before,.ccard.ready:focus-visible::before{height:100%}
+.ccard.ready:active{transform:translateY(-1px) scale(.996)}
+.ccard.ready .cstate{transition:transform .18s ease}
+.ccard.ready:hover .cstate{transform:translateX(3px)}
+.cbar-fill{animation:barGrow .7s cubic-bezier(.2,.7,.3,1) both}
+@keyframes barGrow{from{transform:scaleX(0);transform-origin:left}to{transform:none}}
+
+/* ---------- view transition ---------- */
+main.viewin{animation:viewIn .26s cubic-bezier(.2,.7,.3,1) both}
+@keyframes viewIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* ---------- a task completing ---------- */
+.ltask{transition:border-color .2s ease,background .2s ease}
+.ltask.justdone{animation:taskDone .75s cubic-bezier(.2,.7,.3,1)}
+@keyframes taskDone{
+  0%{background:rgba(167,217,108,.28);border-color:var(--lime)}
+  100%{background:rgba(167,217,108,.07);border-color:var(--lime)}
+}
+.ltask.done .lnum{position:relative}
+.ltask.justdone .lnum{animation:numPop .5s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes numPop{0%{transform:scale(1)}45%{transform:scale(1.35);color:var(--lime)}100%{transform:scale(1)}}
+.cprog.pulse{animation:progPulse .8s ease}
+@keyframes progPulse{0%{color:var(--lime)}100%{color:var(--dim)}}
+
+/* ---------- terminal ---------- */
+.labterm{transition:border-color .25s ease,box-shadow .25s ease}
+.labterm:focus-within{border-color:#33475C;box-shadow:0 0 0 1px rgba(92,207,230,.16)}
+.labterm.working{box-shadow:0 0 0 1px rgba(167,217,108,.35)}
+.labterm .bar .dot.g{animation:none}
+.labterm.working .bar .dot.g{animation:dotBlink .22s ease 1}
+@keyframes dotBlink{50%{box-shadow:0 0 8px var(--lime)}}
+.ln{animation:lineIn .14s ease both}
+@keyframes lineIn{from{opacity:0}to{opacity:1}}
+
+/* ---------- nav ---------- */
+.mod{position:relative}
+.mod::after{
+  content:"";position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--amber);
+  transition:width .22s cubic-bezier(.2,.7,.3,1);
+}
+.mod[aria-current="true"]::after{width:100%}
+.pill{transition:transform .14s ease,color .14s ease,border-color .14s ease,background .14s ease}
+.pill:hover{transform:translateY(-1px)}
+
+@media(prefers-reduced-motion:reduce){
+  .boot,.bline,.picker::after,.phead h1,.cbar-fill,main.viewin,
+  .ltask.justdone,.ltask.justdone .lnum,.cprog.pulse,.ln{animation:none}
+  .ccard::before{transition:none}
+}
+
 /* provisional-course notice and the language switch */
 .provnote{
   border:1px solid var(--rose);border-left:3px solid var(--rose);
@@ -561,6 +704,8 @@ html,body{overflow-x:hidden}
   .ltask .ltext{font-size:13.5px}
 }
 /* ---------- end course lab ---------- */
+
+
 
 
 
@@ -1570,6 +1715,7 @@ const PKGOUT = {
 /* =================== state =================== */
 const S = {mode:"drill", pm:"pacman", m:0, t:0, solved:{}, tries:0, hits:0, streak:0, best:0,
            qDone:{}, qTries:0, qHits:0, c:-1, lab:{}, course:null, lang:"en",
+           hints:{}, reveals:{}, qWrong:{},
            wrongInput:null, awaitingNext:false, hist:[], hp:0, busy:false};
 
 const $ = id => document.getElementById(id);
@@ -1594,7 +1740,8 @@ async function save(){
   try{ await store.set("shelldrill:v1", JSON.stringify(
     {mode:S.mode, pm:S.pm, m:S.m, t:S.t, solved:S.solved, tries:S.tries, hits:S.hits, best:S.best,
      qDone:S.qDone, qTries:S.qTries, qHits:S.qHits, qt:Q.tier, qi:Q.i,
-     c:S.c, lab:S.lab, course:S.course, lang:S.lang, seen:true,
+     c:S.c, lab:S.lab, course:S.course, lang:S.lang,
+     hints:S.hints, reveals:S.reveals, qWrong:S.qWrong, seen:true,
      mach:(typeof serializeMachines === "function" ? serializeMachines() : undefined)})); }
   catch(e){ /* quota or serialisation trouble: keep going without saving */ }
 }
@@ -1603,7 +1750,8 @@ async function load(){
     if(r && r.value){ const d = JSON.parse(r.value); Object.assign(S,{mode:d.mode||"drill",pm:d.pm||"pacman",m:d.m|0,t:d.t|0,
       solved:d.solved||{},tries:d.tries|0,hits:d.hits|0,best:d.best|0,
       qDone:d.qDone||{},qTries:d.qTries|0,qHits:d.qHits|0,
-      c:(d.c==null?-1:d.c|0), lab:d.lab||{}, course:d.course||null, lang:d.lang||"en"});
+      c:(d.c==null?-1:d.c|0), lab:d.lab||{}, course:d.course||null, lang:d.lang||"en",
+      hints:d.hints||{}, reveals:d.reveals||{}, qWrong:d.qWrong||{}});
     if(d.mach && typeof restoreMachines === "function") restoreMachines(d.mach);
     Q.tier=d.qt|0; Q.i=d.qi|0; return d.seen===true; }
   }catch(e){}
@@ -2016,7 +2164,8 @@ function confirmDialog(o){
 function doResetProgress(){
   S.solved={}; S.tries=0; S.hits=0; S.streak=0; S.best=0; S.m=0; S.t=0;
   S.qDone={}; S.qTries=0; S.qHits=0; Q.tier=0; Q.i=0; Q.picked.clear(); Q.checked=false;
-  S.lab={}; S.c=-1; CS.machines={}; CS.screens={}; CS.histories={}; CS.lec=-1;
+  S.lab={}; S.c=-1; S.hints={}; S.reveals={}; S.qWrong={};
+  CS.machines={}; CS.screens={}; CS.histories={}; CS.lec=-1;
   setMode(S.mode);
 }
 
@@ -5975,7 +6124,11 @@ function recheck(){
     try{ done = !!t.check(ctx); }catch(e){ done = false; }
     if(done){ S.lab[ckey(CS.lec,ti)] = 1; newly.push(ti); }
   });
-  if(newly.length){ save(); paintTasks(); }
+  if(newly.length){
+    save(); paintTasks(); newly.forEach(celebrateTask);
+    // finishing the lab brings up the report on its own
+    if(lecDone(CS.lec) === lec.tasks.length) setTimeout(toggleLabReport, 700);
+  }
   return newly;
 }
 
@@ -6072,6 +6225,7 @@ async function csubmit(raw){
     cprompt(); return;
   }
 
+  pulseTerminal();
   let r;
   try{ r = CS.K.run(input); }
   catch(e){ r = {out:"", err:"internal error: "+e.message+"\n", code:1}; }
@@ -6191,7 +6345,8 @@ function renderCourse(){
 
   h += '<div class="cnav">'+
     '<button class="tbtn" id="c-prev">← Previous</button>'+
-    '<button class="nextbtn" id="c-next">Next lecture →</button></div>';
+    '<button class="nextbtn" id="c-next">Next lecture →</button>'+
+    '<button class="tbtn" id="c-report">'+t('reportBtn')+'</button></div>';
 
   $("courseview").innerHTML = h;
 
@@ -6231,15 +6386,18 @@ function renderCourse(){
   $("courseview").querySelectorAll(".lhint[data-h]").forEach(b=>{
     b.onclick = ()=>{ const el = $("h"+b.dataset.h);
       el.hidden = !el.hidden;
+      if(!el.hidden){ S.hints[ckey(CS.lec, +b.dataset.h)] = 1; save(); }
       b.setAttribute("aria-expanded", String(!el.hidden));
-      b.textContent = el.hidden ? "hint" : "hide hint"; };
+      b.textContent = el.hidden ? t("hint") : t("hideHint"); };
   });
   $("courseview").querySelectorAll(".lans[data-a]").forEach(b=>{
     b.onclick = ()=>{ const el = $("a"+b.dataset.a);
       el.hidden = !el.hidden;
+      if(!el.hidden){ S.reveals[ckey(CS.lec, +b.dataset.a)] = 1; save(); }
       b.setAttribute("aria-expanded", String(!el.hidden));
-      b.textContent = el.hidden ? "show answer" : "hide answer"; };
+      b.textContent = el.hidden ? t("showAnswer") : t("hideAnswer"); };
   });
+  $("c-report").onclick = toggleLabReport;
   $("c-prev").onclick = ()=>{ if(S.c>0){ S.c--; renderCourse(); save(); } };
   $("c-next").onclick = ()=>{ if(S.c<COURSE.length-1){ S.c++; renderCourse(); save(); } };
   [["c-prev", li===0], ["c-next", li===COURSE.length-1]].forEach(([id,off])=>{
@@ -6337,6 +6495,67 @@ const T = {
   missed:          {sv:"MISSAD",            en:"MISSED"},
   wrong:           {sv:"FEL",               en:"WRONG"},
   right:           {sv:"RÄTT",              en:"CORRECT"},
+
+  /* report */
+  hint:            {sv:"ledtråd",           en:"hint"},
+  hideHint:        {sv:"dölj ledtråd",      en:"hide hint"},
+  showAnswer:      {sv:"visa svar",         en:"show answer"},
+  hideAnswer:      {sv:"dölj svar",         en:"hide answer"},
+  close:           {sv:"Stäng",             en:"Close"},
+  reportBtn:       {sv:"Rapport",           en:"Report"},
+  reportDone:      {sv:"Klart — så här gick det", en:"Finished — how it went"},
+  reportProgress:  {sv:"Så här långt",      en:"Where you are"},
+  repSolo:         {sv:"Klarade du på egen hand", en:"Done without help"},
+  repHinted:       {sv:"Behövde en ledtråd", en:"Needed a hint"},
+  repRevealed:     {sv:"Tog fram svaret — repetera dessa", en:"Revealed the answer — revisit these"},
+  repTerminal:     {sv:"Från terminalen",   en:"From the terminal"},
+  repRan:          {sv:"Kommandon körda: {n}", en:"Commands run: {n}"},
+  repFailed:       {sv:"varav fel: {n}",    en:"of those, errors: {n}"},
+  repBySection:    {sv:"Per avsnitt",       en:"By section"},
+  repSlips:        {sv:"{n} fel",           en:"{n} missed"},
+  repMissed:       {sv:"Frågor du missade först", en:"Questions you missed first time"},
+  repFocus:        {sv:"Att fokusera på",   en:"What to focus on"},
+  repNext:         {sv:"Repetera det som står under «repetera dessa» innan nästa föreläsning — "+
+                       "det är där du tappar poäng på tentan.",
+                    en:"Go over anything under \"revisit these\" before the next lecture — "+
+                       "that is where marks get lost on the exam."},
+
+  adviceNotFound:  {sv:"Kommandot fanns inte, {n} gånger. Tryck Tab för att komplettera namn — "+
+                       "stavfel är den vanligaste orsaken.",
+                    en:"Command not found, {n} times. Press Tab to complete names — "+
+                       "a typo is the usual cause."},
+  adviceDenied:    {sv:"Nekad åtkomst, {n} gånger. Fundera på vem som äger sökvägen: "+
+                       "systemkataloger kräver sudo, din hemkatalog gör det inte.",
+                    en:"Permission denied, {n} times. Think about who owns the path: "+
+                       "system directories need sudo, your home directory does not."},
+  advicePaths:     {sv:"Sökvägen fanns inte, {n} gånger. Kontrollera var du står med pwd, "+
+                       "och kom ihåg att ~ betyder din hemkatalog.",
+                    en:"Path did not exist, {n} times. Check where you are with pwd, "+
+                       "and remember ~ means your home directory."},
+  adviceReveals:   {sv:"Svar du tog fram: {n}. Gör om dem utan att titta — "+
+                       "att skriva kommandot själv är det som fastnar.",
+                    en:"Answers revealed: {n}. Redo those without looking — "+
+                       "typing the command yourself is what sticks."},
+  adviceHintsOnly: {sv:"Ledtrådar använda: {n}, svar: inga. Bra läge inför tentan.",
+                    en:"Hints used: {n}, answers: none. Good place to be for the exam."},
+  adviceClean:     {sv:"Hela labben utan ledtrådar eller svar, {n} av {n}. Den här veckan sitter.",
+                    en:"The whole lab with no hints and no answers, {n} of {n}. This week is solid."},
+  adviceReadErrors:{sv:"{n}% av dina kommandon gav fel. Läs felmeddelandet innan nästa försök — "+
+                       "det namnger nästan alltid filen och orsaken.",
+                    en:"{n}% of your commands returned an error. Read the message before the next "+
+                       "attempt — it almost always names the file and the reason."},
+  adviceNextLecture:{sv:"Inget hängde upp sig här. Nästa är {tier} — läs igenom den innan föreläsningen.",
+                    en:"Nothing tripped you up here. Next is {tier} — read through it before the lecture."},
+  adviceLastLecture:{sv:"Sista labben är klar. Kör igenom terminalövningen utan ledtrådar som repetition.",
+                    en:"That was the last lab. Run the terminal drill with no hints as revision."},
+  adviceWeakTier:  {sv:"Svagast avsnitt: {tier} — fel på {n}. Läs förklaringarna där igen.",
+                    en:"Weakest section: {tier} — missed {n}. Re-read the explanations there."},
+  adviceQuizClean: {sv:"Rätt på första försöket: {n} av {n}.",
+                    en:"Right first time: {n} of {n}."},
+  adviceQuizReview:{sv:"Fel på första försöket: {n}. Förklaringarna står kvar ovan.",
+                    en:"Missed first time: {n}. The explanations are above."},
+  adviceQuizRepeat:{sv:"Tog mer än ett försök: {n} — värda en extra genomläsning.",
+                    en:"Took more than one attempt: {n} — worth a second read."},
 
   /* confirm dialog */
   resetTitle:      {sv:"Nollställa alla framsteg?", en:"Reset all progress?"},
@@ -7517,7 +7736,292 @@ function enterCourse(id){
   save();
 }
 
+/* =================== motion ===================
+   A boot sequence on arrival, and small reactions to what you do. Everything
+   here is decoration: if it is skipped, disabled or fails, the site behaves
+   exactly the same. Nothing below gates any functionality. */
+
+// guarded so the file can also be loaded by the node test suite
+const REDUCED = typeof window !== "undefined" && window.matchMedia
+  ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : false;
+
+/* ---------- boot sequence ----------
+   Once per browser session, and any key or click cuts it short. The counts are
+   read from the real data, so the lines are not decorative lies. */
+function bootLines(){
+  const courses = PROGRAMME.courses.length, tools = PROGRAMME.tools.length;
+  const ready = allEntries().filter(c => c.ready).length;
+  const drill = MODULES.reduce((n,m)=>n+m.tasks.length, 0);
+  const quizzes = QUIZ.reduce((n,t)=>n+t.items.length, 0) +
+    Object.values(COURSE_QUIZZES).reduce((n,set)=>n+set.reduce((m,t)=>m+t.items.length,0), 0);
+  const labs = COURSE.reduce((n,l)=>n+l.tasks.length, 0);
+  return [
+    {t:"", cls:""},
+    {t:t("brandA")+"·"+t("brandB")+"  —  "+PROGRAMME.name, cls:"bhead"},
+    {t:"", cls:""},
+    {t:"mounting simulated filesystem", ok:true},
+    {t:"starting shell, python interpreter", ok:true},
+    {t:"loading "+courses+" courses, "+tools+" tools ("+ready+" open)", ok:true},
+    {t:drill+" drill tasks · "+quizzes+" quiz questions · "+labs+" lab tasks", ok:true},
+    {t:"", cls:""},
+    {t:"ready.", cls:"bready"}
+  ];
+}
+
+function runBoot(done){
+  let skipped = false;
+  const finish = ()=>{
+    if(skipped) return;
+    skipped = true;
+    document.removeEventListener("keydown", cut, true);
+    document.removeEventListener("click", cut, true);
+    const el = $("boot");
+    if(el){ el.classList.add("out"); setTimeout(()=>el.remove(), 340); }
+    done();
+  };
+  const cut = ()=>finish();
+
+  let seen = false;
+  try{ seen = sessionStorage.getItem("seclab:boot") === "1"; }catch(e){}
+  if(seen || REDUCED){ done(); return; }
+  try{ sessionStorage.setItem("seclab:boot", "1"); }catch(e){}
+
+  const el = document.createElement("div");
+  el.className = "boot"; el.id = "boot";
+  el.innerHTML = '<div class="bwrap"><div class="blines" id="blines"></div>'+
+    '<div class="bskip">press any key to skip</div></div>';
+  document.body.appendChild(el);
+  document.addEventListener("keydown", cut, true);
+  document.addEventListener("click", cut, true);
+
+  const lines = bootLines();
+  const box = $("blines");
+  let i = 0;
+  const step = ()=>{
+    if(skipped) return;
+    if(i >= lines.length){ setTimeout(finish, 420); return; }
+    const l = lines[i++];
+    const d = document.createElement("div");
+    d.className = "bline " + (l.cls || "");
+    d.innerHTML = l.ok ? '<span class="bok">[  OK  ]</span> ' + esc(l.t)
+                       : (l.t ? esc(l.t) : "&nbsp;");
+    box.appendChild(d);
+    setTimeout(step, l.t === "" ? 40 : l.ok ? 115 : 220);
+  };
+  step();
+}
+
+/* ---------- reactions ---------- */
+
+/* A task just completed: draw the tick, flash the row, pulse the progress bar. */
+function celebrateTask(ti){
+  if(REDUCED) return;
+  const row = $("t" + ti);
+  if(row){
+    row.classList.remove("justdone");
+    void row.offsetWidth;              // restart the animation if it is still running
+    row.classList.add("justdone");
+  }
+  const bar = $("c-progress");
+  if(bar){ bar.classList.remove("pulse"); void bar.offsetWidth; bar.classList.add("pulse"); }
+}
+
+/* Fade the main panel when switching tabs, so views do not snap. */
+function transitionView(){
+  if(REDUCED) return;
+  const m = document.querySelector("main");
+  if(!m) return;
+  m.classList.remove("viewin");
+  void m.offsetWidth;
+  m.classList.add("viewin");
+}
+
+/* The terminal glows while a command is being handled — brief, but it makes the
+   machine feel like it is doing something. */
+function pulseTerminal(){
+  if(REDUCED) return;
+  const term = document.querySelector(".labterm");
+  if(!term) return;
+  term.classList.add("working");
+  setTimeout(()=>term.classList.remove("working"), 220);
+}
+
+/* =================== completion report ===================
+   Shown when a lab or a quiz is finished, and reachable any time from a button.
+
+   Everything here is derived from what actually happened: which tasks needed a
+   hint or the answer, which questions were missed, and what the terminal
+   returned. No generic praise — if there is nothing to say about an area, that
+   section is left out. */
+
+/* ---------- reading the signals ---------- */
+
+/* Error patterns in a lecture's command history, each with the advice it earns. */
+function terminalSignals(li){
+  const hist = CS.histories[li] || [];
+  const ran = hist.filter(h => h.cmd && !/^(tasks|lab|reset)$/i.test(h.cmd));
+  const sig = {total: ran.length, notFound: 0, denied: 0, noSuchFile: 0, failed: 0};
+  ran.forEach(h => {
+    const e = h.err || "";
+    if(/command not found/.test(e)) sig.notFound++;
+    if(/Permission denied|Operation not permitted|unless you are root/.test(e)) sig.denied++;
+    if(/No such file or directory/.test(e)) sig.noSuchFile++;
+    if(h.code) sig.failed++;
+  });
+  return sig;
+}
+
+function labReport(li){
+  const lec = COURSE[li];
+  const solo = [], hinted = [], revealed = [];
+  lec.tasks.forEach((task, ti) => {
+    const k = ckey(li, ti);
+    if(!S.lab[k]) return;
+    if(S.reveals[k]) revealed.push({ti, task});
+    else if(S.hints[k]) hinted.push({ti, task});
+    else solo.push({ti, task});
+  });
+  return {kind:"lab", li, lec, solo, hinted, revealed,
+          done: lecDone(li), total: lec.tasks.length, sig: terminalSignals(li)};
+}
+
+function quizReport(){
+  const set = quizSetId(), quiz = activeQuiz();
+  const missed = [], clean = [];
+  quiz.forEach((tier, i) => {
+    tier.items.forEach((item, j) => {
+      const k = set + i + ":" + j;
+      if(!S.qDone[k]) return;
+      (S.qWrong[k] ? missed : clean).push({tier, item, i, j, wrong: S.qWrong[k] || 0});
+    });
+  });
+  const perTier = quiz.map((tier, i) => {
+    const total = tier.items.length;
+    const done = tier.items.filter((_, j) => S.qDone[set + i + ":" + j]).length;
+    const slips = tier.items.filter((_, j) => S.qWrong[set + i + ":" + j]).length;
+    return {tier, i, total, done, slips};
+  });
+  return {kind:"quiz", quiz, missed, clean, perTier,
+          done: clean.length + missed.length,
+          total: quiz.reduce((n, tr) => n + tr.items.length, 0)};
+}
+
+/* ---------- advice earned by the signals ---------- */
+function labAdvice(r){
+  const out = [];
+  const s = r.sig;
+  // thresholds are low on purpose: two of the same error is already a pattern
+  // worth naming, and this section should never come up empty
+  if(s.notFound >= 2)  out.push({k:"adviceNotFound", n:s.notFound});
+  if(s.denied >= 2)    out.push({k:"adviceDenied", n:s.denied});
+  if(s.noSuchFile >= 2) out.push({k:"advicePaths", n:s.noSuchFile});
+  if(r.revealed.length) out.push({k:"adviceReveals", n:r.revealed.length});
+  else if(r.hinted.length) out.push({k:"adviceHintsOnly", n:r.hinted.length});
+  else if(r.done === r.total) out.push({k:"adviceClean", n:r.total});
+  if(s.total && s.failed / s.total > 0.4)
+    out.push({k:"adviceReadErrors", n:Math.round(s.failed / s.total * 100)});
+
+  // with nothing else to say, point at what comes next rather than padding
+  if(!out.length){
+    const next = COURSE[r.li + 1];
+    out.push(next ? {k:"adviceNextLecture", tier:L(next.title)} : {k:"adviceLastLecture"});
+  }
+  return out;
+}
+
+function quizAdvice(r){
+  const out = [];
+  const weakest = r.perTier.filter(p => p.done).sort((a,b) => b.slips - a.slips)[0];
+  if(weakest && weakest.slips >= 2) out.push({k:"adviceWeakTier", tier:L(weakest.tier.tier), n:weakest.slips});
+  if(r.missed.length === 0 && r.done) out.push({k:"adviceQuizClean", n:r.done});
+  else if(r.missed.length) out.push({k:"adviceQuizReview", n:r.missed.length});
+  const repeats = r.missed.filter(m => m.wrong > 1).length;
+  if(repeats) out.push({k:"adviceQuizRepeat", n:repeats});
+  return out;
+}
+
+/* ---------- rendering ---------- */
+// index.html already has a strip(); this one flattens task markup to plain text
+const plain = s => esc(String(s).replace(/<[^>]+>/g, ""));
+
+function reportHtml(r){
+  const adv = r.kind === "lab" ? labAdvice(r) : quizAdvice(r);
+  const pct = r.total ? Math.round(r.done / r.total * 100) : 0;
+  const complete = r.done === r.total;
+
+  let h = '<div class="report' + (complete ? " full" : "") + '">'+
+    '<div class="rhead"><h2>' + t(complete ? "reportDone" : "reportProgress") + "</h2>"+
+      '<div class="rscore"><b>' + r.done + "</b> / " + r.total + "<span>" + pct + "%</span></div>"+
+      '<div class="rsub">' + (r.kind === "lab"
+        ? esc("Vecka " + r.lec.wk + " · " + L(r.lec.title))
+        : esc(L((activeCourse() || {title:""}).title))) + "</div></div>";
+
+  const section = (title, note, body) =>
+    '<div class="rsec"><h3>' + title + (note ? '<span>' + note + "</span>" : "") + "</h3>" + body + "</div>";
+  const list = items => '<ul class="rlist">' + items.map(i => "<li>" + i + "</li>").join("") + "</ul>";
+
+  if(r.kind === "lab"){
+    if(r.solo.length)
+      h += section(t("repSolo"), r.solo.length + "", list(r.solo.map(x => plain(x.task.q))));
+    if(r.hinted.length)
+      h += section(t("repHinted"), r.hinted.length + "",
+        list(r.hinted.map(x => plain(x.task.q) + '<span class="rtake">' + plain(x.task.hint) + "</span>")));
+    if(r.revealed.length)
+      h += section(t("repRevealed"), r.revealed.length + "",
+        list(r.revealed.map(x => plain(x.task.q) + '<span class="rtake">' + plain(x.task.hint) + "</span>")));
+    const s = r.sig;
+    if(s.total)
+      h += section(t("repTerminal"), "",
+        '<p class="rline">' + t("repRan").split("{n}").join(s.total) +
+        (s.failed ? " · " + t("repFailed").split("{n}").join(s.failed) : "") + "</p>");
+  } else {
+    h += section(t("repBySection"), "",
+      '<div class="rtiers">' + r.perTier.map(p =>
+        '<div class="rtier"><span>' + esc(L(p.tier.tier)) + "</span>"+
+        '<b class="' + (p.slips ? "warn" : "") + '">' + p.done + "/" + p.total +
+        (p.slips ? " · " + t("repSlips").split("{n}").join(p.slips) : "") + "</b></div>").join("") + "</div>");
+    if(r.missed.length)
+      h += section(t("repMissed"), r.missed.length + "",
+        list(r.missed.map(m => plain(L(m.item.q)) + '<span class="rtake">' + plain(L(m.item.e)) + "</span>")));
+  }
+
+  if(adv.length)
+    h += section(t("repFocus"), "", list(adv.map(a =>
+      t(a.k).split("{n}").join(a.n).split("{tier}").join(a.tier || ""))));
+
+  h += '<div class="rnext">' + t("repNext") + "</div>";
+  h += '<button class="tbtn rclose" id="rep-close">' + t("close") + "</button></div>";
+  return h;
+}
+
+/* Panel above the content; shown on completion and via the button. */
+function showReport(r){
+  const host = r.kind === "lab" ? $("courseview") : $("quizview");
+  if(!host) return;
+  const old = host.querySelector(".report");
+  if(old) old.remove();
+  const box = document.createElement("div");
+  box.innerHTML = reportHtml(r);
+  const el = box.firstChild;
+  host.insertBefore(el, host.firstChild);
+  const close = $("rep-close");
+  if(close) close.onclick = ()=>{ el.remove(); };
+  el.scrollIntoView({block:"nearest", behavior: REDUCED ? "auto" : "smooth"});
+}
+
+function toggleLabReport(){ showReport(labReport(CS.lec)); }
+function toggleQuizReport(){ showReport(quizReport()); }
+
 /* ===== END simulated machine ===== */
+
+
+
+
+
+
+
+
+
 
 
 
@@ -7649,7 +8153,9 @@ function checkQuiz(){
     else if(!o.c && picked){ el.classList.add("wrong"); right = false; }
   });
   S.qTries++;
+  // remember what was missed, so the end-of-course report can point at it
   if(right){ S.qHits++; S.qDone[qKey()] = true; }
+  else S.qWrong[qKey()] = (S.qWrong[qKey()] || 0) + 1;
   $("qafter").innerHTML = '<div class="breakdown" style="border-top-color:'+(right?"var(--lime)":"var(--rose)")+'">'+
     '<h2 style="color:'+(right?"var(--lime)":"var(--rose)")+'">'+(right?t("correct"):t("notQuite"))+"</h2>"+
     '<div class="tok"><span class="v" style="font-family:var(--sans)">'+L(it.e)+"</span></div>"+
@@ -7674,8 +8180,11 @@ function quizDone(){
     t("quizComplete")+"</h2>"+
     '<div class="big">'+answered+" / "+total+"</div>"+
     "<p>"+t("answeredCorrectly")+" · "+(S.qTries?Math.round(S.qHits/S.qTries*100):0)+"% "+t("accuracy")+"</p>"+
-    '<button class="nextbtn" id="q-restart">'+t("startOver")+"</button></div>";
+    '<button class="nextbtn" id="q-restart">'+t("startOver")+'</button>'+
+    '<button class="tbtn" id="q-report">'+t('reportBtn')+"</button></div>";
   $("q-restart").onclick = ()=>{ Q.tier=0; Q.i=0; Q.picked.clear(); Q.checked=false; renderQuiz(); };
+  $("q-report").onclick = toggleQuizReport;
+  setTimeout(toggleQuizReport, 400);
   renderQuizNav();
 }
 
@@ -7697,6 +8206,7 @@ function setMode(m){
   $("distro").querySelectorAll("button").forEach(b=>{
     b.disabled = !drill; b.style.cursor = drill ? "pointer" : "default"; });
   if(drill) renderTask(); else if(quiz) renderQuiz(); else renderCourse();
+  transitionView();
   save();
 }
 
@@ -7722,7 +8232,8 @@ function setMode(m){
   // last in already focused so Enter takes you straight back
   const back = activeCourse();
   if(back) enterCourse(back.id);
-  openPicker();
+  // the boot sequence plays first, then hands over to the menu
+  runBoot(openPicker);
   // Escape leaves the menu only when there is somewhere to go back to
   document.addEventListener("keydown", e=>{
     if(e.key === "Escape" && !$("picker").hidden && activeCourse()){
