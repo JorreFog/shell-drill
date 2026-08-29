@@ -630,19 +630,18 @@ body.picking .wrap{visibility:hidden}
 
 /* ---------- menu atmosphere ---------- */
 .picker::after{
-  /* oversized so it can be translated without exposing an edge */
-  content:"";position:fixed;top:-52px;left:-52px;right:-52px;bottom:-52px;
-  pointer-events:none;opacity:.5;
-  background-image:linear-gradient(rgba(92,207,230,.045) 1px,transparent 1px),
+  /* Static, and faded with a gradient layer rather than mask-image. A mask
+     takes the layer off the fast paint path in Gecko, and this one was also
+     animating for ever with will-change:transform, so the compositor kept a
+     full-viewport masked layer alive the whole time the menu was open. The
+     top background layer paints the page colour back over the edges, which
+     gives the same fade for the cost of one more gradient. */
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(760px 520px at 50% 6%,transparent 34%,var(--void) 80%),
+                   linear-gradient(rgba(92,207,230,.045) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(92,207,230,.045) 1px,transparent 1px);
-  background-size:52px 52px;
-  mask-image:radial-gradient(760px 520px at 50% 6%,#000 0%,transparent 78%);
-  -webkit-mask-image:radial-gradient(760px 520px at 50% 6%,#000 0%,transparent 78%);
-  /* transform rather than background-position: the compositor can move a
-     layer without repainting the grid every single frame */
-  animation:gridDrift 34s linear infinite;will-change:transform;
+  background-size:100% 100%, 52px 52px, 52px 52px;
 }
-@keyframes gridDrift{to{transform:translate3d(52px,52px,0)}}
 /* animating background-position on background-clip:text repaints the text on
    every frame, so this runs twice on arrival instead of forever */
 .phead h1{background-size:220% 100%;animation:sheen 4.5s ease-in-out 2}
@@ -870,9 +869,11 @@ html,body{overflow-x:hidden}
    the bottom of the page — so text dimmed as it scrolled down and brightened
    again as it passed the middle. A full-page effect cannot live on a fixed
    layer. */
-body::after{
-  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.016) 0 1px,transparent 1px 3px);
-}
+/* The scanlines were a position:fixed layer covering the viewport, so every
+   scroll frame repainted a full-screen gradient above all the content. At
+   0.016 alpha they cost far more than they showed. Removing the layer
+   entirely is the cheapest thing available; restoring it is one rule. */
+body::after{content:none}
 
 /* glow only where it means something, and only on small text */
 .brand{text-shadow:0 0 16px rgba(126,231,135,.30)}
@@ -881,21 +882,17 @@ body::after{
 
 /* the terminal reads as a screen rather than a panel */
 .term .screen{background:linear-gradient(180deg,rgba(63,185,80,.045),transparent 140px),var(--void)}
-.term{box-shadow:0 0 0 1px rgba(35,48,65,.9), 0 18px 50px -32px rgba(63,185,80,.45)}
+/* the ring is free; the 50px blur behind it was repainting on every line the
+   terminal printed, which is the one element that redraws constantly */
+.term{box-shadow:0 0 0 1px rgba(35,48,65,.9)}
 
 /* menu wash and the faint grid a network map is drawn on */
 .picker::before{
   background:radial-gradient(900px 480px at 50% -8%,rgba(126,231,135,.09),transparent 70%),
              radial-gradient(700px 420px at 92% 108%,rgba(86,212,221,.06),transparent 70%);
 }
-.pwrap::before{
-  content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
-  background-image:linear-gradient(rgba(35,48,65,.55) 1px,transparent 1px),
-                   linear-gradient(90deg,rgba(35,48,65,.55) 1px,transparent 1px);
-  background-size:44px 44px;
-  mask-image:radial-gradient(760px 460px at 50% 20%,#000 30%,transparent 78%);
-  -webkit-mask-image:radial-gradient(760px 460px at 50% 20%,#000 30%,transparent 78%);
-}
+/* A second masked grid used to sit here, on top of the one .picker::after
+   already draws. Two full-viewport masked layers for one faint grid. */
 
 /* the title led on near-white, which made the biggest thing on the page grey */
 /* the background shorthand resets background-clip, so the clip has to be
@@ -10154,6 +10151,7 @@ if(typeof window !== "undefined" && typeof showStep === "function"){
 }
 
 /* ===== END simulated machine ===== */
+
 
 
 
