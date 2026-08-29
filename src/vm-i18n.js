@@ -83,9 +83,6 @@ const T = {
   quizComplete:    {sv:"Quiz klart",        en:"Quiz complete"},
   answeredCorrectly:{sv:"rätt besvarade",   en:"answered correctly"},
   startOver:       {sv:"Börja om",          en:"Start over"},
-  missed:          {sv:"MISSAD",            en:"MISSED"},
-  wrong:           {sv:"FEL",               en:"WRONG"},
-  right:           {sv:"RÄTT",              en:"CORRECT"},
 
   /* report */
   hint:            {sv:"ledtråd",           en:"hint"},
@@ -169,11 +166,17 @@ function setLang(lang){
   S.lang = LANGS[lang] ? lang : "en";
   document.documentElement.lang = S.lang;
   applyChrome();
+  // a re-render wipes the report panel, so put it back in the new language
+  const hadReport = !!document.querySelector(".report");
   // re-render whatever is on screen so generated text follows
   if(!$("picker").hidden) renderPicker();
   else if(S.mode === "quiz") { renderQuiz(); renderQuizNav(); }
   else if(S.mode === "course") renderCourse();
   else renderTask();
+  if(hadReport){
+    if(S.mode === "quiz") toggleQuizReport();
+    else if(S.mode === "course") toggleLabReport();
+  }
   save();
 }
 

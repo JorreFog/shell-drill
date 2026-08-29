@@ -717,6 +717,7 @@ html,body{overflow-x:hidden}
 
 
 
+
 </style>
 </head>
 <body>
@@ -2133,7 +2134,7 @@ function confirmDialog(o){
   d.setAttribute("aria-labelledby", "cf-title");
   d.innerHTML = '<h2 id="cf-title">'+esc(o.title)+"</h2>"+
     '<div class="cf-body">'+o.body+"</div>"+
-    '<div class="cf-btns"><button class="ghost" id="cf-no">Cancel</button>'+
+    '<div class="cf-btns"><button class="ghost" id="cf-no">'+t('cancel')+'</button>'+
     '<button class="nextbtn danger" id="cf-yes">'+esc(o.confirmLabel)+"</button></div>";
   document.body.appendChild(d);
   $("scrim").classList.add("open");
@@ -2176,20 +2177,19 @@ $("reset").onclick = ()=>{
   // only machines actually worked in — a freshly booted one is no loss
   const machines = Object.keys(CS.machines || {})
     .filter(li => (CS.histories[li] || []).length > 0).length;
+  // label-then-number, so neither language has to agree on plurals
   const rows = [];
-  if(drill) rows.push(drill + " solved drill task" + (drill===1?"":"s"));
-  if(quiz)  rows.push(quiz + " answered quiz question" + (quiz===1?"":"s"));
-  if(labs)  rows.push(labs + " completed lab task" + (labs===1?"":"s"));
-  if(machines) rows.push("the simulated machine" + (machines===1?"":"s") +
-    " for " + machines + " lecture" + (machines===1?"":"s") + ", with any files you made");
+  if(drill) rows.push(t("drillTasks") + ": " + drill);
+  if(quiz)  rows.push(t("quizAnswers") + ": " + quiz);
+  if(labs)  rows.push(t("labTasks") + ": " + labs);
+  if(machines) rows.push(t("machinesFor") + " " + machines + " " + t("lectures"));
 
   confirmDialog({
-    title: "Reset all progress?",
+    title: t("resetTitle"),
     body: rows.length
-      ? "<p>This clears everything saved in this browser and cannot be undone:</p><ul><li>"+
-        rows.join("</li><li>")+"</li></ul>"
-      : "<p>Nothing is saved yet, so there is nothing to lose. You can reset anyway.</p>",
-    confirmLabel: "Reset everything",
+      ? "<p>" + t("resetIntro") + "</p><ul><li>" + rows.join("</li><li>") + "</li></ul>"
+      : "<p>" + t("resetNothing") + "</p>",
+    confirmLabel: t("resetConfirm"),
     onConfirm: doResetProgress
   });
 };
@@ -6492,9 +6492,6 @@ const T = {
   quizComplete:    {sv:"Quiz klart",        en:"Quiz complete"},
   answeredCorrectly:{sv:"rätt besvarade",   en:"answered correctly"},
   startOver:       {sv:"Börja om",          en:"Start over"},
-  missed:          {sv:"MISSAD",            en:"MISSED"},
-  wrong:           {sv:"FEL",               en:"WRONG"},
-  right:           {sv:"RÄTT",              en:"CORRECT"},
 
   /* report */
   hint:            {sv:"ledtråd",           en:"hint"},
@@ -6578,11 +6575,17 @@ function setLang(lang){
   S.lang = LANGS[lang] ? lang : "en";
   document.documentElement.lang = S.lang;
   applyChrome();
+  // a re-render wipes the report panel, so put it back in the new language
+  const hadReport = !!document.querySelector(".report");
   // re-render whatever is on screen so generated text follows
   if(!$("picker").hidden) renderPicker();
   else if(S.mode === "quiz") { renderQuiz(); renderQuizNav(); }
   else if(S.mode === "course") renderCourse();
   else renderTask();
+  if(hadReport){
+    if(S.mode === "quiz") toggleQuizReport();
+    else if(S.mode === "course") toggleLabReport();
+  }
   save();
 }
 
@@ -6896,7 +6899,9 @@ hotanalys: [
     {t:{sv:"Undvika den genom att låta bli det riskabla",
         en:"Avoid it by not doing the risky thing"},c:1},
     {t:{sv:"Acceptera den, medvetet och dokumenterat",
-        en:"Accept it, deliberately and on the record"},c:1}],
+        en:"Accept it, deliberately and on the record"},c:1},
+    {t:{sv:"Eskalera den uppåt så att den blir någon annans problem",
+        en:"Escalate it upwards so it becomes someone else's problem"}}],
  e:{sv:"Alla fyra är legitima. Acceptans är ett beslut som någon med mandat fattar och skriver under — inte samma sak som att strunta i den.",
     en:"All four are legitimate. Acceptance is a decision someone with authority makes and signs — not the same as ignoring it."}},
 
@@ -7030,7 +7035,9 @@ incident: [
     {t:{sv:"Upptäckt och analys", en:"Detection and analysis"},c:1},
     {t:{sv:"Begränsning, utrensning och återställning",
         en:"Containment, eradication and recovery"},c:1},
-    {t:{sv:"Erfarenhetsåterföring efteråt", en:"Lessons learned afterwards"},c:1}],
+    {t:{sv:"Erfarenhetsåterföring efteråt", en:"Lessons learned afterwards"},c:1},
+    {t:{sv:"Attribution — att fastställa vilken grupp som låg bakom",
+        en:"Attribution — establishing which group was behind it"}}],
  e:{sv:"Förberedelsen är den fas som avgör hur de andra går. En organisation som tänker på detta först under en incident har redan hamnat på efterkälken.",
     en:"Preparation is the phase that decides how the others go. An organisation that first thinks about this during an incident is already losing."}},
 
@@ -7284,7 +7291,9 @@ kravstallning: [
     {t:{sv:"Utbildning och den tid personalen lägger",
         en:"Training and the time staff spend"},c:1},
     {t:{sv:"Avveckling och migrering vid byte",
-        en:"Decommissioning and migration when you move on"},c:1}],
+        en:"Decommissioning and migration when you move on"},c:1},
+    {t:{sv:"Priset på de konkurrerande produkter ni valde bort",
+        en:"The price of the competing products you did not buy"}}],
  e:{sv:"Inköpspriset är ofta den minsta posten. Det billigaste alternativet vid upphandling är regelbundet det dyraste sett över fem år.",
     en:"The purchase price is often the smallest item. The cheapest option at procurement is regularly the most expensive over five years."}},
 
@@ -8013,6 +8022,10 @@ function toggleLabReport(){ showReport(labReport(CS.lec)); }
 function toggleQuizReport(){ showReport(quizReport()); }
 
 /* ===== END simulated machine ===== */
+
+
+
+
 
 
 

@@ -283,7 +283,9 @@ hotanalys: [
     {t:{sv:"Undvika den genom att låta bli det riskabla",
         en:"Avoid it by not doing the risky thing"},c:1},
     {t:{sv:"Acceptera den, medvetet och dokumenterat",
-        en:"Accept it, deliberately and on the record"},c:1}],
+        en:"Accept it, deliberately and on the record"},c:1},
+    {t:{sv:"Eskalera den uppåt så att den blir någon annans problem",
+        en:"Escalate it upwards so it becomes someone else's problem"}}],
  e:{sv:"Alla fyra är legitima. Acceptans är ett beslut som någon med mandat fattar och skriver under — inte samma sak som att strunta i den.",
     en:"All four are legitimate. Acceptance is a decision someone with authority makes and signs — not the same as ignoring it."}},
 
@@ -417,7 +419,9 @@ incident: [
     {t:{sv:"Upptäckt och analys", en:"Detection and analysis"},c:1},
     {t:{sv:"Begränsning, utrensning och återställning",
         en:"Containment, eradication and recovery"},c:1},
-    {t:{sv:"Erfarenhetsåterföring efteråt", en:"Lessons learned afterwards"},c:1}],
+    {t:{sv:"Erfarenhetsåterföring efteråt", en:"Lessons learned afterwards"},c:1},
+    {t:{sv:"Attribution — att fastställa vilken grupp som låg bakom",
+        en:"Attribution — establishing which group was behind it"}}],
  e:{sv:"Förberedelsen är den fas som avgör hur de andra går. En organisation som tänker på detta först under en incident har redan hamnat på efterkälken.",
     en:"Preparation is the phase that decides how the others go. An organisation that first thinks about this during an incident is already losing."}},
 
@@ -671,7 +675,9 @@ kravstallning: [
     {t:{sv:"Utbildning och den tid personalen lägger",
         en:"Training and the time staff spend"},c:1},
     {t:{sv:"Avveckling och migrering vid byte",
-        en:"Decommissioning and migration when you move on"},c:1}],
+        en:"Decommissioning and migration when you move on"},c:1},
+    {t:{sv:"Priset på de konkurrerande produkter ni valde bort",
+        en:"The price of the competing products you did not buy"}}],
  e:{sv:"Inköpspriset är ofta den minsta posten. Det billigaste alternativet vid upphandling är regelbundet det dyraste sett över fem år.",
     en:"The purchase price is often the smallest item. The cheapest option at procurement is regularly the most expensive over five years."}},
 

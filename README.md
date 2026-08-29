@@ -36,6 +36,17 @@ translated, and the menu says so when Swedish is selected.
 LIA, examensarbete and kompetensportfölj are deliberately absent: placement,
 thesis and portfolio work have nothing to practise in a browser.
 
+## Reports
+
+Finishing a lab or a quiz opens a report, also reachable any time from a
+**Report** button. It is built from what actually happened — which tasks were
+done unaided, which needed a hint, which needed the answer, and what the
+terminal returned — so the advice is earned rather than generic. Repeated
+command-not-found suggests Tab completion; repeated permission errors suggest
+checking who owns the path; a high error rate suggests reading the message
+first. Quizzes report per section and quote the questions missed with their
+explanations.
+
 ## Inside a course
 
 - **Terminal drill** — 123 tasks across ten modules. You type the real command;
@@ -92,5 +103,6 @@ Tests run on plain Node with no dependencies:
 
     node test/vmtest.js                 # 154 shell tests
     node test/pytest.js                 #  87 python tests
-    node test/solutions.js              # works every task; 83 near-miss cases must NOT pass
+    node test/solutions.js              # works every task; 85 near-miss cases must NOT pass
     node test/selfcheck.js index.html   # drill + quiz integrity
+    node test/audit.js                  # duplicate declarations, i18n gaps, data integrity
