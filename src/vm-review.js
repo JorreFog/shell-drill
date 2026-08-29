@@ -66,10 +66,21 @@ function pvReviewQuiz(it){
     "<h2>" + L(it.item.q) + "</h2>"+
     '<div class="pvopts">' + it.item.o.map((o,i) => {
       const picked = PVR.picked.has(i);
-      let cls = "qopt" + (picked ? " picked" : "");
-      if(checked){ if(o.c) cls += " good"; else if(picked) cls += " bad"; }
-      return '<button class="' + cls + '" data-o="' + i + '"' + (checked?" disabled":"") + ">"+
-        '<span class="qbox"></span>' + L(o.t) + "</button>";
+      /* .on while choosing, then the quiz's own result classes: hit for a
+         correct one you picked, missed for a correct one you did not, wrong
+         for an incorrect one you did. */
+      /* While choosing, .on marks what you picked. Once checked, the published
+         quiz drops .on and shows only the result class, so the tick does not
+         stay cyan on an option that turned out to be wrong. Same here. */
+      let cls = "qopt";
+      if(checked){
+        if(o.c) cls += picked ? " hit" : " missed";
+        else if(picked) cls += " wrong";
+      } else if(picked) cls += " on";
+      return '<button class="' + cls + '" data-o="' + i + '" aria-pressed="' + picked + '"' +
+        (checked ? " disabled" : "") + ">"+
+        '<span class="box" aria-hidden="true"></span>'+
+        '<span class="txt">' + L(o.t) + "</span></button>";
     }).join("") + "</div>"+
     (checked ? '<p class="pvexpl">' + L(it.item.e) + "</p>" : "")+
     '<div class="pvnav">'+

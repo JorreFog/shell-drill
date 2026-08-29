@@ -8930,9 +8930,17 @@ function pvRenderExam(){
     '<div class="pvcard">'+
       '<div class="pvmeta">' + esc(L(q.course)) + "</div>"+
       "<h2>" + L(q.item.q) + "</h2>"+
-      '<div class="pvopts">' + q.item.o.map((o,i) =>
-        '<button class="qopt' + (q.picked.includes(i)?" picked":"") + '" data-o="' + i + '">'+
-        '<span class="qbox"></span>' + L(o.t) + "</button>").join("") + "</div>"+
+      /* the same classes and inner markup the published quiz uses: .on for a
+         selected option, .box for the tick, .txt for the label. This built
+         its own names, none of which the stylesheet knows, so clicking an
+         option registered but showed nothing at all. */
+      '<div class="pvopts">' + q.item.o.map((o,i) => {
+        const on = q.picked.includes(i);
+        return '<button class="qopt' + (on ? " on" : "") + '" data-o="' + i +
+          '" aria-pressed="' + on + '">'+
+          '<span class="box" aria-hidden="true"></span>'+
+          '<span class="txt">' + L(o.t) + "</span></button>";
+      }).join("") + "</div>"+
       '<div class="pvnav">'+
         '<button class="ghost" id="pv-prev"' + (e.i===0?" disabled":"") + ">← " + t("previous") + "</button>"+
         '<button class="ghost" id="pv-flag">' + (q.flagged ? t("pvFlagged") : t("pvFlag")) + "</button>"+
@@ -9073,10 +9081,21 @@ function pvReviewQuiz(it){
     "<h2>" + L(it.item.q) + "</h2>"+
     '<div class="pvopts">' + it.item.o.map((o,i) => {
       const picked = PVR.picked.has(i);
-      let cls = "qopt" + (picked ? " picked" : "");
-      if(checked){ if(o.c) cls += " good"; else if(picked) cls += " bad"; }
-      return '<button class="' + cls + '" data-o="' + i + '"' + (checked?" disabled":"") + ">"+
-        '<span class="qbox"></span>' + L(o.t) + "</button>";
+      /* .on while choosing, then the quiz's own result classes: hit for a
+         correct one you picked, missed for a correct one you did not, wrong
+         for an incorrect one you did. */
+      /* While choosing, .on marks what you picked. Once checked, the published
+         quiz drops .on and shows only the result class, so the tick does not
+         stay cyan on an option that turned out to be wrong. Same here. */
+      let cls = "qopt";
+      if(checked){
+        if(o.c) cls += picked ? " hit" : " missed";
+        else if(picked) cls += " wrong";
+      } else if(picked) cls += " on";
+      return '<button class="' + cls + '" data-o="' + i + '" aria-pressed="' + picked + '"' +
+        (checked ? " disabled" : "") + ">"+
+        '<span class="box" aria-hidden="true"></span>'+
+        '<span class="txt">' + L(o.t) + "</span></button>";
     }).join("") + "</div>"+
     (checked ? '<p class="pvexpl">' + L(it.item.e) + "</p>" : "")+
     '<div class="pvnav">'+
@@ -10244,6 +10263,8 @@ if(typeof window !== "undefined" && typeof showStep === "function"){
 }
 
 /* ===== END simulated machine ===== */
+
+
 
 
 

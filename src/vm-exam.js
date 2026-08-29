@@ -154,9 +154,17 @@ function pvRenderExam(){
     '<div class="pvcard">'+
       '<div class="pvmeta">' + esc(L(q.course)) + "</div>"+
       "<h2>" + L(q.item.q) + "</h2>"+
-      '<div class="pvopts">' + q.item.o.map((o,i) =>
-        '<button class="qopt' + (q.picked.includes(i)?" picked":"") + '" data-o="' + i + '">'+
-        '<span class="qbox"></span>' + L(o.t) + "</button>").join("") + "</div>"+
+      /* the same classes and inner markup the published quiz uses: .on for a
+         selected option, .box for the tick, .txt for the label. This built
+         its own names, none of which the stylesheet knows, so clicking an
+         option registered but showed nothing at all. */
+      '<div class="pvopts">' + q.item.o.map((o,i) => {
+        const on = q.picked.includes(i);
+        return '<button class="qopt' + (on ? " on" : "") + '" data-o="' + i +
+          '" aria-pressed="' + on + '">'+
+          '<span class="box" aria-hidden="true"></span>'+
+          '<span class="txt">' + L(o.t) + "</span></button>";
+      }).join("") + "</div>"+
       '<div class="pvnav">'+
         '<button class="ghost" id="pv-prev"' + (e.i===0?" disabled":"") + ">← " + t("previous") + "</button>"+
         '<button class="ghost" id="pv-flag">' + (q.flagged ? t("pvFlagged") : t("pvFlag")) + "</button>"+
