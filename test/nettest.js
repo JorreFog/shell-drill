@@ -6,8 +6,8 @@ const base = path.join(__dirname, '..', 'src');
 const read = f => fs.readFileSync(path.join(base, f), 'utf8');
 
 /* the engine files the network needs, minus anything that touches the DOM */
-eval(read('vm-core.js') + read('vm-cmds.js') + read('vm-seed.js') + read('pv-05-net.js'));
-eval(read('pv-06-netlab.js').replace(/^if\(typeof attachPython[\s\S]*?\n}\n/m, ''));
+eval(read('vm-core.js') + read('vm-cmds.js') + read('vm-seed.js') + read('vm-net.js'));
+eval(read('vm-netlab.js').replace(/^if\(typeof attachPython[\s\S]*?\n}\n/m, ''));
 
 let pass = 0, fail = 0;
 function check(name, got, want){

@@ -45,10 +45,21 @@ const engine = BEGIN + '\n' +
   read('vm-courses.js') + '\n' +
   read('vm-fx.js') + '\n' +
   read('vm-report.js') + '\n' +
-  /* Anything named pv-*.js is preview-only: it is spliced into preview.html and
-     left out of index.html, so new work can be tried on the live-ish page
-     without shipping it. The preview files build their own DOM rather than
-     needing markup, which keeps preview.html a plain copy of index.html. */
+  /* These arrived as a preview and now ship. They build their own DOM rather
+     than needing markup in the page, which is why index.html carries no trace
+     of them beyond the spliced block. */
+  read('vm-modes.js') + '\n' +
+  read('vm-exam.js') + '\n' +
+  read('vm-review.js') + '\n' +
+  read('vm-progress.js') + '\n' +
+  read('vm-net.js') + '\n' +
+  read('vm-netlab.js') + '\n' +
+  read('vm-netui.js') + '\n' +
+  read('vm-palette.js') + '\n' +
+  read('vm-tourintro.js') + '\n' +
+  /* Anything named pv-*.js stays preview-only: spliced into preview.html and
+     left out of index.html, so the next batch of work can be tried on a real
+     copy of the page before it ships. Currently nothing is named that. */
   (PREVIEW ? PREVIEW_FILES.map(f => read(f)).join('\n') + '\n' : '') +
   FINISH + '\n\n';
 
@@ -420,8 +431,10 @@ ${CSS_END}
   }
 }
 
-/* ---- preview-only CSS, spliced between its own sentinels ---- */
-if(PREVIEW){
+/* ---- CSS for the modes, the network lab, the palette and the theme ----
+   Spliced between its own sentinels like the block above. Was preview-only;
+   ships now. ---- */
+{
   const PV_MARK = '/* ---------- preview ---------- */';
   const PV_END  = '/* ---------- end preview ---------- */';
   const pvcss = `
@@ -653,8 +666,6 @@ ${PV_END}
   } else {
     html = html.replace('</style>', pvcss + '</style>');
   }
-  html = html.replace(/<title>[^<]*<\/title>/,
-    '<title>Sec·lab preview — exam mode, review, progress</title>');
 }
 
 fs.writeFileSync(target, html);

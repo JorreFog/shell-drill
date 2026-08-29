@@ -23,7 +23,7 @@ function pvBuildIndex(){
     SHEET.forEach(([section, rows]) => rows.forEach(([cmd, what]) => {
       out.push({kind:"cmd", label:cmd, sub:what, go:() => {
         $("drawer").classList.add("open");
-        const f = $("reffilter"); if(f){ f.value = cmd; renderSheet(cmd); }
+        const f = $("refsearch"); if(f){ f.value = cmd; renderSheet(cmd); }
       }});
     }));
   }
@@ -159,7 +159,8 @@ function pvPaletteClose(){
   PVP.open = false;
 }
 
-document.addEventListener("keydown", e => {
+/* guarded so the node suites can load this file for its matcher */
+if(typeof document !== "undefined") document.addEventListener("keydown", e => {
   if((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")){
     e.preventDefault();
     PVP.open ? pvPaletteClose() : pvPaletteOpen();

@@ -94,7 +94,7 @@ Object.assign(T, {
   pvKindDrill:   {sv:"övning",                en:"drill"},
   pvKindLab:     {sv:"labb",                  en:"lab"},
   pvKindQuiz:    {sv:"fråga",                 en:"quiz"},
-  pvPalHint:     {sv:"Ctrl+K för att söka",   en:"Ctrl+K to search"},
+  pvPalHint:     {sv:"Sök",                  en:"Search"},
   pvTiTitle:     {sv:"Vad som finns här", en:"What is on this site"},
   pvTiIntro:     {sv:"Allt nedan ligger bakom Menu-knappen. Du behöver ingen Linux-dator "+
                      "— allt körs i webbläsaren.",
@@ -137,10 +137,6 @@ Object.assign(T, {
                      "hur en uppgift fungerar.",
                   en:"Progress is saved in this browser. The rest of the tour shows how a "+
                      "task works."},
-  pvPreviewTag:  {sv:"FÖRHANDSVERSION",      en:"PREVIEW"},
-  pvPreviewNote: {sv:"Den här sidan är en testversion. Funktionerna nedan finns inte på den "+
-                     "publicerade sidan än.",
-                  en:"This page is a preview. The features below are not on the published site yet."},
 });
 
 /* ---------- preview-only saved state, kept away from the real one ---------- */
@@ -258,15 +254,16 @@ function pvInit(){
 
   PV_MODES.forEach(m => pvView("pv-" + m + "view"));
 
-  /* say plainly that this is not the published site */
-  if(!document.querySelector(".pvflag")){
-    const f = document.createElement("div");
-    f.className = "pvflag";
-    f.innerHTML = "<b>" + t("pvPreviewTag") + "</b><span>" + t("pvPreviewNote") + "</span>"+
-      '<button class="tbtn" id="pv-palbtn">' + t("pvPalHint") + "</button>";
-    const g = document.querySelector(".grid");
-    g.parentNode.insertBefore(f, g);
-    f.querySelector("#pv-palbtn").onclick = pvPaletteOpen;
+  /* Ctrl+K is worth nothing if nobody knows it is there, so the header carries
+     a button that opens the same thing. It sits next to the cheatsheet because
+     that is where you look when you are trying to find something. */
+  if(!document.getElementById("pv-palbtn")){
+    const b = document.createElement("button");
+    b.className = "refbtn"; b.id = "pv-palbtn";
+    b.textContent = t("pvPalHint");
+    b.onclick = pvPaletteOpen;
+    const ref = $("openref");
+    if(ref && ref.parentNode) ref.parentNode.insertBefore(b, ref);
   }
 
   /* a tab button per mode, sitting with the existing ones */
@@ -350,9 +347,9 @@ function pvInit(){
   }
 }
 
-/* The boot sequence runs before this file gets a chance to wrap anything, so
-   pick up whatever it decided once it has finished. */
-pvLoad().then(() => {
+/* the boot sequence runs before this file can wrap anything, so pick up what
+   it decided once it has finished. Guarded: the node suites load this file. */
+if(typeof document !== "undefined") pvLoad().then(() => {
   const go = () => {
     pvInit();
     if(PV_MODES.includes(S.mode)){

@@ -20,6 +20,13 @@ const tKeys = new Set();
 const i18n = fs.readFileSync(base + 'src/vm-i18n.js', 'utf8');
 const tBlock = i18n.slice(i18n.indexOf('const T = {'), i18n.indexOf('\nconst t = key'));
 for(const m of tBlock.matchAll(/^\s{2}([A-Za-z][\w]*)\s*:/gm)) tKeys.add(m[1]);
+/* the later modes add their strings with Object.assign(T, {...}) rather than
+   editing the table, so those keys have to be gathered too — otherwise every
+   one of them reads as missing */
+const modes = fs.readFileSync(base + 'src/vm-modes.js', 'utf8');
+const aBlock = modes.slice(modes.indexOf('Object.assign(T, {') + 'Object.assign(T, '.length,
+                          modes.indexOf('});') + 1);
+for(const m of aBlock.matchAll(/^\s{2}([A-Za-z][\w]*)\s*:/gm)) tKeys.add(m[1]);
 const used = new Set();
 for(const m of script.matchAll(/\bt\(["']([A-Za-z][\w]*)["']\)/g)) used.add(m[1]);
 [...used].filter(k => !tKeys.has(k)).forEach(k => flag('high', 'i18n', 't("' + k + '") has no entry in T'));
@@ -29,6 +36,7 @@ if(unused.length) flag('low', 'i18n', unused.length + ' T entries not seen by st
 
 /* 3. every T entry has both languages and neither is empty by accident */
 const T = new Function(tBlock + '; return T;')();
+Object.assign(T, new Function('return ' + aBlock + ';')());
 for(const k in T){
   const v = T[k];
   if(typeof v !== 'object') { flag('high','i18n','T.'+k+' is not a {sv,en} pair'); continue; }
@@ -43,7 +51,10 @@ for(const k in T){
   ['sv','en'].forEach(l => {
     const s = T[k][l] || '';
     const ph = s.match(/\{[a-z]+\}/g);
-    if(ph && !/^advice|^rep/.test(k)) flag('med','i18n','T.'+k+'.'+l+' has a placeholder but is not an advice/report string: '+ph);
+    /* keys that legitimately interpolate: the advice and report lines, and the
+       tutorial's contents page, which fills counts read from the data */
+    if(ph && !/^advice|^rep|^pvTi/.test(k))
+      flag('med','i18n','T.'+k+'.'+l+' has a placeholder but nothing fills it: '+ph);
   });
 }
 

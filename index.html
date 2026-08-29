@@ -765,6 +765,228 @@ html,body{overflow-x:hidden}
 
 
 
+
+
+/* ---------- preview ---------- */
+.pvcard{border:1px solid var(--line);background:var(--panel-2);padding:18px 20px;margin-bottom:14px}
+.pvcard h2{font-family:var(--sans);font-size:21px;margin:0 0 6px;font-weight:500;line-height:1.35}
+.pvcard h3{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  margin:0 0 12px;font-weight:500}
+.pvlead{font-family:var(--sans);font-size:13.5px;color:var(--dim);line-height:1.6;margin:0 0 14px}
+.pvintro{margin:0 0 14px}
+.pvmuted{font-family:var(--sans);font-size:12.5px;color:var(--dim);margin:10px 0 0}
+.pvmeta{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+.pvempty{text-align:center;padding:40px 20px}
+
+/* the size picker that starts a test */
+.pvsizes{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.pvsize{flex:1 1 130px;background:var(--panel);border:1px solid var(--line);color:var(--bone);
+  padding:16px 12px;cursor:pointer;display:flex;flex-direction:column;gap:3px;align-items:center;
+  transition:border-color .14s ease,transform .14s ease}
+.pvsize:hover{border-color:var(--amber);transform:translateY(-2px)}
+.pvsize b{font-size:26px;font-weight:700;color:var(--amber);font-family:var(--mono)}
+.pvsize span{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.pvsize em{font-style:normal;font-size:11.5px;color:var(--dim);opacity:.8}
+
+/* the running-test bar */
+.pvbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;
+  padding:10px 14px;border:1px solid var(--line);background:var(--panel)}
+/* .pvmuted and friends carry a margin-top for the contexts they usually sit in,
+   which inside this row knocked them off the baseline. Same trap as .nextbtn. */
+.pvbar > *{margin:0}
+.pvbar .pvright{margin-left:auto}
+.pvclock{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--amber);
+  font-variant-numeric:tabular-nums}
+.pvprog{font-size:12px;color:var(--dim);letter-spacing:.04em;font-family:var(--mono)}
+.pvbar .tbtn{margin-left:auto}
+
+.pvgrid{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.pvdot{width:28px;height:28px;border:1px solid var(--line);background:var(--panel);
+  color:var(--dim);font-family:var(--mono);font-size:11px;cursor:pointer;padding:0;
+  transition:border-color .12s,color .12s}
+.pvdot:hover{color:var(--bone);border-color:#3B5063}
+.pvdot.ans{color:var(--bone);border-color:#3B5063;background:var(--panel-2)}
+.pvdot.now{border-color:var(--amber);color:var(--amber)}
+.pvdot.flag{box-shadow:inset 0 -3px 0 var(--rose)}
+
+.pvopts{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.pvopts .qopt{width:100%;text-align:left}
+.pvexpl{font-family:var(--sans);font-size:13.5px;color:var(--dim);line-height:1.6;
+  padding-left:11px;border-left:2px solid var(--amber);margin:14px 0 0}
+.pvnav{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.pvnav button{margin:0;padding:9px 16px;font-size:12px;line-height:1.25;min-height:34px;
+  border:1px solid transparent}
+.pvnav .ghost,.pvnav .tbtn{border-color:var(--line);margin-left:0}
+.pvreveal{margin:12px 0 0;padding-left:11px;border-left:2px solid var(--lime)}
+.pvans{color:var(--lime)}
+
+/* progress overview */
+.pvbig{margin:6px 0 12px}
+.pvmeter{height:6px;background:var(--panel);border:1px solid var(--line);overflow:hidden}
+.pvmeter i{display:block;height:100%;background:var(--amber);transition:width .5s ease}
+.pvrows{display:flex;flex-direction:column;gap:6px}
+.pvrow{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:none;
+  border:0;border-left:2px solid transparent;color:var(--dim);padding:7px 10px;cursor:pointer;
+  font-size:12.5px;transition:color .12s,border-color .12s,background .12s}
+.pvrow:hover{color:var(--bone);border-left-color:var(--amber);background:rgba(255,255,255,.03)}
+.pvrname{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;font-family:var(--sans)}
+.pvrbar{flex:0 0 90px;height:4px;background:var(--panel);overflow:hidden}
+.pvrbar i{display:block;height:100%;background:var(--lime)}
+.pvrnum{flex:0 0 auto;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+.pvweak{color:var(--amber)}
+
+.pvlog{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.pvlogrow{display:flex;gap:12px;align-items:center;padding:5px 0;font-size:12.5px;color:var(--dim)}
+.pvlogrow span{flex:1 1 auto;font-family:var(--mono);font-size:11.5px}
+.pvlogrow b{color:var(--bone);font-weight:500;font-family:var(--mono)}
+.pvlogrow em{font-style:normal;color:var(--amber);font-family:var(--mono);font-size:11.5px}
+
+/* ============ phosphor theme ============
+   Green on black, but the green is the accent, not the whole page. Tinting the
+   surfaces, the body text and the highlights all green passed contrast checks
+   on luminance and still read as mud, because everything sat in one narrow
+   band of hue. Terminal themes that stay readable for hours do the opposite:
+   neutral near-black surfaces, near-white text, and green reserved for the
+   things that carry meaning.
+
+   Roles stay separated by hue as well as brightness — light green marks what is
+   active, deeper green what is finished, teal what is a link, red what broke. */
+:root{
+  --void:    #070A0C;   /* page — neutral near-black, no green cast */
+  --panel:   #0D1117;
+  --panel-2: #121821;
+  --line:    #233041;
+  --bone:    #E6EDF3;   /* body text — neutral, so the greens stay legible next to it */
+  --dim:     #97A4B2;   /* secondary text */
+  --amber:   #7EE787;   /* active, headings, hints */
+  --lime:    #3FB950;   /* done, prompt, success */
+  --cyan:    #56D4DD;   /* links, mode pills, code */
+  --rose:    #FF7B72;   /* errors and danger */
+  --warn:    #E3B341;   /* provisional — caveated, not broken */
+}
+
+/* Scanlines only. There was a vignette layered under these, and because this
+   element is position:fixed it darkened the bottom of the viewport rather than
+   the bottom of the page — so text dimmed as it scrolled down and brightened
+   again as it passed the middle. A full-page effect cannot live on a fixed
+   layer. */
+body::after{
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.016) 0 1px,transparent 1px 3px);
+}
+
+/* glow only where it means something, and only on small text */
+.brand{text-shadow:0 0 16px rgba(126,231,135,.30)}
+.ps1{text-shadow:0 0 10px rgba(63,185,80,.45)}
+.pvclock{text-shadow:0 0 14px rgba(126,231,135,.35)}
+
+/* the terminal reads as a screen rather than a panel */
+.term .screen{background:linear-gradient(180deg,rgba(63,185,80,.045),transparent 140px),var(--void)}
+.term{box-shadow:0 0 0 1px rgba(35,48,65,.9), 0 18px 50px -32px rgba(63,185,80,.45)}
+
+/* menu wash and the faint grid a network map is drawn on */
+.picker::before{
+  background:radial-gradient(900px 480px at 50% -8%,rgba(126,231,135,.09),transparent 70%),
+             radial-gradient(700px 420px at 92% 108%,rgba(86,212,221,.06),transparent 70%);
+}
+.pwrap::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background-image:linear-gradient(rgba(35,48,65,.55) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(35,48,65,.55) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(760px 460px at 50% 20%,#000 30%,transparent 78%);
+  -webkit-mask-image:radial-gradient(760px 460px at 50% 20%,#000 30%,transparent 78%);
+}
+
+/* the title led on near-white, which made the biggest thing on the page grey */
+/* the background shorthand resets background-clip, so the clip has to be
+   restated here or the heading paints as a solid bar over its own text */
+.phead h1{
+  background:linear-gradient(96deg,var(--amber) 6%,var(--bone) 44%,var(--cyan) 96%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* Red is for things that broke. Provisional material is not broken, it is
+   caveated — yellow is the ordinary sign for "usable, with a warning", and it
+   keeps the badge visible without borrowing the colour the terminal uses for
+   real errors. Courses that are not built at all stay grey: those are not a
+   caution, there is simply nothing there yet. */
+.provnote{border-color:var(--line);border-left-color:var(--warn);
+  background:rgba(227,179,65,.06)}
+.provnote h2{color:var(--warn)}
+.ccard.prov .cstate{color:var(--warn)}
+.ccard.prov{border-left-color:rgba(227,179,65,.38)}
+.ccard.ready.prov:hover{border-left-color:var(--warn)}
+.ccard.planned:hover{border-left-color:var(--dim)}
+.csoon{color:var(--dim)}
+
+.nlmap{max-width:100%;height:auto}
+
+/* the tour card, widened for the contents step */
+/* the tour card sets its width in an inline style, which a class cannot beat */
+#tourcard.wide{width:min(560px,92vw)!important}
+.pvtl{max-height:56vh;overflow-y:auto;margin-top:2px}
+.pvtlintro{font-family:var(--sans);font-size:13px;color:var(--dim);line-height:1.6;margin:0 0 14px}
+.pvtlgroup{margin-bottom:14px}
+.pvtlgroup h4{margin:0 0 7px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--amber);font-weight:500}
+.pvtlrow{display:flex;gap:10px;align-items:baseline;padding:3px 0;font-size:12.5px;line-height:1.5}
+.pvtlrow b{flex:0 0 34%;color:var(--bone);font-weight:500;font-family:var(--mono);font-size:12px}
+.pvtlrow span{flex:1 1 auto;color:var(--dim);font-family:var(--sans)}
+.pvtlfoot{font-family:var(--sans);font-size:12px;color:var(--dim);margin:12px 0 0;
+  padding-top:10px;border-top:1px solid var(--line)}
+@media(max-width:560px){.pvtlrow{flex-direction:column;gap:1px}.pvtlrow b{flex:none}}
+
+/* command palette */
+.pvpal{position:fixed;inset:0;z-index:300;background:rgba(4,7,11,.72);
+  display:flex;align-items:flex-start;justify-content:center;padding:12vh 16px 16px}
+.pvpal[hidden]{display:none}
+.pvpalbox{width:min(680px,100%);background:var(--panel-2);border:1px solid var(--amber);
+  box-shadow:0 30px 80px -20px #000;display:flex;flex-direction:column;max-height:70vh}
+#pv-palq{width:100%;background:var(--void);border:0;border-bottom:1px solid var(--line);
+  color:var(--bone);font-family:var(--mono);font-size:15px;padding:15px 17px;outline:none}
+#pv-palq::placeholder{color:#3E4C5C}
+.pvpalhits{overflow-y:auto;flex:1;min-height:0}
+.pvpalhit{display:flex;gap:11px;align-items:baseline;width:100%;text-align:left;
+  background:none;border:0;border-left:2px solid transparent;color:var(--bone);
+  padding:9px 15px;cursor:pointer;font-size:13px;font-family:var(--sans)}
+.pvpalhit:hover{background:rgba(255,255,255,.03)}
+.pvpalhit.sel{background:rgba(255,180,84,.09);border-left-color:var(--amber)}
+.pvpalkind{flex:0 0 62px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim)}
+.pvpalkind.k-cmd{color:var(--lime)} .pvpalkind.k-go{color:var(--amber)}
+.pvpalkind.k-quiz{color:var(--cyan)} .pvpalkind.k-lab{color:var(--rose)}
+.pvpallab{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pvpalsub{flex:0 0 auto;max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--dim);font-size:11.5px;font-family:var(--mono)}
+.pvpalnone{padding:22px 17px;color:var(--dim);font-family:var(--sans);font-size:13px;margin:0}
+.pvpalfoot{border-top:1px solid var(--line);padding:8px 15px;color:var(--dim);
+  font-size:11px;font-family:var(--mono);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pvpalfoot span{border:1px solid var(--line);padding:1px 6px;color:var(--bone)}
+.pvflag .tbtn{margin-left:auto}
+@media(max-width:560px){.pvpal{padding:6vh 10px 10px}.pvpalsub{display:none}}
+
+
+/* the banner that says this is not the published site */
+.pvflag{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px;
+  padding:10px 14px;border:1px solid var(--rose);background:rgba(240,113,120,.07)}
+.pvflag b{color:var(--rose);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase}
+.pvflag span{font-family:var(--sans);font-size:12.5px;color:var(--dim)}
+
+@media(max-width:560px){
+  .pvcard{padding:15px 14px}
+  .pvbar{padding:9px 11px}
+  .pvnav button{flex:1 1 auto}
+  .pvrbar{flex-basis:52px}
+}
+
+/* Last in the sheet on purpose. These override rules defined further up and CSS
+   settles ties on source order, so anywhere earlier simply loses — which is
+   exactly what happened the first two times. The preview banner and the palette
+   tags were using the error colour for things that are not errors. */
+.pvflag{border-color:var(--line);background:rgba(126,231,135,.05)}
+.pvflag b{color:var(--amber)}
+.pvpalkind.k-lab{color:var(--lime)}
+/* ---------- end preview ---------- */
 </style>
 </head>
 <body>
@@ -8107,7 +8329,1836 @@ function showReport(r){
 function toggleLabReport(){ showReport(labReport(CS.lec)); }
 function toggleQuizReport(){ showReport(quizReport()); }
 
+/* ===================== preview: shared core =====================
+   Everything under src/pv-*.js is spliced into preview.html only, so it can be
+   tried on a real copy of the site without shipping it. These files build their
+   own DOM and keep their own saved state under a separate storage key, which
+   means preview.html stays a plain copy of index.html and nothing here can
+   corrupt the progress the published site has already saved.
+
+   Three additions live here:
+     · Exam mode      — a timed mixed test, which is what week 42 is for
+     · Review         — everything you got wrong or had to be shown, again
+     · Progress       — one view of where you stand, plus backup/restore
+*/
+
+/* ---------- strings, in both languages like the rest of the site ---------- */
+Object.assign(T, {
+  pvExam:        {sv:"Tentaläge",            en:"Exam mode"},
+  pvExamBlurb:   {sv:"Ett tidsbestämt prov med blandade frågor från alla kurser. "+
+                     "Inga facit förrän du lämnat in.",
+                  en:"A timed test with mixed questions from every course. "+
+                     "No answers until you hand it in."},
+  pvReview:      {sv:"Repetition",           en:"Review"},
+  pvReviewBlurb: {sv:"Allt du svarat fel på eller behövt se svaret till, samlat på ett ställe.",
+                  en:"Everything you got wrong or had to be shown, gathered in one place."},
+  pvProgress:    {sv:"Överblick",            en:"Progress"},
+  pvProgressBlurb:{sv:"Var du står i hela programmet, och säkerhetskopiering av dina framsteg.",
+                  en:"Where you stand across the programme, and a backup of your progress."},
+
+  pvStart:       {sv:"Starta",               en:"Start"},
+  pvQuestions:   {sv:"frågor",               en:"questions"},
+  pvMinutes:     {sv:"minuter",              en:"minutes"},
+  pvHandIn:      {sv:"Lämna in",             en:"Hand in"},
+  pvAbandon:     {sv:"Avbryt provet",        en:"Abandon test"},
+  pvFlag:        {sv:"Markera",              en:"Flag"},
+  pvFlagged:     {sv:"Markerad",             en:"Flagged"},
+  pvUnanswered:  {sv:"obesvarade",           en:"unanswered"},
+  pvTimeLeft:    {sv:"Tid kvar",             en:"Time left"},
+  pvTimeUp:      {sv:"Tiden är ute — provet lämnades in automatiskt.",
+                  en:"Time is up — the test was handed in for you."},
+  pvOf:          {sv:"av",                   en:"of"},
+  pvQuestion:    {sv:"Fråga",                en:"Question"},
+  pvResult:      {sv:"Resultat",             en:"Result"},
+  pvByCourse:    {sv:"Per kurs",             en:"By course"},
+  pvYourAnswer:  {sv:"Ditt svar",            en:"Your answer"},
+  pvCorrect:     {sv:"Rätt svar",            en:"Correct answer"},
+  pvNothingLeft: {sv:"Inget att repetera just nu. Det är goda nyheter.",
+                  en:"Nothing to review right now. That is good news."},
+  pvReviewIntro: {sv:"Frågor du svarat fel på och labbuppgifter där du tog fram svaret. "+
+                     "Får du rätt utan hjälp försvinner posten härifrån.",
+                  en:"Questions you answered wrong and lab tasks where you revealed the answer. "+
+                     "Get one right unaided and it leaves this list."},
+  pvGotIt:       {sv:"Klarade den",          en:"Got it"},
+  pvStillUnsure: {sv:"Behåll den",           en:"Keep it"},
+  pvShow:        {sv:"Visa",                 en:"Show"},
+  pvItemsLeft:   {sv:"kvar att repetera",    en:"left to review"},
+  pvFromLab:     {sv:"Labb",                 en:"Lab"},
+  pvExport:      {sv:"Spara till fil",       en:"Save to file"},
+  pvImport:      {sv:"Återställ från fil",   en:"Restore from file"},
+  pvBackupNote:  {sv:"Allt sparas bara i den här webbläsaren. Rensar du webbdata är det borta. "+
+                     "Filen nedan är hela din historik och kan läsas in igen här eller på en annan dator.",
+                  en:"Everything is saved only in this browser. Clear your site data and it is gone. "+
+                     "The file below is your whole history and can be loaded back here or on another machine."},
+  pvImported:    {sv:"Framsteg återställda.", en:"Progress restored."},
+  pvImportBad:   {sv:"Den filen gick inte att läsa som en säkerhetskopia.",
+                  en:"That file could not be read as a backup."},
+  pvOverall:     {sv:"Totalt",               en:"Overall"},
+  pvWeakest:     {sv:"Svagast just nu",      en:"Weakest right now"},
+  pvNoData:      {sv:"Inget gjort än — börja var som helst och det dyker upp här.",
+                  en:"Nothing done yet — start anywhere and it shows up here."},
+  pvPastExams:   {sv:"Tidigare prov",        en:"Past tests"},
+  pvNoExams:     {sv:"Inget prov gjort än.", en:"No test taken yet."},
+  pvNetLab:      {sv:"Nätverkslabb",        en:"Network lab"},
+  pvNetTasks:    {sv:"Labb — terminalen nedan sitter på ett riktigt simulerat nät",
+                  en:"Lab — the terminal below sits on a real simulated network"},
+  pvNetMap:      {sv:"Nätverkskarta — ritad från maskinens eget tillstånd",
+                  en:"Network map — drawn from the machine's own state"},
+  pvTasksWord:   {sv:"uppgifter",             en:"tasks"},
+  pvCheckSelf:   {sv:"Kolla dig själv — svaren är dolda tills du öppnar dem",
+                  en:"Check yourself — answers are hidden until you open them"},
+  pvResetMachine:{sv:"återställ maskinen",    en:"reset machine"},
+  pvTypeCommand: {sv:"skriv ett kommando — prova ip a, nmap -sn 10.0.0.0/24",
+                  en:"type a command — try ip a, nmap -sn 10.0.0.0/24"},
+  pvNetBlurb:    {sv:"Kartlägg ett litet kontorsnät, hitta värden som inte hör hemma "+
+                     "och stäng ute den med brandväggen.",
+                  en:"Map a small office network, find the host that does not belong, "+
+                     "and shut it out with the firewall."},
+  pvPalPlaceholder:{sv:"Sök kurser, kommandon, uppgifter och frågor…",
+                  en:"Search courses, commands, tasks and questions…"},
+  pvPalNone:     {sv:"Inget matchade.",       en:"Nothing matched."},
+  pvPalMove:     {sv:"flytta",                en:"move"},
+  pvPalOpen:     {sv:"öppna",                 en:"open"},
+  pvPalClose:    {sv:"stäng",                 en:"close"},
+  pvKindEntry:   {sv:"kurs",                  en:"entry"},
+  pvKindCmd:     {sv:"kommando",              en:"command"},
+  pvKindDrill:   {sv:"övning",                en:"drill"},
+  pvKindLab:     {sv:"labb",                  en:"lab"},
+  pvKindQuiz:    {sv:"fråga",                 en:"quiz"},
+  pvPalHint:     {sv:"Sök",                  en:"Search"},
+  pvTiTitle:     {sv:"Vad som finns här", en:"What is on this site"},
+  pvTiIntro:     {sv:"Allt nedan ligger bakom Menu-knappen. Du behöver ingen Linux-dator "+
+                     "— allt körs i webbläsaren.",
+                  en:"Everything below sits behind the Menu button. You do not need a Linux "+
+                     "machine — it all runs in the browser."},
+  pvTiStudy:     {sv:"Öva",                 en:"Practise"},
+  pvTiTest:      {sv:"Testa dig själv",     en:"Test yourself"},
+  pvTiTools:     {sv:"Verktyg",             en:"Tools"},
+  pvTiLectures:  {sv:"föreläsningar",       en:"lectures"},
+  pvTiLabDesc:   {sv:"{n} labbuppgifter som rättar sig själva mot en simulerad maskin",
+                  en:"{n} lab tasks that check themselves against a simulated machine"},
+  pvTiDrillTasks:{sv:"terminaluppgifter",   en:"terminal tasks"},
+  pvTiDrillDesc: {sv:"{n} moduler, från pwd till SUID — välj Arch, Debian, Fedora eller SUSE",
+                  en:"{n} modules, from pwd to SUID — pick Arch, Debian, Fedora or SUSE"},
+  pvTiQuestions: {sv:"quizfrågor",          en:"quiz questions"},
+  pvTiQuizDesc:  {sv:"över {n} kurser, var och en med en förklaring",
+                  en:"across {n} courses, each one with an explanation"},
+  pvTiNetTasks:  {sv:"nätverksuppgifter",   en:"network tasks"},
+  pvTiNetDesc:   {sv:"ett riktigt simulerat nät: nmap, ufw, curl mot maskiner som svarar",
+                  en:"a real simulated LAN: nmap, ufw, curl against hosts that answer"},
+  pvTiExamDesc:  {sv:"tidsbestämt prov med blandade frågor, facit först när du lämnat in",
+                  en:"a timed test of mixed questions, answers only once you hand it in"},
+  pvTiReviewDesc:{sv:"allt du svarat fel på kommer tillbaka tills du klarar det",
+                  en:"everything you got wrong comes back until you get it right"},
+  pvTiReports:   {sv:"Rapporter",           en:"Reports"},
+  pvTiReportsDesc:{sv:"efter varje labb och quiz: vad du klarade själv och vad du bör repetera",
+                  en:"after each lab and quiz: what you did unaided and what to revisit"},
+  pvTiProgressDesc:{sv:"var du står i hela programmet, och säkerhetskopiering till fil",
+                  en:"where you stand across the programme, and a backup to file"},
+  pvTiMachine:   {sv:"Simulerad maskin",    en:"Simulated machine"},
+  pvTiMachineDesc:{sv:"riktiga rättigheter, pipes, paket och en liten Python — inget kan gå sönder",
+                  en:"real permissions, pipes, packages and a small Python — nothing can break"},
+  pvTiSheet:     {sv:"Fusklapp",            en:"Cheatsheet"},
+  pvTiSheetDesc: {sv:"varje kommando i kursen, sökbart, öppet bredvid dig medan du jobbar",
+                  en:"every command in the course, filterable, open beside you as you work"},
+  pvTiSearchDesc:{sv:"sök bland kurser, kommandon, uppgifter och frågor och hoppa dit",
+                  en:"search courses, commands, tasks and questions, and jump straight there"},
+  pvTiLangDesc:  {sv:"byt språk när som helst",  en:"switch language at any time"},
+  pvTiFoot:      {sv:"Framstegen sparas i den här webbläsaren. Resten av rundturen visar "+
+                     "hur en uppgift fungerar.",
+                  en:"Progress is saved in this browser. The rest of the tour shows how a "+
+                     "task works."},
+});
+
+/* ---------- preview-only saved state, kept away from the real one ---------- */
+const PV = {
+  exam: null,        // the test in progress, if any
+  examLog: [],       // {when, score, total, perCourse}
+  extraWrong: {},    // quiz keys missed in an exam, so review picks them up
+  recalled: {},      // lab reveals the student has since recalled unaided
+};
+
+async function pvSave(){
+  try{ await store.set("shelldrill:pv1", JSON.stringify(
+    {examLog: PV.examLog, extraWrong: PV.extraWrong, recalled: PV.recalled})); }
+  catch(e){ /* same best-effort contract as the main save */ }
+}
+async function pvLoad(){
+  try{ const r = await store.get("shelldrill:pv1");
+    if(r && r.value){ const d = JSON.parse(r.value);
+      PV.examLog   = Array.isArray(d.examLog) ? d.examLog : [];
+      PV.extraWrong = d.extraWrong || {};
+      PV.recalled  = d.recalled || {};
+    }
+  }catch(e){}
+}
+
+/* ---------- every quiz on the site, flattened and addressable ----------
+   Keys match the ones the site already writes into S.qDone / S.qWrong, so a
+   question missed in the normal quiz and one missed in an exam are the same
+   thing to the review queue. */
+function pvAllQuizzes(){
+  const out = [];
+  const push = (setId, quiz, courseTitle) => {
+    quiz.forEach((tier, i) => tier.items.forEach((item, j) => {
+      out.push({key: setId + i + ":" + j, item, tier, course: courseTitle, setId});
+    }));
+  };
+  push("", QUIZ, {sv:"Linux", en:"Linux"});
+  if(typeof COURSE_QUIZZES !== "undefined"){
+    for(const id in COURSE_QUIZZES){
+      const c = (typeof courseById === "function") && courseById(id);
+      push(id + ":", COURSE_QUIZZES[id], c ? c.title : {sv:id, en:id});
+    }
+  }
+  return out;
+}
+
+/* correct answers are stored per option, so an answer is right only when the
+   picked set is exactly the correct set — same rule the normal quiz uses */
+function pvIsRight(item, picked){
+  const want = item.o.map((o,i)=>o.c?i:-1).filter(i=>i>=0);
+  return want.length === picked.size && want.every(i => picked.has(i));
+}
+
+/* ---------- view plumbing ----------
+   The published page knows three modes. These add two more without touching
+   setMode itself: the wrapper handles its own and delegates everything else. */
+const PV_MODES = ["exam", "review", "progress", "netlab"];
+const PV_LABEL = {exam:"pvExam", review:"pvReview", progress:"pvProgress", netlab:"pvNetLab"};
+let pvWrapped = false;
+
+function pvView(id){
+  let el = document.getElementById(id);
+  if(!el){
+    el = document.createElement("section");
+    el.id = id; el.style.display = "none";
+    document.querySelector("main").appendChild(el);
+  }
+  return el;
+}
+
+/* The sidebar belongs to whichever mode is showing: the drill's module list and
+   its solved/accuracy/streak counters mean nothing in an exam or on the network
+   lab, so each preview mode fills it or empties it. */
+function pvSidebar(mode){
+  const list = $("modlist"), stats = document.querySelector(".stats");
+  if(!list) return;
+  list.innerHTML = "";
+  if(stats) stats.style.display = (mode === "netlab" || mode === "exam") ? "none" : "";
+
+  if(mode === "netlab"){
+    NETLAB.tasks.forEach((task, i) => {
+      const b = document.createElement("button");
+      b.className = "mod" + (NL.done[i] ? " isnow" : "");
+      b.innerHTML = '<span class="n">' + String(i+1).padStart(2,"0") + "</span>"+
+        '<span class="mlong">' + esc(plain(L(task.q)).slice(0, 42)) + "</span>"+
+        '<span class="done">' + (NL.done[i] ? "done" : "") + "</span>";
+      b.onclick = () => { const el = document.querySelectorAll("#pv-netlabview .ltask")[i];
+        if(el) el.scrollIntoView({block:"center"}); };
+      list.appendChild(b);
+    });
+    return;
+  }
+  if(mode === "exam" && PV.exam && !PV.exam.done){
+    PV.exam.qs.forEach((q, i) => {
+      const b = document.createElement("button");
+      b.className = "mod";
+      b.setAttribute("aria-current", String(i === PV.exam.i));
+      b.innerHTML = '<span class="n">' + String(i+1).padStart(2,"0") + "</span>"+
+        '<span class="mlong">' + esc(L(q.course)) + "</span>"+
+        '<span class="done">' + (q.picked.length ? "·" : "") + "</span>";
+      b.onclick = () => { PV.exam.i = i; pvRenderExam(); pvSidebar("exam"); };
+      list.appendChild(b);
+    });
+  }
+}
+
+function pvHideAll(){
+  PV_MODES.forEach(m => { const v = document.getElementById("pv-" + m + "view");
+    if(v) v.style.display = "none"; });
+}
+
+function pvInit(){
+  if(pvWrapped) return;
+  pvWrapped = true;
+
+  PV_MODES.forEach(m => pvView("pv-" + m + "view"));
+
+  /* Ctrl+K is worth nothing if nobody knows it is there, so the header carries
+     a button that opens the same thing. It sits next to the cheatsheet because
+     that is where you look when you are trying to find something. */
+  if(!document.getElementById("pv-palbtn")){
+    const b = document.createElement("button");
+    b.className = "refbtn"; b.id = "pv-palbtn";
+    b.textContent = t("pvPalHint");
+    b.onclick = pvPaletteOpen;
+    const ref = $("openref");
+    if(ref && ref.parentNode) ref.parentNode.insertBefore(b, ref);
+  }
+
+  /* a tab button per mode, sitting with the existing ones */
+  const modes = document.querySelector(".modes");
+  PV_MODES.forEach(m => {
+    if(document.getElementById("m-" + m)) return;
+    const b = document.createElement("button");
+    b.className = "pill"; b.id = "m-" + m; b.setAttribute("aria-pressed", "false");
+    b.style.display = "none";
+    b.onclick = () => setMode(m);
+    modes.appendChild(b);
+  });
+
+  const inner = window.setMode;
+  window.setMode = function(m){
+    if(PV_MODES.includes(m)){
+      S.mode = m;
+      ["guide","brief","after"].forEach(id => { const e = $(id); if(e) e.style.display = "none"; });
+      const term = document.querySelector(".term"); if(term) term.style.display = "none";
+      $("quizview").style.display = "none";
+      $("courseview").style.display = "none";
+      pvHideAll();
+      pvView("pv-" + m + "view").style.display = "";
+      ["drill","quiz","course"].concat(PV_MODES).forEach(x => {
+        const b = $("m-" + x); if(b) b.setAttribute("aria-pressed", String(x === m)); });
+      $("sectlabel").textContent = t(PV_LABEL[m]);
+      pvSidebar(m);
+      ({exam: pvRenderExam, review: pvRenderReview,
+        progress: pvRenderProgress, netlab: pvRenderNetlab})[m]();
+      if(typeof transitionView === "function") transitionView();
+      save();
+      return;
+    }
+    pvHideAll();
+    const st = document.querySelector(".stats");
+    if(st) st.style.display = "";
+    inner(m);
+  };
+
+  /* the new entries only make sense once they are in the menu */
+  const tools = PROGRAMME.tools;
+  const add = (id, mode, title, blurb) => {
+    if(tools.some(x => x.id === id)) return;
+    tools.push({id, title, blurb, ready:true, modes:[mode], entry:mode, preview:true});
+  };
+  add("pv-exam",     "exam",     t("pvExam"),     T.pvExamBlurb);
+  add("pv-review",   "review",   t("pvReview"),   T.pvReviewBlurb);
+  add("pv-progress", "progress", t("pvProgress"), T.pvProgressBlurb);
+  add("pv-netlab",   "netlab",   t("pvNetLab"),   T.pvNetBlurb);
+
+  /* enterCourse only knows the three published tabs; show ours and hide the
+     others when one of these entries is the destination */
+  const enter = window.enterCourse;
+  window.enterCourse = function(id){
+    const c = courseById(id);
+    enter(id);
+    if(c && c.modes && PV_MODES.includes(c.modes[0])){
+      ["drill","quiz","course"].forEach(x => { const b = $("m-"+x); if(b) b.style.display = "none"; });
+      PV_MODES.forEach(x => { const b = $("m-"+x);
+        if(b){ b.style.display = c.modes[0] === x ? "" : "none";
+               b.textContent = t(PV_LABEL[x]); } });
+      $("distro").style.display = "none";
+      $("openref").style.display = "none";
+      setMode(c.modes[0]);
+    } else {
+      PV_MODES.forEach(x => { const b = $("m-"+x); if(b) b.style.display = "none"; });
+    }
+  };
+
+  /* keep the tab labels honest when the language changes */
+  const sl = window.setLang;
+  if(typeof sl === "function"){
+    window.setLang = function(l){
+      sl(l);
+      PV_MODES.forEach(x => { const b = $("m-"+x);
+        if(b) b.textContent = t(PV_LABEL[x]); });
+      pvIndex = null;   // labels are cached in the index; rebuild in the new language
+      const c = activeCourse();
+      if(c && c.modes && PV_MODES.includes(c.modes[0])) setMode(c.modes[0]);
+    };
+  }
+}
+
+/* the boot sequence runs before this file can wrap anything, so pick up what
+   it decided once it has finished. Guarded: the node suites load this file. */
+if(typeof document !== "undefined") pvLoad().then(() => {
+  const go = () => {
+    pvInit();
+    if(PV_MODES.includes(S.mode)){
+      const c = activeCourse();
+      if(c && c.modes && PV_MODES.includes(c.modes[0])) enterCourse(c.id); else setMode("drill");
+    }
+  };
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => setTimeout(go, 0));
+  else setTimeout(go, 0);
+});
+
+/* ===================== preview: exam mode =====================
+   Week 42 of the schedule is "Repetition och tentaförberedelse", and nothing on
+   the site practises the thing an exam actually tests: recall across the whole
+   programme, under time, with no feedback until the end. The normal quiz tells
+   you immediately whether you were right, which is good for learning and
+   useless as rehearsal.
+
+   Questions are drawn across every quiz set, so a test mixes Linux with the
+   course material rather than staying in one topic. */
+
+const PV_EXAM_SIZES = [10, 20, 30];
+const PV_EXAM_MINUTES = {10: 10, 20: 20, 30: 30};
+
+/* Deterministic shuffle from a seed, so a test is described by its seed alone
+   and Math.random stays out of saved state.
+
+   The index is taken from the HIGH bits of the generator, not with s % (i+1).
+   A linear congruential generator modulo 2^32 has famously poor low bits — the
+   lowest bit alternates, the low k bits repeat every 2^k — so the modulo form
+   biased the draw badly: measured over 4000 runs it returned a mean of 8.8
+   Linux questions per 20 where 6.42 was expected, and as many as 15. */
+function pvShuffle(list, seed){
+  const a = list.slice();
+  let s = seed >>> 0;
+  for(let i = a.length - 1; i > 0; i--){
+    s = (s * 1664525 + 1013904223) >>> 0;
+    const j = Math.floor((s / 4294967296) * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* An unbiased draw still leaves the Linux set at 32% of the pool, because it
+   holds 34 questions against 8 for each course — so a "mixed" test came out a
+   third Linux. Draw round-robin across the courses instead: every course is
+   represented before any course is drawn from twice, which is what makes it a
+   test of the programme rather than a test of Linux. */
+function pvDraw(pool, n, seed){
+  const groups = new Map();
+  pool.forEach(q => {
+    const k = q.setId || "";
+    if(!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(q);
+  });
+  const decks = pvShuffle([...groups.keys()], seed ^ 0x5bf03635)
+    .map((k, i) => pvShuffle(groups.get(k), seed + i * 7919));
+  const out = [];
+  for(let round = 0; out.length < n; round++){
+    let took = 0;
+    for(const deck of decks){
+      if(out.length >= n) break;
+      if(deck.length > round){ out.push(deck[round]); took++; }
+    }
+    if(!took) break;   // every deck exhausted
+  }
+  return pvShuffle(out, seed ^ 0x2545f491).slice(0, n);
+}
+function pvStartExam(n){
+  const pool = pvAllQuizzes();
+  const seed = Date.now() & 0x7fffffff;
+  const picked = pvDraw(pool, Math.min(n, pool.length), seed);
+  PV.exam = {
+    n: picked.length,
+    minutes: PV_EXAM_MINUTES[n] || n,
+    endsAt: Date.now() + (PV_EXAM_MINUTES[n] || n) * 60000,
+    i: 0,
+    qs: picked.map(q => ({key:q.key, item:q.item, course:q.course, picked:[], flagged:false})),
+    done: false,
+  };
+  pvRenderExam();
+  pvTick();
+}
+
+let pvTimer = null;
+function pvTick(){
+  clearInterval(pvTimer);
+  pvTimer = setInterval(() => {
+    const e = PV.exam;
+    if(!e || e.done){ clearInterval(pvTimer); return; }
+    const left = e.endsAt - Date.now();
+    const el = document.getElementById("pv-clock");
+    if(el) el.textContent = pvClock(left);
+    if(left <= 0){ clearInterval(pvTimer); pvFinishExam(true); }
+  }, 500);
+}
+
+function pvClock(ms){
+  if(ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  return String(Math.floor(s / 60)).padStart(2,"0") + ":" + String(s % 60).padStart(2,"0");
+}
+
+function pvFinishExam(timedOut){
+  const e = PV.exam;
+  if(!e || e.done) return;
+  e.done = true;
+  e.timedOut = !!timedOut;
+  clearInterval(pvTimer);
+
+  const perCourse = {};
+  let score = 0;
+  e.qs.forEach(q => {
+    const right = pvIsRight(q.item, new Set(q.picked));
+    q.right = right;
+    if(right) score++;
+    else PV.extraWrong[q.key] = (PV.extraWrong[q.key] || 0) + 1;
+    const name = L(q.course);
+    perCourse[name] = perCourse[name] || {done:0, total:0};
+    perCourse[name].total++;
+    if(right) perCourse[name].done++;
+  });
+  e.score = score;
+  PV.examLog.unshift({when: new Date().toISOString().slice(0,16).replace("T"," "),
+                      score, total: e.n, perCourse});
+  PV.examLog = PV.examLog.slice(0, 10);
+  pvSave();
+  pvRenderExam();
+}
+
+function pvRenderExam(){
+  const v = pvView("pv-examview");
+  const e = PV.exam;
+
+  if(!e){
+    v.innerHTML = '<div class="pvcard"><h2>' + t("pvExam") + "</h2>"+
+      '<p class="pvlead">' + t("pvExamBlurb") + "</p>"+
+      '<div class="pvsizes">' + PV_EXAM_SIZES.map(n =>
+        '<button class="pvsize" data-n="' + n + '"><b>' + n + "</b><span>" + t("pvQuestions") +
+        "</span><em>" + (PV_EXAM_MINUTES[n]) + " " + t("pvMinutes") + "</em></button>").join("") + "</div>"+
+      pvExamLogHtml() + "</div>";
+    v.querySelectorAll(".pvsize").forEach(b =>
+      b.onclick = () => pvStartExam(+b.dataset.n));
+    return;
+  }
+
+  if(e.done){ v.innerHTML = pvExamResultHtml(e); pvWireResult(v, e); return; }
+
+  const q = e.qs[e.i];
+  const answered = e.qs.filter(x => x.picked.length).length;
+  v.innerHTML =
+    '<div class="pvbar">'+
+      '<span class="pvclock" id="pv-clock">' + pvClock(e.endsAt - Date.now()) + "</span>"+
+      '<span class="pvprog">' + t("pvQuestion") + " " + (e.i+1) + " " + t("pvOf") + " " + e.n +
+        " · " + (e.n - answered) + " " + t("pvUnanswered") + "</span>"+
+      '<button class="tbtn" id="pv-handin">' + t("pvHandIn") + "</button>"+
+    "</div>"+
+    '<div class="pvgrid">' + e.qs.map((x,i) =>
+      '<button class="pvdot' + (i===e.i?" now":"") + (x.picked.length?" ans":"") +
+      (x.flagged?" flag":"") + '" data-i="' + i + '">' + (i+1) + "</button>").join("") + "</div>"+
+    '<div class="pvcard">'+
+      '<div class="pvmeta">' + esc(L(q.course)) + "</div>"+
+      "<h2>" + esc(L(q.item.q)) + "</h2>"+
+      '<div class="pvopts">' + q.item.o.map((o,i) =>
+        '<button class="qopt' + (q.picked.includes(i)?" picked":"") + '" data-o="' + i + '">'+
+        '<span class="qbox"></span>' + esc(L(o.t)) + "</button>").join("") + "</div>"+
+      '<div class="pvnav">'+
+        '<button class="ghost" id="pv-prev"' + (e.i===0?" disabled":"") + ">← " + t("previous") + "</button>"+
+        '<button class="ghost" id="pv-flag">' + (q.flagged ? t("pvFlagged") : t("pvFlag")) + "</button>"+
+        '<button class="nextbtn" id="pv-next">' + (e.i===e.n-1 ? t("pvHandIn") : t("skip") + " →") + "</button>"+
+      "</div>"+
+    "</div>";
+
+  v.querySelectorAll(".pvopts .qopt").forEach(b => b.onclick = () => {
+    const i = +b.dataset.o, at = q.picked.indexOf(i);
+    if(at >= 0) q.picked.splice(at,1); else q.picked.push(i);
+    pvRenderExam();
+  });
+  v.querySelectorAll(".pvdot").forEach(b => b.onclick = () => { e.i = +b.dataset.i; pvRenderExam(); });
+  if(typeof pvSidebar === "function") pvSidebar("exam");
+  $("pv-prev").onclick = () => { if(e.i>0){ e.i--; pvRenderExam(); } };
+  $("pv-flag").onclick = () => { q.flagged = !q.flagged; pvRenderExam(); };
+  $("pv-next").onclick = () => { if(e.i < e.n-1){ e.i++; pvRenderExam(); } else pvConfirmHandIn(); };
+  $("pv-handin").onclick = pvConfirmHandIn;
+}
+
+function pvConfirmHandIn(){
+  const e = PV.exam;
+  const left = e.qs.filter(x => !x.picked.length).length;
+  confirmDialog({
+    title: t("pvHandIn") + "?",
+    body: left ? "<p>" + left + " " + t("pvUnanswered") + ".</p>" : "<p>" + t("pvHandIn") + "?</p>",
+    confirmLabel: t("pvHandIn"),
+    onConfirm: () => pvFinishExam(false),
+  });
+}
+
+function pvExamResultHtml(e){
+  const pct = Math.round(e.score / e.n * 100);
+  const missed = e.qs.filter(q => !q.right);
+  const perCourse = {};
+  e.qs.forEach(q => { const n = L(q.course);
+    perCourse[n] = perCourse[n] || {done:0,total:0};
+    perCourse[n].total++; if(q.right) perCourse[n].done++; });
+
+  return '<div class="report' + (pct===100?" full":"") + '">'+
+    '<div class="rhead"><h2>' + t("pvResult") + "</h2>"+
+      '<div class="rscore"><b>' + e.score + "</b> / " + e.n + "<span>" + pct + "%</span></div>"+
+      (e.timedOut ? '<div class="rsub">' + t("pvTimeUp") + "</div>" : "") + "</div>"+
+    '<div class="rsec"><h3>' + t("pvByCourse") + "</h3><div class=\"rtiers\">"+
+      Object.entries(perCourse).map(([name,p]) =>
+        '<div class="rtier"><span>' + esc(name) + "</span>"+
+        '<b class="' + (p.done < p.total ? "warn" : "") + '">' + p.done + "/" + p.total + "</b></div>").join("")+
+    "</div></div>"+
+    (missed.length ? '<div class="rsec"><h3>' + t("repMissed") + "<span>" + missed.length + "</span></h3>"+
+      '<ul class="rlist">' + missed.map(q =>
+        "<li>" + esc(L(q.item.q)) +
+        '<span class="rtake">' + esc(L(q.item.e)) + "</span>"+
+        '<span class="rtake pvans">' + t("pvCorrect") + ": " +
+          q.item.o.filter(o=>o.c).map(o=>esc(L(o.t))).join(" · ") + "</span></li>").join("") + "</ul></div>" : "")+
+    '<div class="pvnav"><button class="nextbtn" id="pv-again">' + t("pvExam") + " →</button>"+
+      '<button class="tbtn" id="pv-toreview">' + t("pvReview") + "</button></div>"+
+  "</div>";
+}
+
+function pvWireResult(v, e){
+  $("pv-again").onclick = () => { PV.exam = null; pvRenderExam(); };
+  $("pv-toreview").onclick = () => { PV.exam = null; enterCourse("pv-review"); };
+}
+
+function pvExamLogHtml(){
+  if(!PV.examLog.length) return '<p class="pvmuted">' + t("pvNoExams") + "</p>";
+  return '<div class="pvlog"><h3>' + t("pvPastExams") + "</h3>"+
+    PV.examLog.map(r => '<div class="pvlogrow"><span>' + esc(r.when) + "</span>"+
+      "<b>" + r.score + "/" + r.total + "</b>"+
+      "<em>" + Math.round(r.score/r.total*100) + "%</em></div>").join("") + "</div>";
+}
+
+/* ===================== preview: review queue =====================
+   The reports already tell a student what went wrong. What they could not do is
+   hand the material back. This does: every quiz question answered wrong, and
+   every lab task where the answer was revealed, comes back one at a time.
+
+   An item leaves the queue only by being answered correctly with no help, which
+   is the whole point — clearing the list means something. */
+
+function pvReviewItems(){
+  const out = [];
+
+  /* quiz questions missed here or in an exam */
+  pvAllQuizzes().forEach(q => {
+    const wrong = (S.qWrong[q.key] || 0) + (PV.extraWrong[q.key] || 0);
+    if(wrong > 0) out.push({kind:"quiz", key:q.key, item:q.item, course:q.course, wrong});
+  });
+
+  /* lab tasks whose answer was revealed and not since recalled */
+  if(typeof COURSE !== "undefined"){
+    COURSE.forEach((lec, li) => lec.tasks.forEach((task, ti) => {
+      const k = ckey(li, ti);
+      if(S.reveals[k] && !PV.recalled[k])
+        out.push({kind:"lab", key:k, task, lec, li, ti});
+    }));
+  }
+  return out;
+}
+
+const PVR = {i: 0, picked: new Set(), checked: false, shown: false};
+
+function pvRenderReview(){
+  const v = pvView("pv-reviewview");
+  const items = pvReviewItems();
+
+  if(!items.length){
+    v.innerHTML = '<div class="pvcard pvempty"><h2>' + t("pvReview") + "</h2>"+
+      '<p class="pvlead">' + t("pvNothingLeft") + "</p></div>";
+    return;
+  }
+  if(PVR.i >= items.length) PVR.i = 0;
+  const it = items[PVR.i];
+
+  /* built like the exam bar on purpose: same big count, same right-aligned
+     position, so the two modes do not look like different products */
+  const head = '<div class="pvbar">'+
+      '<span class="pvclock">' + items.length + "</span>"+
+      '<span class="pvprog">' + t("pvItemsLeft") + "</span>"+
+      '<span class="pvprog pvright">' + (PVR.i+1) + " " + t("pvOf") + " " + items.length + "</span>"+
+    "</div>"+
+    '<p class="pvlead pvintro">' + t("pvReviewIntro") + "</p>";
+
+  v.innerHTML = head + (it.kind === "quiz" ? pvReviewQuiz(it) : pvReviewLab(it));
+  if(it.kind === "quiz") pvWireReviewQuiz(v, it, items); else pvWireReviewLab(v, it, items);
+}
+
+function pvReviewQuiz(it){
+  const checked = PVR.checked;
+  const right = checked && pvIsRight(it.item, PVR.picked);
+  return '<div class="pvcard">'+
+    '<div class="pvmeta">' + esc(L(it.course)) + " · " +
+      t("repSlips").split("{n}").join(it.wrong) + "</div>"+
+    "<h2>" + esc(L(it.item.q)) + "</h2>"+
+    '<div class="pvopts">' + it.item.o.map((o,i) => {
+      const picked = PVR.picked.has(i);
+      let cls = "qopt" + (picked ? " picked" : "");
+      if(checked){ if(o.c) cls += " good"; else if(picked) cls += " bad"; }
+      return '<button class="' + cls + '" data-o="' + i + '"' + (checked?" disabled":"") + ">"+
+        '<span class="qbox"></span>' + esc(L(o.t)) + "</button>";
+    }).join("") + "</div>"+
+    (checked ? '<p class="pvexpl">' + esc(L(it.item.e)) + "</p>" : "")+
+    '<div class="pvnav">'+
+      (checked
+        ? '<button class="nextbtn" id="pv-r-next">' + (right ? t("pvGotIt") : t("pvStillUnsure")) + " →</button>"
+        : '<button class="nextbtn" id="pv-r-check">' + t("checkAnswer") + "</button>")+
+      '<button class="ghost" id="pv-r-skip">' + t("skip") + " →</button>"+
+    "</div></div>";
+}
+
+function pvWireReviewQuiz(v, it, items){
+  v.querySelectorAll(".pvopts .qopt").forEach(b => b.onclick = () => {
+    const i = +b.dataset.o;
+    if(PVR.picked.has(i)) PVR.picked.delete(i); else PVR.picked.add(i);
+    pvRenderReview();
+  });
+  const check = $("pv-r-check");
+  if(check) check.onclick = () => {
+    if(!PVR.picked.size) return;
+    PVR.checked = true;
+    pvRenderReview();
+  };
+  const next = $("pv-r-next");
+  if(next) next.onclick = () => {
+    if(pvIsRight(it.item, PVR.picked)){
+      /* cleared: forget both the normal miss and any exam miss */
+      delete S.qWrong[it.key];
+      delete PV.extraWrong[it.key];
+      S.qDone[it.key] = true;
+      save(); pvSave();
+    } else {
+      PVR.i++;
+    }
+    PVR.picked = new Set(); PVR.checked = false;
+    pvRenderReview();
+  };
+  $("pv-r-skip").onclick = () => {
+    PVR.i++; PVR.picked = new Set(); PVR.checked = false;
+    pvRenderReview();
+  };
+}
+
+function pvReviewLab(it){
+  return '<div class="pvcard">'+
+    '<div class="pvmeta">' + t("pvFromLab") + " · " + esc("v" + it.lec.wk) + " " + esc(L(it.lec.title)) + "</div>"+
+    "<h2>" + plain(it.task.q) + "</h2>"+
+    (PVR.shown
+      ? '<div class="pvreveal">' + (typeof answerHtml === "function"
+          ? answerHtml(it.li, it.ti)
+          : "<code>" + esc((LAB_ANSWERS[it.li]||[])[it.ti] || "") + "</code>") + "</div>"
+      : '<p class="pvmuted">' + plain(it.task.hint) + "</p>")+
+    '<div class="pvnav">'+
+      (PVR.shown
+        ? '<button class="nextbtn" id="pv-r-got">' + t("pvGotIt") + "</button>"+
+          '<button class="ghost" id="pv-r-keep">' + t("pvStillUnsure") + "</button>"
+        : '<button class="nextbtn" id="pv-r-show">' + t("pvShow") + "</button>"+
+          '<button class="ghost" id="pv-r-skip">' + t("skip") + " →</button>")+
+    "</div></div>";
+}
+
+function pvWireReviewLab(v, it, items){
+  const show = $("pv-r-show");
+  if(show) show.onclick = () => { PVR.shown = true; pvRenderReview(); };
+  const skip = $("pv-r-skip");
+  if(skip) skip.onclick = () => { PVR.i++; PVR.shown = false; pvRenderReview(); };
+  const got = $("pv-r-got");
+  if(got) got.onclick = () => {
+    PV.recalled[it.key] = 1; pvSave();
+    PVR.shown = false; pvRenderReview();
+  };
+  const keep = $("pv-r-keep");
+  if(keep) keep.onclick = () => { PVR.i++; PVR.shown = false; pvRenderReview(); };
+}
+
+/* ===================== preview: progress overview =====================
+   Progress is spread across three stores and ten courses, so the only way to
+   see where you stand is to walk into each entry and look. This is that walk,
+   done once.
+
+   It also does the thing the reset dialog made obvious: everything lives in one
+   browser's local storage, so a cleared cache loses a term of work. The backup
+   is a plain JSON file that restores here or on another machine. */
+
+function pvProgressRows(){
+  const rows = [];
+  PROGRAMME.courses.concat(PROGRAMME.tools).forEach(c => {
+    if(!c.ready || c.preview) return;
+    const p = courseProgress(c);
+    if(p) rows.push({title: L(c.title), done: p.done, total: p.total, unit: p.unit, id: c.id});
+  });
+  return rows;
+}
+
+function pvRenderProgress(){
+  const v = pvView("pv-progressview");
+  const rows = pvProgressRows();
+  const done = rows.reduce((n,r) => n + r.done, 0);
+  const total = rows.reduce((n,r) => n + r.total, 0);
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const reviewCount = pvReviewItems().length;
+
+  /* weakest = furthest from finished, ignoring anything untouched, so it points
+     at work in progress rather than at whatever has not been opened yet */
+  const started = rows.filter(r => r.done > 0 && r.done < r.total);
+  started.sort((a,b) => (a.done/a.total) - (b.done/b.total));
+
+  v.innerHTML = '<div class="pvcard">'+
+    "<h2>" + t("pvProgress") + "</h2>"+
+    (total === 0 ? '<p class="pvlead">' + t("pvNoData") + "</p>" :
+      '<div class="rscore pvbig"><b>' + done + "</b> / " + total + "<span>" + pct + "%</span></div>"+
+      '<div class="pvmeter"><i style="width:' + pct + '%"></i></div>')+
+    "</div>"+
+
+    '<div class="pvcard"><h3>' + t("pvOverall") + "</h3>"+
+      '<div class="pvrows">' + rows.map(r => {
+        const p = r.total ? Math.round(r.done/r.total*100) : 0;
+        return '<button class="pvrow" data-go="' + r.id + '">'+
+          '<span class="pvrname">' + esc(r.title) + "</span>"+
+          '<span class="pvrbar"><i style="width:' + p + '%"></i></span>'+
+          '<span class="pvrnum">' + r.done + "/" + r.total + "</span></button>";
+      }).join("") + "</div>"+
+      (started.length ? '<p class="pvmuted pvweak">' + t("pvWeakest") + ": "+
+        esc(started[0].title) + " — " + started[0].done + "/" + started[0].total + "</p>" : "")+
+      (reviewCount ? '<p class="pvmuted"><button class="lhint" id="pv-goreview">'+
+        reviewCount + " " + t("pvItemsLeft") + " →</button></p>" : "")+
+    "</div>"+
+
+    '<div class="pvcard"><h3>' + t("pvExport") + "</h3>"+
+      '<p class="pvlead">' + t("pvBackupNote") + "</p>"+
+      '<div class="pvnav">'+
+        '<button class="nextbtn" id="pv-export">' + t("pvExport") + "</button>"+
+        '<button class="tbtn" id="pv-import">' + t("pvImport") + "</button>"+
+        '<input type="file" id="pv-file" accept="application/json,.json" hidden>'+
+      "</div>"+
+      '<p class="pvmuted" id="pv-iomsg"></p>'+
+    "</div>";
+
+  v.querySelectorAll(".pvrow").forEach(b => b.onclick = () => enterCourse(b.dataset.go));
+  const gr = $("pv-goreview"); if(gr) gr.onclick = () => enterCourse("pv-review");
+  $("pv-export").onclick = pvExport;
+  $("pv-import").onclick = () => $("pv-file").click();
+  $("pv-file").onchange = pvImport;
+}
+
+/* ---------- backup ---------- */
+function pvBackupBlob(){
+  return JSON.stringify({
+    format: "seclab-progress",
+    version: 1,
+    saved: new Date().toISOString(),
+    main: {
+      mode:S.mode, pm:S.pm, m:S.m, t:S.t, solved:S.solved, tries:S.tries, hits:S.hits, best:S.best,
+      qDone:S.qDone, qTries:S.qTries, qHits:S.qHits,
+      c:S.c, lab:S.lab, course:S.course, lang:S.lang,
+      hints:S.hints, reveals:S.reveals, qWrong:S.qWrong, seen:true,
+      mach:(typeof serializeMachines === "function" ? serializeMachines() : undefined),
+    },
+    preview: {examLog: PV.examLog, extraWrong: PV.extraWrong, recalled: PV.recalled},
+  }, null, 1);
+}
+
+function pvExport(){
+  const blob = new Blob([pvBackupBlob()], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "seclab-progress-" + new Date().toISOString().slice(0,10) + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function pvImport(ev){
+  const f = ev.target.files && ev.target.files[0];
+  if(!f) return;
+  const msg = $("pv-iomsg");
+  const rd = new FileReader();
+  rd.onload = () => {
+    try{
+      const d = JSON.parse(rd.result);
+      if(!d || d.format !== "seclab-progress") throw new Error("not a backup");
+      const m = d.main || {};
+      Object.assign(S, {
+        mode:m.mode||"drill", pm:m.pm||"pacman", m:m.m|0, t:m.t|0,
+        solved:m.solved||{}, tries:m.tries|0, hits:m.hits|0, best:m.best|0,
+        qDone:m.qDone||{}, qTries:m.qTries|0, qHits:m.qHits|0,
+        c:(m.c==null?-1:m.c|0), lab:m.lab||{}, course:m.course||null, lang:m.lang||"en",
+        hints:m.hints||{}, reveals:m.reveals||{}, qWrong:m.qWrong||{},
+      });
+      if(m.mach && typeof restoreMachines === "function") restoreMachines(m.mach);
+      const p = d.preview || {};
+      PV.examLog = Array.isArray(p.examLog) ? p.examLog : [];
+      PV.extraWrong = p.extraWrong || {};
+      PV.recalled = p.recalled || {};
+      save(); pvSave();
+      setLang(S.lang);
+      msg.textContent = t("pvImported");
+      msg.style.color = "var(--lime)";
+      pvRenderProgress();
+    }catch(e){
+      msg.textContent = t("pvImportBad");
+      msg.style.color = "var(--rose)";
+    }
+  };
+  rd.readAsText(f);
+  ev.target.value = "";
+}
+
+/* ===================== preview: a network for the machine =====================
+   Lecture F4 of the course is "Networking, Firewalls, Subnetting" and the second
+   course in the programme is Nätverkssäkerhet, but the simulated machine has
+   never had a network to look at. Commands like ping and ss had nothing to
+   report, so those lectures were the only ones you could not actually practise.
+
+   This gives the machine a small LAN that behaves consistently: hosts answer
+   ping only if they are up and the firewall lets the packet out, nmap finds
+   exactly the ports those hosts declare, curl gets the page the host serves,
+   and a ufw rule you add really does stop the next ping. Every command reads
+   the same state, so the network cannot contradict itself.
+
+   Attached the same way python is: attachNet(K) hangs commands off K.C. */
+
+function makeNet(){
+  /* One /24, a gateway, and a handful of machines a student would expect to
+     meet on a small office network — plus one that should not be there. */
+  const hosts = [
+    {ip:"10.0.0.1",  name:"gw",           mac:"3c:7a:8a:11:00:01", up:true, kind:"router",
+     ports:[{n:22,svc:"ssh",ver:"OpenSSH 9.6"},{n:80,svc:"http",ver:"lighttpd 1.4"}]},
+    {ip:"10.0.0.10", name:"workstation-07",mac:"52:54:00:9d:2b:1a", up:true, self:true, kind:"workstation",
+     ports:[{n:22,svc:"ssh",ver:"OpenSSH 9.6"}]},
+    {ip:"10.0.0.20", name:"srv-web",      mac:"3c:7a:8a:11:00:20", up:true, kind:"server",
+     ports:[{n:22,svc:"ssh",ver:"OpenSSH 9.6"},
+            {n:80,svc:"http",ver:"nginx 1.24.0"},
+            {n:443,svc:"https",ver:"nginx 1.24.0"}],
+     http:{title:"srv-web — internal", server:"nginx/1.24.0",
+           body:"<h1>Internal web</h1>\n<p>Staging for the intranet.</p>\n"}},
+    {ip:"10.0.0.21", name:"srv-db",       mac:"3c:7a:8a:11:00:21", up:true, kind:"server",
+     ports:[{n:22,svc:"ssh",ver:"OpenSSH 9.6"},
+            {n:5432,svc:"postgresql",ver:"PostgreSQL 16.2"}]},
+    {ip:"10.0.0.22", name:"srv-files",    mac:"3c:7a:8a:11:00:22", up:true, kind:"server",
+     ports:[{n:21,svc:"ftp",ver:"vsftpd 3.0.5"},
+            {n:22,svc:"ssh",ver:"OpenSSH 9.6"},
+            {n:445,svc:"microsoft-ds",ver:"Samba 4.19"}]},
+    {ip:"10.0.0.30", name:"prn-hp-2",     mac:"3c:7a:8a:11:00:30", up:true, kind:"printer",
+     ports:[{n:80,svc:"http",ver:"HP embedded"},{n:9100,svc:"jetdirect",ver:"HP JetDirect"}],
+     http:{title:"HP LaserJet — configuration", server:"HP-ChaiSOE/1.0",
+           body:"<h1>Printer admin</h1>\n<p>Administrator password: not set</p>\n"}},
+    /* the point of the exercise: nobody put this here on purpose */
+    {ip:"10.0.0.99", name:"",             mac:"b8:27:eb:4f:19:77", up:true, kind:"unknown",
+     ports:[{n:23,svc:"telnet",ver:"BusyBox telnetd"},
+            {n:8080,svc:"http-proxy",ver:"tinyproxy 1.11"}],
+     http:{title:"", server:"tinyproxy/1.11", body:"proxy\n"}},
+    /* off today, so "no answer" does not always mean "blocked" */
+    {ip:"10.0.0.41", name:"laptop-anna",  mac:"3c:7a:8a:11:00:41", up:false, kind:"workstation", ports:[]},
+  ];
+
+  return {
+    iface: {name:"enp3s0", ip:"10.0.0.10", cidr:24, mac:"52:54:00:9d:2b:1a", gw:"10.0.0.1",
+            lo:{name:"lo", ip:"127.0.0.1", cidr:8}},
+    hosts,
+    dns: {"gw.lan":"10.0.0.1","srv-web.lan":"10.0.0.20","srv-db.lan":"10.0.0.21",
+          "srv-files.lan":"10.0.0.22","prn-hp-2.lan":"10.0.0.30",
+          "workstation-07.lan":"10.0.0.10","localhost":"127.0.0.1"},
+    /* the machine's own listening sockets, which is what ss reports */
+    listening: [{proto:"tcp", port:22, svc:"sshd", pid:641, addr:"0.0.0.0"},
+                {proto:"tcp", port:631, svc:"cupsd", pid:702, addr:"127.0.0.1"},
+                {proto:"udp", port:68,  svc:"dhclient", pid:534, addr:"0.0.0.0"}],
+    fw: {enabled:false, rules:[]},   // {action:"allow"|"deny", dir:"in"|"out", port, proto, host}
+    arp: {},
+  };
+}
+
+/* ---------- helpers shared by the commands ---------- */
+function netFind(net, target){
+  if(!target) return null;
+  const t = String(target).trim();
+  const byIp = net.hosts.find(h => h.ip === t);
+  if(byIp) return byIp;
+  const name = t.replace(/\.lan$/, "");
+  const byName = net.hosts.find(h => h.name && h.name === name);
+  if(byName) return byName;
+  const viaDns = net.dns[t] || net.dns[t + ".lan"];
+  if(viaDns) return net.hosts.find(h => h.ip === viaDns) || null;
+  return null;
+}
+
+/* Does the firewall let this packet out? Rules are matched in order, first
+   match wins, and an enabled firewall with no matching rule allows — the same
+   shape as ufw's default-allow-outgoing. */
+function netAllowed(net, host, port, proto){
+  if(!net.fw.enabled) return true;
+  for(const r of net.fw.rules){
+    if(r.dir !== "out") continue;
+    if(r.host && r.host !== host.ip && r.host !== host.name) continue;
+    if(r.port != null && r.port !== port) continue;
+    if(r.proto && proto && r.proto !== proto) continue;
+    return r.action === "allow";
+  }
+  return true;
+}
+
+function attachNet(K){
+  const {vm} = K;
+  if(!K.net) K.net = makeNet();
+  const net = K.net;
+  const ok  = out => ({out: out==null?"":out, err:"", code:0});
+  const bad = (err,code) => ({out:"", err, code:code==null?1:code});
+
+  const self = () => net.hosts.find(h => h.self);
+
+  /* ---------------- ip ---------------- */
+  K.C.ip = (argv) => {
+    const sub = (argv[0]||"addr").replace(/^-/,"");
+    const i = net.iface;
+    if(/^a(ddr)?$/.test(sub)){
+      return ok(
+        "1: "+i.lo.name+": <LOOPBACK,UP,LOWER_UP> mtu 65536 state UNKNOWN\n"+
+        "    inet "+i.lo.ip+"/"+i.lo.cidr+" scope host lo\n"+
+        "2: "+i.name+": <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP\n"+
+        "    link/ether "+i.mac+" brd ff:ff:ff:ff:ff:ff\n"+
+        "    inet "+i.ip+"/"+i.cidr+" brd 10.0.0.255 scope global "+i.name+"\n");
+    }
+    if(/^r(oute)?$/.test(sub)){
+      return ok("default via "+i.gw+" dev "+i.name+" proto dhcp metric 100\n"+
+                "10.0.0.0/"+i.cidr+" dev "+i.name+" proto kernel scope link src "+i.ip+" metric 100\n");
+    }
+    if(/^l(ink)?$/.test(sub)){
+      return ok("1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536\n"+
+                "2: "+i.name+": <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500\n"+
+                "    link/ether "+i.mac+" brd ff:ff:ff:ff:ff:ff\n");
+    }
+    return bad('Object "'+sub+'" is unknown, try "ip help".\n');
+  };
+  K.C.ifconfig = () => {
+    const i = net.iface;
+    return ok(i.name+": flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\n"+
+      "        inet "+i.ip+"  netmask 255.255.255.0  broadcast 10.0.0.255\n"+
+      "        ether "+i.mac+"  txqueuelen 1000  (Ethernet)\n");
+  };
+
+  /* ---------------- ping ---------------- */
+  K.C.ping = (argv) => {
+    const flags = argv.filter(a => a.startsWith("-"));
+    const ops = argv.filter(a => !a.startsWith("-") && !/^\d+$/.test(a) || false);
+    let count = 4;
+    const ci = argv.indexOf("-c");
+    if(ci >= 0 && argv[ci+1]) count = Math.max(1, Math.min(10, parseInt(argv[ci+1],10) || 4));
+    const target = argv.filter((a,i) => !a.startsWith("-") && !(ci>=0 && i===ci+1))[0];
+    if(!target) return bad("ping: usage error: Destination address required\n");
+
+    const h = netFind(net, target);
+    if(!h){
+      if(/^\d+\.\d+\.\d+\.\d+$/.test(target)){
+        /* an address inside our subnet that nothing answers on */
+        return ok("PING "+target+" ("+target+") 56(84) bytes of data.\n\n"+
+          "--- "+target+" ping statistics ---\n"+
+          count+" packets transmitted, 0 received, 100% packet loss, time "+(count*1000)+"ms\n");
+      }
+      return bad("ping: "+target+": Name or service not known\n");
+    }
+    net.arp[h.ip] = h.mac;
+
+    if(!netAllowed(net, h, null, "icmp"))
+      return bad("PING "+target+" ("+h.ip+") 56(84) bytes of data.\n"+
+        "ping: sendmsg: Operation not permitted\n", 2);
+
+    if(!h.up)
+      return ok("PING "+target+" ("+h.ip+") 56(84) bytes of data.\n"+
+        "From "+net.iface.ip+" icmp_seq=1 Destination Host Unreachable\n\n"+
+        "--- "+target+" ping statistics ---\n"+
+        count+" packets transmitted, 0 received, +1 errors, 100% packet loss, time "+(count*1000)+"ms\n");
+
+    let out = "PING "+target+" ("+h.ip+") 56(84) bytes of data.\n";
+    for(let i=1;i<=count;i++){
+      const ms = h.self ? 0.03 : (0.3 + ((i*7 + h.ip.length) % 9) / 10);
+      out += "64 bytes from "+h.ip+": icmp_seq="+i+" ttl=64 time="+ms.toFixed(2)+" ms\n";
+    }
+    out += "\n--- "+target+" ping statistics ---\n"+
+      count+" packets transmitted, "+count+" received, 0% packet loss, time "+((count-1)*1000)+"ms\n";
+    return ok(out);
+  };
+
+  /* ---------------- ss / netstat ---------------- */
+  K.C.ss = (argv) => {
+    const f = argv.join("");
+    const wantListen = /l/.test(f) || !/[tu]/.test(f);
+    const rows = net.listening.filter(s =>
+      (/t/.test(f) ? s.proto==="tcp" : false) || (/u/.test(f) ? s.proto==="udp" : false) ||
+      (!/[tu]/.test(f)));
+    const showPid = /p/.test(f);
+    let out = "Netid  State   Recv-Q  Send-Q  Local Address:Port   Peer Address:Port  Process\n";
+    rows.forEach(s => {
+      out += s.proto.padEnd(7)+(s.proto==="tcp"?"LISTEN  ":"UNCONN  ")+"0       0       "+
+        (s.addr+":"+s.port).padEnd(21)+"0.0.0.0:*".padEnd(19)+
+        (showPid ? 'users:(("'+s.svc+'",pid='+s.pid+',fd=3))' : "")+"\n";
+    });
+    return ok(out);
+  };
+  K.C.netstat = K.C.ss;
+
+  /* ---------------- arp ---------------- */
+  K.C.arp = () => {
+    const seen = Object.keys(net.arp);
+    if(!seen.length) return ok("");
+    let out = "Address                  HWtype  HWaddress           Flags Mask            Iface\n";
+    seen.sort().forEach(ip => {
+      const h = net.hosts.find(x => x.ip === ip);
+      out += ip.padEnd(25)+"ether   "+net.arp[ip]+"   C                     "+net.iface.name+"\n";
+    });
+    return ok(out);
+  };
+
+  /* ---------------- dig / host ---------------- */
+  K.C.dig = (argv) => {
+    const name = argv.filter(a => !a.startsWith("+") && !a.startsWith("-"))[0];
+    if(!name) return bad("dig: no name to look up\n");
+    const ip = net.dns[name] || net.dns[name+".lan"];
+    const short = argv.includes("+short");
+    if(!ip) return short ? ok("") : ok(
+      "; <<>> DiG 9.18 <<>> "+name+"\n;; ->>HEADER<<- opcode: QUERY, status: NXDOMAIN\n\n"+
+      ";; QUESTION SECTION:\n;"+name+".\t\tIN\tA\n\n");
+    if(short) return ok(ip+"\n");
+    return ok("; <<>> DiG 9.18 <<>> "+name+"\n;; ->>HEADER<<- opcode: QUERY, status: NOERROR\n\n"+
+      ";; QUESTION SECTION:\n;"+name+".\t\tIN\tA\n\n"+
+      ";; ANSWER SECTION:\n"+name+".\t60\tIN\tA\t"+ip+"\n\n"+
+      ";; SERVER: 10.0.0.1#53(10.0.0.1)\n");
+  };
+  K.C.host = (argv) => {
+    const name = argv[0];
+    const ip = name && (net.dns[name] || net.dns[name+".lan"]);
+    if(ip) return ok(name+" has address "+ip+"\n");
+    const h = netFind(net, name);
+    if(h && h.name) return ok(h.ip+".in-addr.arpa domain name pointer "+h.name+".lan.\n");
+    return bad("Host "+name+" not found: 3(NXDOMAIN)\n");
+  };
+
+  /* ---------------- nmap ----------------
+     Enough of a scan to teach what a scan is: a host sweep over a CIDR, or a
+     port list for one host, with -sV adding the version the host declares. */
+  K.C.nmap = (argv) => {
+    const sv = argv.includes("-sV");
+    const sn = argv.includes("-sn") || argv.includes("-sP");
+    const target = argv.filter(a => !a.startsWith("-"))[0];
+    if(!target) return bad("nmap: no target specified\n");
+
+    const stamp = "Starting Nmap 7.94 ( https://nmap.org )\n";
+    if(/\/\d+$/.test(target)){
+      const live = net.hosts.filter(h => h.up && netAllowed(net, h, null, "icmp"));
+      let out = stamp;
+      live.forEach(h => {
+        out += "Nmap scan report for "+(h.name ? h.name+".lan ("+h.ip+")" : h.ip)+"\n"+
+               "Host is up (0.00"+(20+h.ip.length)+"s latency).\n"+
+               "MAC Address: "+h.mac.toUpperCase()+"\n";
+        if(!sn && h.ports.length){
+          out += "PORT      STATE SERVICE"+(sv?"    VERSION":"")+"\n";
+          h.ports.forEach(p => { out += (p.n+"/tcp").padEnd(10)+"open  "+
+            p.svc.padEnd(sv?10:0)+(sv?p.ver:"")+"\n"; });
+        }
+        out += "\n";
+      });
+      out += "Nmap done: 256 IP addresses ("+live.length+" hosts up) scanned\n";
+      return ok(out);
+    }
+
+    const h = netFind(net, target);
+    if(!h) return ok(stamp+"Note: Host seems down.\nNmap done: 1 IP address (0 hosts up) scanned\n");
+    if(!h.up || !netAllowed(net, h, null, "icmp"))
+      return ok(stamp+"Note: Host seems down. If it is really up, but blocking our ping probes, try -Pn\n"+
+        "Nmap done: 1 IP address (0 hosts up) scanned\n");
+    let out = stamp+"Nmap scan report for "+(h.name ? h.name+".lan ("+h.ip+")" : h.ip)+"\n"+
+      "Host is up (0.0010s latency).\n";
+    if(h.ports.length){
+      out += "PORT      STATE SERVICE"+(sv?"    VERSION":"")+"\n";
+      h.ports.forEach(p => { out += (p.n+"/tcp").padEnd(10)+"open  "+
+        p.svc.padEnd(sv?10:0)+(sv?p.ver:"")+"\n"; });
+    } else out += "All 1000 scanned ports on "+h.ip+" are in ignored states.\n";
+    out += "MAC Address: "+h.mac.toUpperCase()+"\n\nNmap done: 1 IP address (1 host up) scanned\n";
+    return ok(out);
+  };
+
+  /* ---------------- nc ---------------- */
+  K.C.nc = (argv) => {
+    const ops = argv.filter(a => !a.startsWith("-"));
+    const target = ops[0], port = parseInt(ops[1],10);
+    if(!target || !port) return bad("nc: usage: nc -zv host port\n");
+    const h = netFind(net, target);
+    if(!h) return bad("nc: getaddrinfo for host \""+target+"\" port "+port+": Name or service not known\n");
+    if(!netAllowed(net, h, port, "tcp"))
+      return bad("nc: connect to "+h.ip+" port "+port+" (tcp) failed: Operation not permitted\n");
+    if(!h.up || !h.ports.some(p => p.n === port))
+      return bad("nc: connect to "+h.ip+" port "+port+" (tcp) failed: Connection refused\n");
+    return bad("Connection to "+target+" "+port+" port [tcp/"+
+      (h.ports.find(p=>p.n===port).svc)+"] succeeded!\n", 0);
+  };
+
+  /* ---------------- traceroute ---------------- */
+  K.C.traceroute = (argv) => {
+    const target = argv.filter(a => !a.startsWith("-"))[0];
+    const h = netFind(net, target);
+    if(!h) return bad("traceroute: unknown host "+target+"\n");
+    let out = "traceroute to "+target+" ("+h.ip+"), 30 hops max, 60 byte packets\n";
+    if(h.ip !== net.iface.gw && !h.self)
+      out += " 1  gw.lan ("+net.iface.gw+")  0.412 ms  0.388 ms  0.371 ms\n";
+    out += " "+(h.self?1:2)+"  "+(h.name?h.name+".lan ":"")+"("+h.ip+")  0.9 ms  0.8 ms  0.8 ms\n";
+    return ok(out);
+  };
+
+  /* ---------------- ufw ----------------
+     Rules here are the same rules ping, nc and curl consult, so "deny then
+     verify" is a real loop rather than a message that says it worked. */
+  K.C.ufw = (argv) => {
+    if(!vm.asRoot) return bad("ERROR: You need to be root to run this script\n");
+    const sub = (argv[0]||"status").toLowerCase();
+
+    if(sub === "enable"){ net.fw.enabled = true;  return ok("Firewall is active and enabled on system startup\n"); }
+    if(sub === "disable"){ net.fw.enabled = false; return ok("Firewall stopped and disabled on system startup\n"); }
+    if(sub === "reset"){ net.fw.enabled = false; net.fw.rules = []; return ok("Backing up 'user.rules'\nFirewall reset\n"); }
+
+    if(sub === "status"){
+      if(!net.fw.enabled) return ok("Status: inactive\n");
+      let out = "Status: active\n\nTo                         Action      From\n"+
+                "--                         ------      ----\n";
+      net.fw.rules.forEach(r => {
+        const to = r.host ? r.host + (r.port!=null ? " "+r.port : "")
+                          : (r.port!=null ? String(r.port) : "Anywhere");
+        out += to.padEnd(27)+(r.action.toUpperCase()+(r.dir==="out"?" OUT":"")).padEnd(12)+"Anywhere\n";
+      });
+      return ok(out);
+    }
+
+    if(sub === "allow" || sub === "deny"){
+      const rest = argv.slice(1);
+      const dir = rest[0] === "out" ? "out" : (rest[0] === "in" ? "in" : "out");
+      const args = (rest[0]==="out"||rest[0]==="in") ? rest.slice(1) : rest;
+      const rule = {action: sub, dir, port:null, proto:null, host:null};
+      /* accepted shapes: PORT | PORT/proto | to IP | to IP port N | from IP */
+      for(let i=0;i<args.length;i++){
+        const a = args[i];
+        if(a === "to" || a === "from"){ rule.host = args[++i]; continue; }
+        if(a === "port"){ rule.port = parseInt(args[++i],10); continue; }
+        if(a === "proto"){ rule.proto = args[++i]; continue; }
+        if(/^\d+\/(tcp|udp)$/.test(a)){ const [p,pr]=a.split("/"); rule.port=+p; rule.proto=pr; continue; }
+        if(/^\d+$/.test(a)){ rule.port = +a; continue; }
+        if(/^\d+\.\d+\.\d+\.\d+$/.test(a)){ rule.host = a; continue; }
+      }
+      if(rule.port == null && rule.host == null)
+        return bad("ERROR: Wrong number of arguments\n");
+      net.fw.rules.push(rule);
+      if(!net.fw.enabled) return ok("Rules updated\nFirewall not enabled (use 'ufw enable')\n");
+      return ok("Rule added\n");
+    }
+    return bad("ERROR: Invalid syntax\n");
+  };
+
+  /* iptables reads the same rules, so the two views cannot disagree */
+  K.C.iptables = (argv) => {
+    if(!vm.asRoot) return bad("iptables v1.8.10 (nf_tables): Permission denied (you must be root)\n");
+    if(!argv.includes("-L") && !argv.includes("--list"))
+      return bad("iptables: use -L here; rule editing is done with ufw in this trainer\n");
+    let out = "Chain INPUT (policy ACCEPT)\ntarget     prot opt source               destination\n\n"+
+              "Chain FORWARD (policy ACCEPT)\ntarget     prot opt source               destination\n\n"+
+              "Chain OUTPUT (policy ACCEPT)\ntarget     prot opt source               destination\n";
+    if(net.fw.enabled) net.fw.rules.filter(r=>r.dir==="out").forEach(r => {
+      out += (r.action==="deny"?"DROP":"ACCEPT").padEnd(11)+
+        (r.proto||"all").padEnd(5)+"--  anywhere             "+
+        (r.host||"anywhere")+(r.port!=null?"  tcp dpt:"+r.port:"")+"\n";
+    });
+    return ok(out);
+  };
+
+  /* ---------------- curl, extended to reach the LAN ----------------
+     The published curl fetches from a small table of canned sites; this keeps
+     that and adds the hosts on the network, firewall included. */
+  const innerCurl = K.C.curl;
+  K.C.curl = (argv, stdin) => {
+    const url = argv.filter(a => !a.startsWith("-"))[0] || "";
+    const m = url.match(/^(?:https?:\/\/)?([^\/:\s]+)(?::(\d+))?(\/[^\s]*)?$/);
+    const h = m && netFind(net, m[1]);
+    if(!h) return innerCurl ? innerCurl(argv, stdin)
+                            : bad("curl: (6) Could not resolve host: "+url+"\n");
+    const port = m[2] ? parseInt(m[2],10) : 80;
+    if(!netAllowed(net, h, port, "tcp"))
+      return bad("curl: (7) Failed to connect to "+m[1]+" port "+port+": Operation not permitted\n", 7);
+    if(!h.up || !h.ports.some(p => p.n === port))
+      return bad("curl: (7) Failed to connect to "+m[1]+" port "+port+": Connection refused\n", 7);
+    if(!h.http) return bad("curl: (52) Empty reply from server\n", 52);
+    if(argv.includes("-I") || argv.includes("--head"))
+      return ok("HTTP/1.1 200 OK\nServer: "+h.http.server+"\nContent-Type: text/html\n"+
+                "Content-Length: "+h.http.body.length+"\n\n");
+    return ok((h.http.title ? "<title>"+h.http.title+"</title>\n" : "") + h.http.body);
+  };
+
+  /* the machine has a network now, so stop claiming otherwise */
+  K.C.pip = () => ({out:"", err:"pip: no package index reachable from this network\n", code:1});
+
+  return K;
+}
+
+/* ===================== preview: network security lab =====================
+   Nätverkssäkerhet is the second course in the programme and has been a
+   placeholder with a provisional quiz. With a network on the machine it can
+   have real work instead: find what is on the wire, notice the thing that
+   should not be there, shut it out, and prove it is shut out.
+
+   The checks read machine state — files you wrote, rules the firewall holds —
+   never the text you typed, which is the same contract the existing labs use.
+   That matters here: there are several right ways to find a rogue host, and a
+   check that insisted on one command would be teaching the command instead of
+   the skill. */
+
+/* every machine built from here on also gets a network */
+if(typeof window !== "undefined" && typeof attachPython === "function" && typeof attachNet === "function"){
+  const _attachPython = attachPython;
+  window.attachPython = function(K){ return attachNet(_attachPython(K)); };
+}
+
+const NETLAB = {
+  title: {sv:"Nätverksrekognosering och brandvägg", en:"Network recon and firewall"},
+  brief: {sv:"Du sitter på 10.0.0.10 i ett litet kontorsnät. Ta reda på vad som finns "+
+             "där ute, hitta det som inte hör hemma, och stäng ute det.",
+          en:"You are on 10.0.0.10 in a small office network. Find out what is out "+
+             "there, find the thing that does not belong, and shut it out."},
+  tasks: [
+    {q: {sv:"Skriv den här maskinens IPv4-adress till ~/net/ip.txt.",
+         en:"Write this machine's IPv4 address to ~/net/ip.txt."},
+     hint: {sv:"ip a visar adressen. Katalogen måste finnas först.",
+            en:"ip a shows the address. The directory has to exist first."},
+     answer: ["mkdir -p ~/net", "ip a > ~/net/raw.txt", "echo 10.0.0.10 > ~/net/ip.txt"],
+     check: (K) => fileHas(K, "/home/analyst/net/ip.txt", /\b10\.0\.0\.10\b/)},
+
+    {q: {sv:"Svepet: skriv IP-adresserna för alla värdar som svarar i 10.0.0.0/24 "+
+            "till ~/net/hosts.txt, en per rad.",
+         en:"Sweep the network: write the IP of every host that answers in "+
+            "10.0.0.0/24 to ~/net/hosts.txt, one per line."},
+     hint: {sv:"nmap -sn 10.0.0.0/24 svarar. Sju värdar är uppe.",
+            en:"nmap -sn 10.0.0.0/24 answers this. Seven hosts are up."},
+     answer: ["nmap -sn 10.0.0.0/24 > ~/net/scan.txt",
+              "grep -o '10\\.0\\.0\\.[0-9]*' ~/net/scan.txt | sort -u > ~/net/hosts.txt"],
+     check: (K) => {
+       const c = readFileText(K, "/home/analyst/net/hosts.txt");
+       if(c == null) return false;
+       const found = new Set((c.match(/10\.0\.0\.\d+/g) || []));
+       const want = ["10.0.0.1","10.0.0.10","10.0.0.20","10.0.0.21","10.0.0.22","10.0.0.30","10.0.0.99"];
+       /* every live host present, and the host that is switched off absent */
+       return want.every(ip => found.has(ip)) && !found.has("10.0.0.41");
+     }},
+
+    {q: {sv:"En av värdarna kör telnet (port 23). Skriv dess IP-adress till ~/net/rogue.txt.",
+         en:"One host is running telnet (port 23). Write its IP to ~/net/rogue.txt."},
+     hint: {sv:"nmap -sV 10.0.0.0/24 visar tjänsterna. Telnet skickar lösenord i klartext.",
+            en:"nmap -sV 10.0.0.0/24 shows the services. Telnet sends passwords in the clear."},
+     answer: ["nmap -sV 10.0.0.0/24 > ~/net/ports.txt", "echo 10.0.0.99 > ~/net/rogue.txt"],
+     check: (K) => fileHas(K, "/home/analyst/net/rogue.txt", /\b10\.0\.0\.99\b/)},
+
+    {q: {sv:"Slå på brandväggen och blockera all utgående trafik till den värden.",
+         en:"Turn the firewall on and block all outbound traffic to that host."},
+     hint: {sv:"sudo ufw enable, sedan sudo ufw deny out to 10.0.0.99.",
+            en:"sudo ufw enable, then sudo ufw deny out to 10.0.0.99."},
+     answer: ["sudo ufw enable", "sudo ufw deny out to 10.0.0.99"],
+     check: (K) => !!(K.net && K.net.fw.enabled &&
+       K.net.fw.rules.some(r => r.action === "deny" && r.dir === "out" && r.host === "10.0.0.99"))},
+
+    {q: {sv:"Bevisa att den är blockerad: kör ping mot värden igen och spara utfallet "+
+            "i ~/net/blocked.txt.",
+         en:"Prove it is blocked: ping the host again and save the result to ~/net/blocked.txt."},
+     hint: {sv:"ping skriver felet på stderr, så 2>&1 behövs för att fånga det.",
+            en:"ping writes the error on stderr, so you need 2>&1 to capture it."},
+     answer: ["ping -c 1 10.0.0.99 > ~/net/blocked.txt 2>&1"],
+     check: (K) => fileHas(K, "/home/analyst/net/blocked.txt", /not permitted|Operation not permitted/i)},
+
+    {q: {sv:"Webbservern i nätet svarar på port 80. Spara dess serverrubrik "+
+            "(Server:-raden) till ~/net/server.txt.",
+         en:"The web server on the network answers on port 80. Save its server header "+
+            "(the Server: line) to ~/net/server.txt."},
+     hint: {sv:"curl -I visar bara rubrikerna. Servern är srv-web.",
+            en:"curl -I shows headers only. The server is srv-web."},
+     answer: ["curl -I http://srv-web > ~/net/head.txt",
+              "grep Server ~/net/head.txt > ~/net/server.txt"],
+     check: (K) => fileHas(K, "/home/analyst/net/server.txt", /nginx/i)},
+
+    {q: {sv:"Skrivaren på 10.0.0.30 har ett admingränssnitt utan lösenord. "+
+            "Hämta sidan och spara den till ~/net/printer.txt.",
+         en:"The printer on 10.0.0.30 has an admin page with no password. "+
+            "Fetch it and save it to ~/net/printer.txt."},
+     hint: {sv:"curl http://10.0.0.30 räcker. Läs vad som står om lösenordet.",
+            en:"curl http://10.0.0.30 is enough. Read what it says about the password."},
+     answer: ["curl http://10.0.0.30 > ~/net/printer.txt"],
+     check: (K) => fileHas(K, "/home/analyst/net/printer.txt", /password/i)},
+  ],
+  check: [
+    [{sv:"Varför är telnet ett fynd värt att rapportera?", en:"Why is telnet worth reporting?"},
+     {sv:"Telnet skickar användarnamn och lösenord i klartext över nätet. Vem som helst som "+
+         "kan lyssna på trafiken läser dem. Det är därför ssh ersatte den.",
+      en:"Telnet sends usernames and passwords in clear text over the wire. Anyone who can "+
+         "listen to the traffic reads them. That is why ssh replaced it."}],
+    [{sv:"Vad är skillnaden mellan «Destination Host Unreachable» och «Operation not permitted»?",
+      en:"What is the difference between \"Destination Host Unreachable\" and \"Operation not permitted\"?"},
+     {sv:"Det första betyder att ingen svarade — värden kan vara avstängd. Det andra betyder "+
+         "att din egen brandvägg stoppade paketet innan det lämnade maskinen.",
+      en:"The first means nothing answered — the host may be switched off. The second means "+
+         "your own firewall stopped the packet before it left the machine."}],
+    [{sv:"Varför räcker det inte att bara stänga av porten på den okända värden?",
+      en:"Why is it not enough to just close the port on the unknown host?"},
+     {sv:"Du äger inte den värden och vet inte vad den är. Det du kontrollerar är din egen "+
+         "maskin och nätets gränser — börja där, och eskalera fyndet.",
+      en:"You do not own that host and do not know what it is. What you control is your own "+
+         "machine and the network boundary — start there, and escalate the finding."}],
+  ],
+};
+
+/* ---------- small helpers the checks share ---------- */
+function readFileText(K, path){
+  try{ const r = K.lookup(path); return r.node && r.node.t === "f" ? r.node.c : null; }
+  catch(e){ return null; }
+}
+function fileHas(K, path, rx){
+  const c = readFileText(K, path);
+  return c != null && rx.test(c);
+}
+
+/* a const declared inside eval() does not escape it, and the tests load these
+   files that way — same reason vm-labs.js exports LAB_ANSWERS */
+if (typeof globalThis !== "undefined") globalThis.NETLAB = NETLAB;
+
+/* ===================== preview: the network lab's own view =====================
+   The published lab view is wired to COURSE and S.c, so rather than bending it
+   this builds a compact one: the task list, a terminal on a machine of its own,
+   and the same self-checking contract. Roughly a third of the code, because it
+   only has to serve one lab. */
+
+const NL = {machine: null, screen: [], hist: [], hp: 0, done: {}, shown: {}};
+
+function nlMachine(){
+  if(!NL.machine) NL.machine = attachPython(seedVM(attachShell(makeVM())));
+  return NL.machine;
+}
+
+function nlCheck(){
+  const K = nlMachine();
+  let changed = false;
+  NETLAB.tasks.forEach((task, i) => {
+    if(NL.done[i]) return;
+    let pass = false;
+    try{ pass = !!task.check(K); }catch(e){ pass = false; }
+    if(pass){ NL.done[i] = true; changed = true; }
+  });
+  if(changed){ pvSave(); nlRender(); if(typeof celebrateTask === "function") celebrateTask(); }
+  return changed;
+}
+
+function nlPrint(text, cls){
+  if(text == null || text === "") return;
+  String(text).replace(/\n$/,"").split("\n").forEach(line =>
+    NL.screen.push({t: line, c: cls || ""}));
+  if(NL.screen.length > 400) NL.screen = NL.screen.slice(-400);
+}
+
+function nlRun(line){
+  const K = nlMachine();
+  nlPrint(K.vm.user + "@" + "workstation-07:" + shortCwd(K) + "$ " + line, "cmd");
+  const cmd = line.trim();
+  if(!cmd){ nlRender(); return; }
+  if(cmd === "clear"){ NL.screen = []; nlRender(); return; }
+  if(cmd === "tasks"){ nlPrint(nlTaskText(), "note"); nlRender(); return; }
+  if(cmd === "reset"){
+    NL.machine = null; NL.screen = [];
+    nlPrint("Machine reset. Completed tasks are kept.", "note");
+    nlRender(); return;
+  }
+  let r;
+  try{ r = K.run(cmd); }
+  catch(e){ r = {out:"", err:"bash: " + e.message + "\n", code:1}; }
+  if(r.clear) NL.screen = [];
+  nlPrint(r.out, "");
+  nlPrint(r.err, "err");
+  nlCheck();
+  nlRender();
+}
+
+function shortCwd(K){
+  const c = K.vm.cwd;
+  return c === K.vm.HOME ? "~" : c.replace(K.vm.HOME, "~");
+}
+
+function nlTaskText(){
+  return NETLAB.tasks.map((t,i) =>
+    (NL.done[i] ? "[x] " : "[ ] ") + (i+1) + ". " + plain(L(t.q))).join("\n");
+}
+
+function pvRenderNetlab(){
+  const v = pvView("pv-netlabview");
+  const done = NETLAB.tasks.filter((_,i) => NL.done[i]).length;
+
+  v.innerHTML =
+    '<div class="cw">'+
+      '<div class="chead"><div class="cmeta"><span class="wk">'+t("pvNetLab")+"</span>"+
+        '<span class="dt">10.0.0.0/24</span></div>'+
+        "<h1>" + esc(L(NETLAB.title)) + "</h1>"+
+        '<p class="cbrief">' + esc(L(NETLAB.brief)) + "</p></div>"+
+      '<div class="csec"><h2>' + t("pvNetTasks") + "</h2><ol class=\"ltasks\">"+
+        NETLAB.tasks.map((task,i) => {
+          const d = !!NL.done[i];
+          return '<li class="ltask'+(d?" done":"")+'">'+
+            '<span class="lnum">'+(i+1)+"</span>"+
+            '<span class="lbody"><span class="ltext">'+esc(L(task.q))+"</span>"+
+              '<span class="lbtns">'+
+                '<button class="lhint" data-h="'+i+'">'+t("hint")+"</button>"+
+                '<button class="lhint lans" data-a="'+i+'">'+t("showAnswer")+"</button>"+
+              "</span>"+
+              '<span class="lhinttext" id="nl-h'+i+'" hidden>'+esc(L(task.hint))+"</span>"+
+              '<span class="lanstext" id="nl-a'+i+'" hidden>'+
+                task.answer.map(a => "<code>"+esc(a)+"</code>").join("<br>")+"</span>"+
+            "</span>"+
+            '<span class="lstat">'+(d?"done":"")+"</span></li>";
+        }).join("")+
+      '</ol><p class="cprog'+(done===NETLAB.tasks.length?" allgood":"")+'">'+
+        done+" / "+NETLAB.tasks.length+" "+t("pvTasksWord")+"</p></div>"+
+
+      '<div class="csec"><h2>' + t("pvNetMap") + "</h2>" + nlTopologySvg() + "</div>"+
+
+      '<div class="csec"><h2>' + t("pvCheckSelf") + "</h2>"+
+        NETLAB.check.map(([q,a]) =>
+          '<details class="chk"><summary>'+esc(L(q))+'</summary>'+
+          '<div class="ans">'+esc(L(a))+"</div></details>").join("")+
+      "</div>"+
+    "</div>"+
+
+    '<section class="term labterm">'+
+      '<div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>'+
+        '<span class="tt">bash — analyst@workstation-07 (simulated)</span>'+
+        '<button class="tbtn" id="nl-reset">'+t("pvResetMachine")+"</button></div>"+
+      '<div class="screen" id="nl-screen">'+
+        NL.screen.map(l => '<div class="ln '+l.c+'">'+esc(l.t)+"</div>").join("")+
+      "</div>"+
+      '<div class="inputline"><span class="ps1">analyst@workstation-07:'+
+        esc(shortCwd(nlMachine()))+'$</span>'+
+        '<input id="nl-entry" spellcheck="false" autocomplete="off" '+
+        'placeholder="'+t("pvTypeCommand")+'" aria-label="terminal"></div>'+
+    "</section>";
+
+  v.querySelectorAll(".lhint[data-h]").forEach(b => b.onclick = () => {
+    const el = $("nl-h"+b.dataset.h); el.hidden = !el.hidden;
+    b.textContent = el.hidden ? t("hint") : t("hideHint");
+  });
+  v.querySelectorAll(".lans[data-a]").forEach(b => b.onclick = () => {
+    const el = $("nl-a"+b.dataset.a); el.hidden = !el.hidden;
+    b.textContent = el.hidden ? t("showAnswer") : t("hideAnswer");
+  });
+  $("nl-reset").onclick = () => { NL.machine = null; NL.screen = []; nlRender(); };
+
+  const inp = $("nl-entry");
+  inp.onkeydown = e => {
+    if(e.key === "Enter"){
+      const line = inp.value; inp.value = "";
+      if(line.trim()){ NL.hist.push(line); NL.hp = NL.hist.length; }
+      nlRun(line);
+    } else if(e.key === "ArrowUp"){
+      if(NL.hp > 0){ NL.hp--; inp.value = NL.hist[NL.hp] || ""; }
+      e.preventDefault();
+    } else if(e.key === "ArrowDown"){
+      if(NL.hp < NL.hist.length){ NL.hp++; inp.value = NL.hist[NL.hp] || ""; }
+      e.preventDefault();
+    }
+  };
+  const sc = $("nl-screen"); if(sc) sc.scrollTop = sc.scrollHeight;
+}
+
+function nlRender(){
+  const active = document.activeElement && document.activeElement.id === "nl-entry";
+  const caret = active ? document.activeElement.value : null;
+  pvRenderNetlab();
+  if(typeof pvSidebar === "function") pvSidebar("netlab");
+  if(active){ const i = $("nl-entry"); i.value = caret; i.focus(); }
+}
+
+/* A picture of the same state the commands read: hosts the scan would find,
+   drawn from net.hosts rather than hand-placed, so it cannot drift. */
+function nlTopologySvg(){
+  const K = nlMachine();
+  const net = K.net || makeNet();
+  const rows = net.hosts.filter(h => !h.self);
+  const W = 620, rowH = 34, H = 90 + rows.length * rowH;
+  const cx = 90;
+
+  let s = '<svg viewBox="0 0 '+W+' '+H+'" class="nlmap" role="img" '+
+    'aria-label="Network map of 10.0.0.0/24">';
+  /* the switch spine */
+  s += '<line x1="'+cx+'" y1="56" x2="'+cx+'" y2="'+(56 + rows.length*rowH)+'" '+
+       'stroke="var(--line)" stroke-width="2"/>';
+  /* this machine */
+  s += '<rect x="20" y="20" width="140" height="26" rx="2" fill="var(--panel)" '+
+       'stroke="var(--amber)"/>'+
+       '<text x="30" y="37" fill="var(--amber)" font-size="11" font-family="monospace">'+
+       'this machine · .10</text>';
+
+  rows.forEach((h, i) => {
+    const y = 62 + i * rowH;
+    const blocked = net.fw.enabled && !netAllowed(net, h, null, "icmp");
+    const colour = !h.up ? "var(--dim)" : blocked ? "var(--rose)"
+                 : h.kind === "unknown" ? "var(--rose)" : "var(--lime)";
+    s += '<line x1="'+cx+'" y1="'+y+'" x2="'+(cx+40)+'" y2="'+y+'" stroke="var(--line)"/>';
+    s += '<circle cx="'+(cx+40)+'" cy="'+y+'" r="4" fill="'+colour+'"/>';
+    s += '<text x="'+(cx+54)+'" y="'+(y+4)+'" fill="var(--bone)" font-size="11.5" '+
+         'font-family="monospace">'+esc(h.ip)+"</text>";
+    s += '<text x="'+(cx+150)+'" y="'+(y+4)+'" fill="var(--dim)" font-size="11.5" '+
+         'font-family="monospace">'+esc(h.name || "?")+"</text>";
+    s += '<text x="'+(cx+300)+'" y="'+(y+4)+'" fill="'+
+         (h.kind === "unknown" ? "var(--rose)" : "var(--dim)")+'" font-size="11" '+
+         'font-family="monospace">'+
+         esc(h.up ? h.ports.map(p => p.n).join(" ") : "down")+"</text>";
+    if(blocked)
+      s += '<text x="'+(cx+430)+'" y="'+(y+4)+'" fill="var(--rose)" font-size="10.5" '+
+           'font-family="monospace">BLOCKED</text>';
+  });
+  s += "</svg>";
+  return s;
+}
+
+/* ===================== preview: command palette =====================
+   The site has grown to twelve entries, ~230 tasks, ~180 questions and a
+   cheatsheet of a hundred commands, and the only way to reach any of it is to
+   remember which tab it lives behind. Ctrl+K searches the lot and jumps.
+
+   The index is built from the same data the pages render, so it cannot list
+   something that is not there, and it is built once on first open rather than
+   at load — nothing is paid for by a student who never presses the key. */
+
+let pvIndex = null;
+
+function pvBuildIndex(){
+  const out = [];
+
+  /* courses and tools */
+  PROGRAMME.courses.concat(PROGRAMME.tools).forEach(c => {
+    if(!c.ready) return;
+    out.push({kind:"go", label:L(c.title), sub:L(T.pvKindEntry), go:() => enterCourse(c.id)});
+  });
+
+  /* cheatsheet commands — the fastest thing to want mid-task */
+  if(typeof SHEET !== "undefined"){
+    SHEET.forEach(([section, rows]) => rows.forEach(([cmd, what]) => {
+      out.push({kind:"cmd", label:cmd, sub:what, go:() => {
+        $("drawer").classList.add("open");
+        const f = $("refsearch"); if(f){ f.value = cmd; renderSheet(cmd); }
+      }});
+    }));
+  }
+
+  /* drill tasks */
+  if(typeof MODULES !== "undefined"){
+    MODULES.forEach((m, mi) => (m.tasks||[]).forEach((task, ti) => {
+      out.push({kind:"drill", label:plain(task.q), sub:m.name,
+        go:() => { enterCourse("tool-drill"); S.m = mi; S.t = ti;
+                   S.awaitingNext = false; setMode("drill"); }});
+    }));
+  }
+
+  /* lab tasks, per lecture */
+  if(typeof COURSE !== "undefined"){
+    COURSE.forEach((lec, li) => lec.tasks.forEach((task, ti) => {
+      out.push({kind:"lab", label:plain(task.q), sub:"v"+lec.wk+" "+L(lec.title),
+        go:() => { enterCourse("grund-it"); S.c = li; setMode("course");
+                   setTimeout(() => { const el = $("t"+ti);
+                     if(el) el.scrollIntoView({block:"center"}); }, 60); }});
+    }));
+  }
+
+  /* the network lab's tasks too */
+  if(typeof NETLAB !== "undefined"){
+    NETLAB.tasks.forEach((task, i) => {
+      out.push({kind:"lab", label:plain(L(task.q)), sub:L(NETLAB.title),
+        go:() => enterCourse("pv-netlab")});
+    });
+  }
+
+  /* every quiz question on the site */
+  pvAllQuizzes().forEach(q => {
+    out.push({kind:"quiz", label:plain(L(q.item.q)), sub:L(q.course), go:() => {
+      const courseId = q.setId ? q.setId.replace(/:$/,"") : "tool-quiz";
+      enterCourse(courseId);
+      const parts = q.key.replace(q.setId, "").split(":");
+      Q.tier = +parts[0]; Q.i = +parts[1];
+      Q.picked = new Set(); Q.checked = false;
+      setMode("quiz");
+    }});
+  });
+
+  return out;
+}
+
+/* Subsequence match, the way editors do it: "grpr" finds "grep -r". Scores
+   earlier and tighter matches higher so exact prefixes float to the top. */
+function pvFuzzy(needle, hay){
+  if(!needle) return 0;
+  const n = needle.toLowerCase(), h = hay.toLowerCase();
+  const direct = h.indexOf(n);
+  if(direct === 0) return 1000;
+  if(direct > 0) return 700 - direct;
+  let i = 0, score = 0, last = -1;
+  for(let k = 0; k < h.length && i < n.length; k++){
+    if(h[k] === n[i]){
+      score += (last === k-1) ? 6 : 2;
+      if(k === 0 || h[k-1] === " " || h[k-1] === "-") score += 4;
+      last = k; i++;
+    }
+  }
+  return i === n.length ? score : -1;
+}
+
+const PVP = {open:false, q:"", sel:0, hits:[]};
+
+function pvPalette(){
+  let box = $("pv-palette");
+  if(!box){
+    box = document.createElement("div");
+    box.id = "pv-palette"; box.className = "pvpal"; box.hidden = true;
+    box.innerHTML = '<div class="pvpalbox" role="dialog" aria-label="Search">'+
+      '<input id="pv-palq" autocomplete="off" spellcheck="false">'+
+      '<div class="pvpalhits" id="pv-palhits"></div>'+
+      '<div class="pvpalfoot"><span>&uarr;&darr;</span> '+t("pvPalMove")+
+        ' <span>&crarr;</span> '+t("pvPalOpen")+' <span>esc</span> '+t("pvPalClose")+"</div></div>";
+    document.body.appendChild(box);
+    box.onclick = e => { if(e.target === box) pvPaletteClose(); };
+    $("pv-palq").oninput = e => { PVP.q = e.target.value; PVP.sel = 0; pvPaletteRender(); };
+    $("pv-palq").onkeydown = e => {
+      if(e.key === "Escape"){ pvPaletteClose(); e.preventDefault(); }
+      else if(e.key === "ArrowDown"){ PVP.sel = Math.min(PVP.sel+1, PVP.hits.length-1); pvPaletteRender(); e.preventDefault(); }
+      else if(e.key === "ArrowUp"){ PVP.sel = Math.max(PVP.sel-1, 0); pvPaletteRender(); e.preventDefault(); }
+      else if(e.key === "Enter"){ pvPaletteGo(); e.preventDefault(); }
+    };
+  }
+  return box;
+}
+
+function pvPaletteRender(){
+  if(!pvIndex) pvIndex = pvBuildIndex();
+  const q = PVP.q.trim();
+  PVP.hits = (q
+    ? pvIndex.map(it => ({it, s: Math.max(pvFuzzy(q, it.label), pvFuzzy(q, it.sub||"") - 200)}))
+        .filter(x => x.s > 0).sort((a,b) => b.s - a.s).slice(0, 40).map(x => x.it)
+    : pvIndex.filter(it => it.kind === "go"));
+  if(PVP.sel >= PVP.hits.length) PVP.sel = Math.max(0, PVP.hits.length - 1);
+
+  const kindLabel = {go:"pvKindEntry", cmd:"pvKindCmd", drill:"pvKindDrill",
+                     lab:"pvKindLab", quiz:"pvKindQuiz"};
+  $("pv-palhits").innerHTML = PVP.hits.length
+    ? PVP.hits.map((it, i) =>
+        '<button class="pvpalhit'+(i===PVP.sel?" sel":"")+'" data-i="'+i+'">'+
+          '<span class="pvpalkind k-'+it.kind+'">'+t(kindLabel[it.kind])+"</span>"+
+          '<span class="pvpallab">'+esc(it.label)+"</span>"+
+          '<span class="pvpalsub">'+esc(it.sub||"")+"</span></button>").join("")
+    : '<p class="pvpalnone">'+t("pvPalNone")+"</p>";
+  $("pv-palhits").querySelectorAll(".pvpalhit").forEach(b =>
+    b.onclick = () => { PVP.sel = +b.dataset.i; pvPaletteGo(); });
+  const sel = $("pv-palhits").querySelector(".sel");
+  if(sel) sel.scrollIntoView({block:"nearest"});
+}
+
+function pvPaletteGo(){
+  const it = PVP.hits[PVP.sel];
+  if(!it) return;
+  pvPaletteClose();
+  try{ it.go(); }catch(e){}
+}
+
+function pvPaletteOpen(){
+  const box = pvPalette();
+  box.hidden = false; PVP.open = true; PVP.q = ""; PVP.sel = 0;
+  $("pv-palq").value = "";
+  $("pv-palq").placeholder = t("pvPalPlaceholder");
+  pvPaletteRender();
+  $("pv-palq").focus();
+}
+function pvPaletteClose(){
+  const box = $("pv-palette");
+  if(box) box.hidden = true;
+  PVP.open = false;
+}
+
+/* guarded so the node suites can load this file for its matcher */
+if(typeof document !== "undefined") document.addEventListener("keydown", e => {
+  if((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")){
+    e.preventDefault();
+    PVP.open ? pvPaletteClose() : pvPaletteOpen();
+  }
+  /* the language switch rebuilds labels, so the index has to go with it */
+  if(e.key === "Escape" && PVP.open) pvPaletteClose();
+});
+
+/* ===================== preview: the tutorial's opening step =====================
+   The tour used to start by explaining the task panel, which only makes sense
+   if you already know what the site is. This puts a contents page first: every
+   feature, grouped, with the numbers that say how much of each there is.
+
+   The step is defined with getters rather than fixed strings so that switching
+   language re-reads it — showStep() pulls .t and .b fresh on every render. */
+
+function pvTourGroups(){
+  const n = {
+    courses: PROGRAMME.courses.filter(c => c.ready).length,
+    labs: (typeof COURSE !== "undefined") ? COURSE.reduce((a,l) => a + l.tasks.length, 0) : 0,
+    lectures: (typeof COURSE !== "undefined") ? COURSE.length : 0,
+    drill: (typeof MODULES !== "undefined") ? MODULES.reduce((a,m) => a + m.tasks.length, 0) : 0,
+    modules: (typeof MODULES !== "undefined") ? MODULES.length : 0,
+    quiz: (typeof QUIZ !== "undefined") ? QUIZ.reduce((a,t) => a + t.items.length, 0) : 0,
+    provisional: (typeof COURSE_QUIZZES !== "undefined")
+      ? Object.values(COURSE_QUIZZES).reduce((a,q) => a + q.reduce((b,t) => b + t.items.length, 0), 0) : 0,
+    net: (typeof NETLAB !== "undefined") ? NETLAB.tasks.length : 0,
+  };
+
+  return [
+    {k:"study", items:[
+      {n: n.lectures + " " + L(T.pvTiLectures), d: L(T.pvTiLabDesc).replace("{n}", n.labs)},
+      {n: n.drill + " " + L(T.pvTiDrillTasks), d: L(T.pvTiDrillDesc).replace("{n}", n.modules)},
+      {n: (n.quiz + n.provisional) + " " + L(T.pvTiQuestions), d: L(T.pvTiQuizDesc).replace("{n}", n.courses)},
+      {n: n.net + " " + L(T.pvTiNetTasks), d: L(T.pvTiNetDesc)},
+    ]},
+    {k:"test", items:[
+      {n: L(T.pvExam), d: L(T.pvTiExamDesc)},
+      {n: L(T.pvReview), d: L(T.pvTiReviewDesc)},
+      {n: L(T.pvTiReports), d: L(T.pvTiReportsDesc)},
+      {n: L(T.pvProgress), d: L(T.pvTiProgressDesc)},
+    ]},
+    {k:"tools", items:[
+      {n: L(T.pvTiMachine), d: L(T.pvTiMachineDesc)},
+      {n: L(T.pvTiSheet), d: L(T.pvTiSheetDesc)},
+      {n: "Ctrl+K", d: L(T.pvTiSearchDesc)},
+      {n: "SV / EN", d: L(T.pvTiLangDesc)},
+    ]},
+  ];
+}
+
+function pvTourListHtml(){
+  const heads = {study:"pvTiStudy", test:"pvTiTest", tools:"pvTiTools"};
+  return '<div id="pv-tourlist" class="pvtl">'+
+    '<p class="pvtlintro">' + t("pvTiIntro") + "</p>"+
+    pvTourGroups().map(g =>
+      '<div class="pvtlgroup"><h4>' + t(heads[g.k]) + "</h4>"+
+      g.items.map(it =>
+        '<div class="pvtlrow"><b>' + esc(it.n) + "</b><span>" + esc(it.d) + "</span></div>").join("")+
+      "</div>").join("")+
+    '<p class="pvtlfoot">' + t("pvTiFoot") + "</p></div>";
+}
+
+/* put it first, and target a control that is on screen in every mode so the
+   tour's own skip-hidden-steps rule never drops it */
+if(typeof window !== "undefined" && typeof TOUR !== "undefined"){
+  TOUR.unshift({
+    el: "tomenu",
+    get t(){ return t("pvTiTitle"); },
+    get b(){ return pvTourListHtml(); },
+  });
+}
+
+/* The card is sized for a paragraph; this step is a table of contents. showStep
+   does not know about per-step widths, so widen it whenever the list is what it
+   just rendered — detectable from the DOM without reaching into the tour's own
+   private step counter. */
+if(typeof window !== "undefined" && typeof showStep === "function"){
+  const _showStep = showStep;
+  window.showStep = function(dir){
+    _showStep(dir);
+    const card = document.getElementById("tourcard");
+    if(card) card.classList.toggle("wide", !!card.querySelector("#pv-tourlist"));
+  };
+}
+
 /* ===== END simulated machine ===== */
+
+
+
+
+
 
 
 

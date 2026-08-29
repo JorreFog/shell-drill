@@ -55,7 +55,7 @@ function pvTourListHtml(){
 
 /* put it first, and target a control that is on screen in every mode so the
    tour's own skip-hidden-steps rule never drops it */
-if(typeof TOUR !== "undefined"){
+if(typeof window !== "undefined" && typeof TOUR !== "undefined"){
   TOUR.unshift({
     el: "tomenu",
     get t(){ return t("pvTiTitle"); },
@@ -67,7 +67,7 @@ if(typeof TOUR !== "undefined"){
    does not know about per-step widths, so widen it whenever the list is what it
    just rendered — detectable from the DOM without reaching into the tour's own
    private step counter. */
-if(typeof showStep === "function"){
+if(typeof window !== "undefined" && typeof showStep === "function"){
   const _showStep = showStep;
   window.showStep = function(dir){
     _showStep(dir);

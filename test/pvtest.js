@@ -7,7 +7,7 @@ const base = path.join(__dirname, '..', 'src');
 const read = f => fs.readFileSync(path.join(base, f), 'utf8');
 
 /* the exam file only needs its sampling half, which touches no DOM */
-const examSrc = read('pv-02-exam.js');
+const examSrc = read('vm-exam.js');
 eval(examSrc.slice(0, examSrc.indexOf('function pvStartExam')));
 
 let pass = 0, fail = 0;

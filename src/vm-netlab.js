@@ -11,7 +11,7 @@
    the skill. */
 
 /* every machine built from here on also gets a network */
-if(typeof attachPython === "function" && typeof attachNet === "function"){
+if(typeof window !== "undefined" && typeof attachPython === "function" && typeof attachNet === "function"){
   const _attachPython = attachPython;
   window.attachPython = function(K){ return attachNet(_attachPython(K)); };
 }
