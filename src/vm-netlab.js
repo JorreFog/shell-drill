@@ -18,17 +18,17 @@ if(typeof window !== "undefined" && typeof attachPython === "function" && typeof
 
 const NETLAB = {
   title: {sv:"Nätverksrekognosering och brandvägg", en:"Network recon and firewall"},
-  brief: {sv:"Du sitter på 10.0.0.10 i ett litet kontorsnät. Ta reda på vad som finns "+
+  brief: {sv:"Du sitter på 10.0.0.24 i ett litet kontorsnät. Ta reda på vad som finns "+
              "där ute, hitta det som inte hör hemma, och stäng ute det.",
-          en:"You are on 10.0.0.10 in a small office network. Find out what is out "+
+          en:"You are on 10.0.0.24 in a small office network. Find out what is out "+
              "there, find the thing that does not belong, and shut it out."},
   tasks: [
     {q: {sv:"Skriv den här maskinens IPv4-adress till ~/net/ip.txt.",
          en:"Write this machine's IPv4 address to ~/net/ip.txt."},
      hint: {sv:"ip a visar adressen. Katalogen måste finnas först.",
             en:"ip a shows the address. The directory has to exist first."},
-     answer: ["mkdir -p ~/net", "ip a > ~/net/raw.txt", "echo 10.0.0.10 > ~/net/ip.txt"],
-     check: (K) => fileHas(K, "/home/analyst/net/ip.txt", /\b10\.0\.0\.10\b/)},
+     answer: ["mkdir -p ~/net", "ip a > ~/net/raw.txt", "echo 10.0.0.24 > ~/net/ip.txt"],
+     check: (K) => fileHas(K, "/home/analyst/net/ip.txt", /\b10\.0\.0\.24\b/)},
 
     {q: {sv:"Svepet: skriv IP-adresserna för alla värdar som svarar i 10.0.0.0/24 "+
             "till ~/net/hosts.txt, en per rad.",
@@ -42,7 +42,7 @@ const NETLAB = {
        const c = readFileText(K, "/home/analyst/net/hosts.txt");
        if(c == null) return false;
        const found = new Set((c.match(/10\.0\.0\.\d+/g) || []));
-       const want = ["10.0.0.1","10.0.0.10","10.0.0.20","10.0.0.21","10.0.0.22","10.0.0.30","10.0.0.99"];
+       const want = ["10.0.0.1","10.0.0.24","10.0.0.20","10.0.0.21","10.0.0.22","10.0.0.30","10.0.0.99"];
        /* every live host present, and the host that is switched off absent */
        return want.every(ip => found.has(ip)) && !found.has("10.0.0.41");
      }},

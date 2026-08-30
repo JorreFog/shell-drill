@@ -152,7 +152,11 @@ function pvRenderExam(){
       '<button class="pvdot' + (i===e.i?" now":"") + (x.picked.length?" ans":"") +
       (x.flagged?" flag":"") + '" data-i="' + i + '">' + (i+1) + "</button>").join("") + "</div>"+
     '<div class="pvcard">'+
-      '<div class="pvmeta">' + esc(L(q.course)) + "</div>"+
+      /* 92% of the questions have more than one right answer and scoring wants
+         the exact set, so a student who assumes one answer gets almost all of
+         them wrong. The published quiz says so in its header; so does this. */
+      '<div class="pvmeta">' + esc(L(q.course)) +
+        ' <span class="pvselall">' + t("selectAll") + "</span></div>"+
       "<h2>" + L(q.item.q) + "</h2>"+
       /* the same classes and inner markup the published quiz uses: .on for a
          selected option, .box for the tick, .txt for the label. This built

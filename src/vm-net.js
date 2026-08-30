@@ -12,13 +12,22 @@
 
    Attached the same way python is: attachNet(K) hangs commands off K.C. */
 
-function makeNet(){
+/* Built FROM the machine, not beside it. The seed already defines an address,
+   a gateway, a DNS table, which ports remote hosts answer on, and which
+   sockets are listening — and the published lectures are written against all
+   of it. The first version of this file invented a second set of those facts
+   and overwrote ten existing commands with them, which quietly broke five lab
+   tasks in lectures 2, 5 and 6. Everything here now derives from vm. */
+function makeNet(vm){
+  const ifaceAddr = (vm && vm.iface && vm.iface.eth0 && vm.iface.eth0.addr) || "10.0.0.24/24";
+  const selfIp = ifaceAddr.split("/")[0];
+  const selfCidr = +(ifaceAddr.split("/")[1] || 24);
   /* One /24, a gateway, and a handful of machines a student would expect to
      meet on a small office network — plus one that should not be there. */
   const hosts = [
     {ip:"10.0.0.1",  name:"gw",           mac:"3c:7a:8a:11:00:01", up:true, kind:"router",
      ports:[{n:22,svc:"ssh",ver:"OpenSSH 9.6"},{n:80,svc:"http",ver:"lighttpd 1.4"}]},
-    {ip:"10.0.0.10", name:"workstation-07",mac:"52:54:00:9d:2b:1a", up:true, self:true, kind:"workstation",
+    {ip:selfIp,      name:"workstation-07",mac:"52:54:00:9d:2b:1a", up:true, self:true, kind:"workstation",
      ports:[{n:22,svc:"ssh",ver:"OpenSSH 9.6"}]},
     {ip:"10.0.0.20", name:"srv-web",      mac:"3c:7a:8a:11:00:20", up:true, kind:"server",
      ports:[{n:22,svc:"ssh",ver:"OpenSSH 9.6"},
@@ -47,16 +56,16 @@ function makeNet(){
   ];
 
   return {
-    iface: {name:"enp3s0", ip:"10.0.0.10", cidr:24, mac:"52:54:00:9d:2b:1a", gw:"10.0.0.1",
+    iface: {name:"eth0", ip:selfIp, cidr:selfCidr, mac:"52:54:00:9d:2b:1a",
+            gw:(vm && vm.gateway) || "10.0.0.1",
             lo:{name:"lo", ip:"127.0.0.1", cidr:8}},
     hosts,
-    dns: {"gw.lan":"10.0.0.1","srv-web.lan":"10.0.0.20","srv-db.lan":"10.0.0.21",
+    /* the lab names, on top of whatever the machine already resolves */
+    dns: Object.assign({}, (vm && vm.dns) || {},
+         {"gw.lan":"10.0.0.1","srv-web.lan":"10.0.0.20","srv-db.lan":"10.0.0.21",
           "srv-files.lan":"10.0.0.22","prn-hp-2.lan":"10.0.0.30",
-          "workstation-07.lan":"10.0.0.10","localhost":"127.0.0.1"},
-    /* the machine's own listening sockets, which is what ss reports */
-    listening: [{proto:"tcp", port:22, svc:"sshd", pid:641, addr:"0.0.0.0"},
-                {proto:"tcp", port:631, svc:"cupsd", pid:702, addr:"127.0.0.1"},
-                {proto:"udp", port:68,  svc:"dhclient", pid:534, addr:"0.0.0.0"}],
+          "workstation-07.lan":selfIp,"localhost":"127.0.0.1"}),
+    /* sockets belong to vm.sockets; ss reads those, not a copy kept here */
     fw: {enabled:false, rules:[]},   // {action:"allow"|"deny", dir:"in"|"out", port, proto, host}
     arp: {},
   };
@@ -93,42 +102,20 @@ function netAllowed(net, host, port, proto){
 
 function attachNet(K){
   const {vm} = K;
-  if(!K.net) K.net = makeNet();
+  if(!K.net) K.net = makeNet(K.vm);
   const net = K.net;
   const ok  = out => ({out: out==null?"":out, err:"", code:0});
   const bad = (err,code) => ({out:"", err, code:code==null?1:code});
 
   const self = () => net.hosts.find(h => h.self);
 
-  /* ---------------- ip ---------------- */
-  K.C.ip = (argv) => {
-    const sub = (argv[0]||"addr").replace(/^-/,"");
-    const i = net.iface;
-    if(/^a(ddr)?$/.test(sub)){
-      return ok(
-        "1: "+i.lo.name+": <LOOPBACK,UP,LOWER_UP> mtu 65536 state UNKNOWN\n"+
-        "    inet "+i.lo.ip+"/"+i.lo.cidr+" scope host lo\n"+
-        "2: "+i.name+": <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP\n"+
-        "    link/ether "+i.mac+" brd ff:ff:ff:ff:ff:ff\n"+
-        "    inet "+i.ip+"/"+i.cidr+" brd 10.0.0.255 scope global "+i.name+"\n");
-    }
-    if(/^r(oute)?$/.test(sub)){
-      return ok("default via "+i.gw+" dev "+i.name+" proto dhcp metric 100\n"+
-                "10.0.0.0/"+i.cidr+" dev "+i.name+" proto kernel scope link src "+i.ip+" metric 100\n");
-    }
-    if(/^l(ink)?$/.test(sub)){
-      return ok("1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536\n"+
-                "2: "+i.name+": <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500\n"+
-                "    link/ether "+i.mac+" brd ff:ff:ff:ff:ff:ff\n");
-    }
-    return bad('Object "'+sub+'" is unknown, try "ip help".\n');
-  };
-  K.C.ifconfig = () => {
-    const i = net.iface;
-    return ok(i.name+": flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\n"+
-      "        inet "+i.ip+"  netmask 255.255.255.0  broadcast 10.0.0.255\n"+
-      "        ether "+i.mac+"  txqueuelen 1000  (Ethernet)\n");
-  };
+  /* ip, ifconfig, ss and netstat are NOT overridden. The machine already
+     implements them from vm.iface and vm.sockets, and lectures 2 and 6 check
+     their output — replacing them with a private copy is what broke those
+     tasks. Anything below only takes over when the target is one of the lab
+     hosts this file adds; otherwise it hands back to the original. */
+  const inner = {ping:K.C.ping, nc:K.C.nc, dig:K.C.dig, host:K.C.host,
+                 traceroute:K.C.traceroute, curl:K.C.curl};
 
   /* ---------------- ping ---------------- */
   K.C.ping = (argv) => {
@@ -142,8 +129,10 @@ function attachNet(K){
 
     const h = netFind(net, target);
     if(!h){
+      /* not one of the lab hosts. The machine already resolves example.com and
+         the rest, so hand back to its own ping rather than inventing a failure. */
+      if(inner.ping) return inner.ping(argv);
       if(/^\d+\.\d+\.\d+\.\d+$/.test(target)){
-        /* an address inside our subnet that nothing answers on */
         return ok("PING "+target+" ("+target+") 56(84) bytes of data.\n\n"+
           "--- "+target+" ping statistics ---\n"+
           count+" packets transmitted, 0 received, 100% packet loss, time "+(count*1000)+"ms\n");
@@ -172,24 +161,6 @@ function attachNet(K){
     return ok(out);
   };
 
-  /* ---------------- ss / netstat ---------------- */
-  K.C.ss = (argv) => {
-    const f = argv.join("");
-    const wantListen = /l/.test(f) || !/[tu]/.test(f);
-    const rows = net.listening.filter(s =>
-      (/t/.test(f) ? s.proto==="tcp" : false) || (/u/.test(f) ? s.proto==="udp" : false) ||
-      (!/[tu]/.test(f)));
-    const showPid = /p/.test(f);
-    let out = "Netid  State   Recv-Q  Send-Q  Local Address:Port   Peer Address:Port  Process\n";
-    rows.forEach(s => {
-      out += s.proto.padEnd(7)+(s.proto==="tcp"?"LISTEN  ":"UNCONN  ")+"0       0       "+
-        (s.addr+":"+s.port).padEnd(21)+"0.0.0.0:*".padEnd(19)+
-        (showPid ? 'users:(("'+s.svc+'",pid='+s.pid+',fd=3))' : "")+"\n";
-    });
-    return ok(out);
-  };
-  K.C.netstat = K.C.ss;
-
   /* ---------------- arp ---------------- */
   K.C.arp = () => {
     const seen = Object.keys(net.arp);
@@ -207,6 +178,7 @@ function attachNet(K){
     const name = argv.filter(a => !a.startsWith("+") && !a.startsWith("-"))[0];
     if(!name) return bad("dig: no name to look up\n");
     const ip = net.dns[name] || net.dns[name+".lan"];
+    if(!ip && inner.dig) return inner.dig(argv);
     const short = argv.includes("+short");
     if(!ip) return short ? ok("") : ok(
       "; <<>> DiG 9.18 <<>> "+name+"\n;; ->>HEADER<<- opcode: QUERY, status: NXDOMAIN\n\n"+
@@ -223,6 +195,7 @@ function attachNet(K){
     if(ip) return ok(name+" has address "+ip+"\n");
     const h = netFind(net, name);
     if(h && h.name) return ok(h.ip+".in-addr.arpa domain name pointer "+h.name+".lan.\n");
+    if(inner.host) return inner.host(argv);
     return bad("Host "+name+" not found: 3(NXDOMAIN)\n");
   };
 
@@ -276,7 +249,9 @@ function attachNet(K){
     const target = ops[0], port = parseInt(ops[1],10);
     if(!target || !port) return bad("nc: usage: nc -zv host port\n");
     const h = netFind(net, target);
-    if(!h) return bad("nc: getaddrinfo for host \""+target+"\" port "+port+": Name or service not known\n");
+    /* vm.remote already says which ports 10.0.0.5 and friends answer on */
+    if(!h) return inner.nc ? inner.nc(argv)
+      : bad("nc: getaddrinfo for host \""+target+"\" port "+port+": Name or service not known\n");
     if(!netAllowed(net, h, port, "tcp"))
       return bad("nc: connect to "+h.ip+" port "+port+" (tcp) failed: Operation not permitted\n");
     if(!h.up || !h.ports.some(p => p.n === port))
@@ -289,7 +264,8 @@ function attachNet(K){
   K.C.traceroute = (argv) => {
     const target = argv.filter(a => !a.startsWith("-"))[0];
     const h = netFind(net, target);
-    if(!h) return bad("traceroute: unknown host "+target+"\n");
+    if(!h) return inner.traceroute ? inner.traceroute(argv)
+      : bad("traceroute: unknown host "+target+"\n");
     let out = "traceroute to "+target+" ("+h.ip+"), 30 hops max, 60 byte packets\n";
     if(h.ip !== net.iface.gw && !h.self)
       out += " 1  gw.lan ("+net.iface.gw+")  0.412 ms  0.388 ms  0.371 ms\n";

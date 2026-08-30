@@ -568,4 +568,28 @@ const LAB_ANSWERS = {
 };
 
 // const does not escape an eval, so the node test suite needs this handle
-if (typeof globalThis !== "undefined") globalThis.LAB_ANSWERS = LAB_ANSWERS;
+/* Which tasks in a lecture are satisfied but not yet ticked off.
+
+   This lives here, out of the UI, so a test can drive the exact code the page
+   runs. It used to be inline in recheck(), where a stale reference — t.check
+   instead of tk.check, t being the translation function — made every check
+   throw into a silent catch, so no lab task in any lecture could ever complete.
+   The suite missed it entirely because it called check() directly and never the
+   code that calls check(). Testing the decision, not just the predicate, is the
+   difference. */
+function newlyDone(lec, ctx, isDone, onError){
+  const out = [];
+  lec.tasks.forEach((tk, ti) => {
+    if(isDone(ti)) return;
+    let done = false;
+    try{ done = !!tk.check(ctx); }
+    catch(e){ done = false; if(onError) onError(ti, e); }
+    if(done) out.push(ti);
+  });
+  return out;
+}
+
+if (typeof globalThis !== "undefined"){
+  globalThis.LAB_ANSWERS = LAB_ANSWERS;
+  globalThis.newlyDone = newlyDone;
+}

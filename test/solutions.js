@@ -4,6 +4,11 @@
 const fs = require('fs'), path = require('path');
 const dir = path.join(__dirname, '..', 'src'), load = f => fs.readFileSync(path.join(dir, f), 'utf8');
 eval(load('vm-core.js') + load('vm-cmds.js') + load('vm-seed.js') + load('vm-python.js') + load('vm-labs.js'));
+/* The page attaches the network to every machine it builds. This suite did not,
+   so it was testing a machine that no student ever sees — and stayed green while
+   five tasks in lectures 2, 5 and 6 were broken in the browser. Build what the
+   page builds. */
+eval(load('vm-net.js'));
 
 const COURSE = buildCourse();
 
@@ -105,7 +110,7 @@ const NEAR_MISS = {
 
 function fresh(){
   const K = attachShell(makeVM()); seedVM(K); attachPython(K);
-  return K;
+  return attachNet(K);   // the page does this too; see the note above
 }
 function applyStep(K, hist, step){
   if(typeof step === 'object'){
@@ -196,10 +201,38 @@ COURSE.forEach((lec, li) => {
   });
 });
 
+/* The wiring, not just the predicate. Everything above calls task.check()
+   directly, which is exactly why a typo in the code that CALLS check() shipped:
+   recheck() referenced t.check instead of tk.check, every call threw into a
+   silent catch, and no lab task in any lecture could be completed. The suite
+   was green throughout. newlyDone() is the decision the page actually runs, so
+   drive that, and make a throwing check a failure rather than a false. */
+let wiringFail = 0, thrown = 0;
+COURSE.forEach((lec, li) => {
+  const K = fresh(), hist = [];
+  const doneSet = new Set();
+  lec.tasks.forEach((task, ti) => {
+    const sol = SOL[(li + 1) + ':' + ti];
+    if(sol) (Array.isArray(sol) ? sol : [sol]).forEach(step => {
+      try{ applyStep(K, hist, step); }catch(e){}
+    });
+    const found = newlyDone(lec, makeLabCtx(K, hist),
+      i => doneSet.has(i),
+      (i, e) => { thrown++; console.log('CHECK THREW [lecture ' + (li+1) + ' task ' + i + '] ' + e.message); });
+    found.forEach(i => doneSet.add(i));
+    if(!doneSet.has(ti)){
+      wiringFail++;
+      console.log('NOT TICKED BY newlyDone [lecture ' + (li+1) + ' task ' + ti + '] ' +
+                  task.q.replace(/<[^>]+>/g,'').slice(0,70));
+    }
+  });
+});
+
 const total = COURSE.reduce((n,l)=>n+l.tasks.length,0);
 const nm = Object.values(NEAR_MISS).reduce((n,v)=>n+v.length,0);
 console.log('\nlectures: ' + COURSE.length + ', tasks: ' + total + ', near-miss cases: ' + nm);
 console.log(pass + ' solvable, ' + fail + ' not satisfied, ' + missing + ' without a solution, ' +
             falsePass + ' passing untouched, ' + loose + ' accepting a near miss, ' +
-            contaminated + ' completed by a neighbour');
-process.exitCode = (fail || missing || falsePass || loose || contaminated) ? 1 : 0;
+            contaminated + ' completed by a neighbour, ' +
+            wiringFail + ' not ticked by newlyDone, ' + thrown + ' checks threw');
+process.exitCode = (fail || missing || falsePass || loose || contaminated || wiringFail || thrown) ? 1 : 0;

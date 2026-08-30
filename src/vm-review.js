@@ -62,7 +62,8 @@ function pvReviewQuiz(it){
   const right = checked && pvIsRight(it.item, PVR.picked);
   return '<div class="pvcard">'+
     '<div class="pvmeta">' + esc(L(it.course)) + " · " +
-      t("repSlips").split("{n}").join(it.wrong) + "</div>"+
+      t("repSlips").split("{n}").join(it.wrong) +
+      (checked ? "" : ' <span class="pvselall">' + t("selectAll") + "</span>") + "</div>"+
     "<h2>" + L(it.item.q) + "</h2>"+
     '<div class="pvopts">' + it.item.o.map((o,i) => {
       const picked = PVR.picked.has(i);

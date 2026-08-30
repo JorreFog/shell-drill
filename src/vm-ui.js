@@ -67,12 +67,19 @@ function recheck(){
   const lec = COURSE[CS.lec];
   const ctx = makeLabCtx(CS.K, CS.hist);
   const newly = [];
-  lec.tasks.forEach((tk,ti)=>{
-    if(S.lab[ckey(CS.lec,ti)]) return;
-    let done = false;
-    try{ done = !!t.check(ctx); }catch(e){ done = false; }
-    if(done){ S.lab[ckey(CS.lec,ti)] = 1; newly.push(ti); }
-  });
+  /* the decision lives in vm-labs.js so a test can run the same code */
+  newlyDone(lec, ctx,
+    ti => !!S.lab[ckey(CS.lec, ti)],
+    (ti, e) => {
+      /* a check that throws is a bug in the check, not a task the student
+         failed — a silent catch here hid exactly that for several commits */
+      recheck.warned = recheck.warned || {};
+      const key = CS.lec + ":" + ti;
+      if(recheck.warned[key]) return;
+      recheck.warned[key] = 1;
+      console.error("lab check threw for lecture " + CS.lec + " task " + ti + ": " + e.message);
+    }
+  ).forEach(ti => { S.lab[ckey(CS.lec, ti)] = 1; newly.push(ti); });
   if(newly.length){
     save(); paintTasks(); newly.forEach(celebrateTask);
     // finishing the lab brings up the report on its own
