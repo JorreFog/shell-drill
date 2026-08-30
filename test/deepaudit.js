@@ -172,6 +172,30 @@ const flag = (sev, area, msg) => findings.push({sev, area, msg});
   });
 }
 
+/* ---------- 4c. menu entries are registered before the menu is drawn ----------
+   The boot sequence renders the picker once, on a timer of its own. Anything
+   that pushes an entry into PROGRAMME.tools from inside pvInit — which runs
+   later — is missing from the menu on a fresh load, and only appears if the
+   user happens to open the menu a second time. Six entries shipped that way. */
+{
+  const modes = sources['vm-modes.js'];
+  const registers = /function pvRegisterEntries\(/.test(modes);
+  const calledAtParseTime =
+    /^if\(typeof PROGRAMME[^\r\n]*pvRegisterEntries\(\);/m.test(modes);
+  if(!registers)
+    flag('high','menu','entries are added inline rather than in pvRegisterEntries()');
+  else if(!calledAtParseTime)
+    flag('high','menu','pvRegisterEntries() is never called at parse time, so the '+
+      'menu is drawn before the entries exist');
+
+  /* and nothing may push a tool from inside the deferred init */
+  const initStart = modes.indexOf('function pvInit(');
+  const initEnd = modes.indexOf('function pvView(', initStart);
+  const initBody = initStart >= 0 ? modes.slice(initStart, initEnd > 0 ? initEnd : undefined) : '';
+  if(/tools\.push\(/.test(initBody))
+    flag('high','menu','pvInit() pushes a menu entry; it runs after the menu is drawn');
+}
+
 /* ---------- 5. markup and accessibility ---------- */
 {
   /* inputs need a label or an aria-label */

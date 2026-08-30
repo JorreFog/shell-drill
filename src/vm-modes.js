@@ -230,6 +230,35 @@ const PV_MODES = ["exam", "review", "progress", "netlab", "python", "hardware"];
 const PV_LABEL = {exam:"pvExam", review:"pvReview", progress:"pvProgress", netlab:"pvNetLab", python:"pyTitle", hardware:"hwTitle"};
 let pvWrapped = false;
 
+/* Registering the entries needs PROGRAMME and T, both of which exist by the
+   time this file is spliced in — but it must NOT wait for pvInit, which runs
+   on a timer after the boot sequence has already drawn the menu. Every entry
+   added here was missing from the menu on a fresh load until it was drawn a
+   second time, which only happened if you navigated. */
+function pvRegisterEntries(){
+  const tools = PROGRAMME.tools;
+  const add = (id, mode, title, blurb) => {
+    if(tools.some(x => x.id === id)) return;
+    tools.push({id, title, blurb, ready:true, modes:[mode], entry:mode, preview:true});
+  };
+  /* the {sv,en} object, not t(...): a resolved string freezes the title in
+     whichever language was active when this ran, and the menu then never
+     retranslates it. It also means no call to t() here, which matters because
+     this now runs at parse time, before S exists. */
+  add("pv-exam",     "exam",     T.pvExam,     T.pvExamBlurb);
+  add("pv-review",   "review",   T.pvReview,   T.pvReviewBlurb);
+  add("pv-progress", "progress", T.pvProgress, T.pvProgressBlurb);
+  add("pv-netlab",   "netlab",   T.pvNetLab,   T.pvNetBlurb);
+  add("pv-python",   "python",   T.pyTitle,    T.pyBlurb);
+  /* two modes on purpose: its own diagrams, plus the ordinary quiz view, so
+     the questions reach exam mode and the review queue without a second copy
+     of the quiz machinery */
+  if(!tools.some(x => x.id === "pv-hardware"))
+    tools.push({id:"pv-hardware", title:T.hwTitle, blurb:T.hwBlurb, ready:true,
+                modes:["hardware","quiz"], entry:"hardware", preview:true});
+}
+if(typeof PROGRAMME !== "undefined") pvRegisterEntries();
+
 function pvView(id){
   let el = document.getElementById(id);
   if(!el){
@@ -366,23 +395,7 @@ function pvInit(){
     inner(m);
   };
 
-  /* the new entries only make sense once they are in the menu */
-  const tools = PROGRAMME.tools;
-  const add = (id, mode, title, blurb) => {
-    if(tools.some(x => x.id === id)) return;
-    tools.push({id, title, blurb, ready:true, modes:[mode], entry:mode, preview:true});
-  };
-  add("pv-exam",     "exam",     t("pvExam"),     T.pvExamBlurb);
-  add("pv-review",   "review",   t("pvReview"),   T.pvReviewBlurb);
-  add("pv-progress", "progress", t("pvProgress"), T.pvProgressBlurb);
-  add("pv-netlab",   "netlab",   t("pvNetLab"),   T.pvNetBlurb);
-  add("pv-python",   "python",   t("pyTitle"),    T.pyBlurb);
-  /* two modes on purpose: its own diagrams, plus the ordinary quiz view, so
-     the questions reach exam mode and the review queue without a second copy
-     of the quiz machinery */
-  if(!tools.some(x => x.id === "pv-hardware"))
-    tools.push({id:"pv-hardware", title:t("hwTitle"), blurb:T.hwBlurb, ready:true,
-                modes:["hardware","quiz"], entry:"hardware", preview:true});
+  pvRegisterEntries();
 
   /* enterCourse only knows the three published tabs; show ours and hide the
      others when one of these entries is the destination */
