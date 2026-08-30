@@ -68,6 +68,23 @@ Object.assign(T, {
                   en:"Nothing done yet — start anywhere and it shows up here."},
   pvPastExams:   {sv:"Tidigare prov",        en:"Past tests"},
   pvNoExams:     {sv:"Inget prov gjort än.", en:"No test taken yet."},
+  hwTitle:       {sv:"Datorns delar",         en:"Computer hardware"},
+  hwHeading:     {sv:"Vad som sitter i lådan, och varför det spelar roll",
+                  en:"What is in the box, and why it matters"},
+  hwBlurb:       {sv:"Klicka runt på ett moderkort, se hur långsam en hårddisk egentligen är, och testa dig själv på 12 frågor.",
+                  en:"Click around a motherboard, see how slow a hard disk really is, and test yourself on 12 questions."},
+  hwIntro:       {sv:"Varje del har en uppgift, och nästan varje del har en säkerhetssida som sällan nämns i en vanlig hårdvarugenomgång. Klicka på en del i bilden för att läsa om den.",
+                  en:"Every part has a job, and nearly every part has a security side that a normal hardware walkthrough leaves out. Click a part in the diagram to read about it."},
+  hwClickAround: {sv:"Klicka på en del", en:"Click a part"},
+  hwParts:       {sv:"delar",           en:"parts"},
+  hwDiagramAlt:  {sv:"Schematisk bild av datorns delar",
+                  en:"Schematic diagram of the parts of a computer"},
+  hwWhyItMatters:{sv:"Säkerhetsvinkeln:", en:"The security angle:"},
+  hwSpeedTitle:  {sv:"Hur långsamt är långsamt?", en:"How slow is slow?"},
+  hwSpeedIntro:  {sv:"Skalan är logaritmisk — annars skulle sex av staplarna vara osynliga. Kolumnen längst till höger är samma väntetid omräknad så att en processortakt motsvarar en sekund.",
+                  en:"The scale is logarithmic — otherwise six of these bars would be invisible. The right-hand column is the same wait, rescaled so that one processor tick is one second."},
+  hwSpeedFoot:   {sv:"Det är därför program försöker hålla allt de använder ofta i RAM, och varför en SSD kändes som en ny dator.",
+                  en:"This is why programs try to keep whatever they touch often in RAM, and why swapping in an SSD felt like a new computer."},
   pyTitle:       {sv:"Lär dig Python",       en:"Learn Python"},
   pyBlurb:       {sv:"Nio kapitel från noll: variabler, listor, loopar, funktioner och filer. Du skriver koden och kör den på riktigt.",
                   en:"Nine chapters from zero: variables, lists, loops, functions and files. You write the code and actually run it."},
@@ -209,8 +226,8 @@ function pvIsRight(item, picked){
 /* ---------- view plumbing ----------
    The published page knows three modes. These add two more without touching
    setMode itself: the wrapper handles its own and delegates everything else. */
-const PV_MODES = ["exam", "review", "progress", "netlab", "python"];
-const PV_LABEL = {exam:"pvExam", review:"pvReview", progress:"pvProgress", netlab:"pvNetLab", python:"pyTitle"};
+const PV_MODES = ["exam", "review", "progress", "netlab", "python", "hardware"];
+const PV_LABEL = {exam:"pvExam", review:"pvReview", progress:"pvProgress", netlab:"pvNetLab", python:"pyTitle", hardware:"hwTitle"};
 let pvWrapped = false;
 
 function pvView(id){
@@ -230,8 +247,10 @@ function pvSidebar(mode){
   const list = $("modlist"), stats = document.querySelector(".stats");
   if(!list) return;
   list.innerHTML = "";
+    /* the drill's solved/accuracy/streak counters mean nothing in these views */
     if(stats) stats.style.display =
-      (mode === "netlab" || mode === "exam" || mode === "python") ? "none" : "";
+      (mode === "netlab" || mode === "exam" || mode === "python" ||
+       mode === "hardware") ? "none" : "";
 
   if(mode === "netlab"){
     NETLAB.tasks.forEach((task, i) => {
@@ -242,6 +261,18 @@ function pvSidebar(mode){
         '<span class="done">' + (NL.done[i] ? "done" : "") + "</span>";
       b.onclick = () => { const el = document.querySelectorAll("#pv-netlabview .ltask")[i];
         if(el) el.scrollIntoView({block:"center"}); };
+      list.appendChild(b);
+    });
+    return;
+  }
+  if(mode === "hardware"){
+    HWPARTS.forEach((part, i) => {
+      const b = document.createElement("button");
+      b.className = "mod" + (part.id === HW.part ? " isnow" : "");
+      b.setAttribute("aria-current", String(part.id === HW.part));
+      b.innerHTML = '<span class="n">' + String(i+1).padStart(2,"0") + "</span>"+
+        '<span class="mlong">' + esc(L(part.name)) + "</span>";
+      b.onclick = () => { HW.part = part.id; pvRenderHardware(); pvSidebar("hardware"); };
       list.appendChild(b);
     });
     return;
@@ -324,7 +355,7 @@ function pvInit(){
       pvSidebar(m);
       ({exam: pvRenderExam, review: pvRenderReview,
         progress: pvRenderProgress, netlab: pvRenderNetlab,
-        python: pvRenderPython})[m]();
+        python: pvRenderPython, hardware: pvRenderHardware})[m]();
       if(typeof transitionView === "function") transitionView();
       save();
       return;
@@ -346,6 +377,12 @@ function pvInit(){
   add("pv-progress", "progress", t("pvProgress"), T.pvProgressBlurb);
   add("pv-netlab",   "netlab",   t("pvNetLab"),   T.pvNetBlurb);
   add("pv-python",   "python",   t("pyTitle"),    T.pyBlurb);
+  /* two modes on purpose: its own diagrams, plus the ordinary quiz view, so
+     the questions reach exam mode and the review queue without a second copy
+     of the quiz machinery */
+  if(!tools.some(x => x.id === "pv-hardware"))
+    tools.push({id:"pv-hardware", title:t("hwTitle"), blurb:T.hwBlurb, ready:true,
+                modes:["hardware","quiz"], entry:"hardware", preview:true});
 
   /* enterCourse only knows the three published tabs; show ours and hide the
      others when one of these entries is the destination */
@@ -354,9 +391,14 @@ function pvInit(){
     const c = courseById(id);
     enter(id);
     if(c && c.modes && PV_MODES.includes(c.modes[0])){
-      ["drill","quiz","course"].forEach(x => { const b = $("m-"+x); if(b) b.style.display = "none"; });
+      /* Show a tab for every mode the entry declares, not only the first. An
+         entry can mix one of these views with a published one — the hardware
+         tool offers its diagrams AND the ordinary quiz view, which is what lets
+         it reuse the quiz machinery instead of growing a second copy. */
+      ["drill","quiz","course"].forEach(x => { const b = $("m-"+x);
+        if(b) b.style.display = c.modes.includes(x) ? "" : "none"; });
       PV_MODES.forEach(x => { const b = $("m-"+x);
-        if(b){ b.style.display = c.modes[0] === x ? "" : "none";
+        if(b){ b.style.display = c.modes.includes(x) ? "" : "none";
                b.textContent = t(PV_LABEL[x]); } });
       $("distro").style.display = "none";
       $("openref").style.display = "none";

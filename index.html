@@ -942,6 +942,38 @@ body::after{content:none}
 
 .pvselall{color:var(--dim);margin-left:8px;letter-spacing:.12em}
 
+/* ---------- the hardware tool ---------- */
+.hwmap{width:100%;max-width:560px;height:auto;display:block;margin:0 auto 6px}
+.hwpart{cursor:pointer}
+.hwpart rect{transition:stroke .14s ease,fill-opacity .14s ease}
+.hwpart:hover rect{stroke:var(--cyan)}
+.hwpart:hover text{fill:var(--cyan)}
+.hwpart:focus{outline:none}
+.hwpart:focus-visible rect{stroke:var(--amber);stroke-width:2}
+.hwinfo{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.hwname{font-family:var(--sans);font-size:17px;color:var(--bone);font-weight:500;margin-bottom:8px}
+.hwname span{display:block;font-family:var(--mono);font-size:11.5px;color:var(--dim);
+  font-weight:400;margin-top:3px}
+.hwinfo p{font-family:var(--sans);font-size:13.5px;line-height:1.65;color:var(--dim);margin:0 0 10px}
+.hwinfo .hwsec{padding-left:11px;border-left:2px solid var(--amber);color:var(--bone)}
+.hwinfo .hwsec b{color:var(--amber);font-weight:500}
+
+.hwlead,.hwfoot{font-family:var(--sans);font-size:13px;color:var(--dim);line-height:1.6;margin:0 0 14px}
+.hwfoot{margin:14px 0 0;padding-left:11px;border-left:2px solid var(--lime)}
+.hwspeed{display:flex;flex-direction:column;gap:7px}
+.hwrow{display:flex;gap:11px;align-items:center;font-size:12.5px}
+.hwlabel{flex:0 0 33%;min-width:0;font-family:var(--sans);color:var(--bone);overflow-wrap:anywhere}
+.hwbar{flex:1 1 auto;height:9px;background:var(--panel);border:1px solid var(--line);overflow:hidden}
+.hwbar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--amber))}
+.hwns{flex:0 0 66px;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.hwhuman{flex:0 0 82px;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--amber)}
+@media(max-width:560px){
+  .hwrow{flex-wrap:wrap;gap:5px}
+  .hwlabel{flex:1 1 100%}
+  .hwbar{flex:1 1 auto}
+  .hwns,.hwhuman{flex:0 0 auto}
+}
+
 /* ---------- the Python tool ---------- */
 .pyed{border:1px solid var(--line);background:var(--panel);margin-bottom:16px;
   display:flex;flex-direction:column;border-radius:3px}
@@ -8548,6 +8580,23 @@ Object.assign(T, {
                   en:"Nothing done yet — start anywhere and it shows up here."},
   pvPastExams:   {sv:"Tidigare prov",        en:"Past tests"},
   pvNoExams:     {sv:"Inget prov gjort än.", en:"No test taken yet."},
+  hwTitle:       {sv:"Datorns delar",         en:"Computer hardware"},
+  hwHeading:     {sv:"Vad som sitter i lådan, och varför det spelar roll",
+                  en:"What is in the box, and why it matters"},
+  hwBlurb:       {sv:"Klicka runt på ett moderkort, se hur långsam en hårddisk egentligen är, och testa dig själv på 12 frågor.",
+                  en:"Click around a motherboard, see how slow a hard disk really is, and test yourself on 12 questions."},
+  hwIntro:       {sv:"Varje del har en uppgift, och nästan varje del har en säkerhetssida som sällan nämns i en vanlig hårdvarugenomgång. Klicka på en del i bilden för att läsa om den.",
+                  en:"Every part has a job, and nearly every part has a security side that a normal hardware walkthrough leaves out. Click a part in the diagram to read about it."},
+  hwClickAround: {sv:"Klicka på en del", en:"Click a part"},
+  hwParts:       {sv:"delar",           en:"parts"},
+  hwDiagramAlt:  {sv:"Schematisk bild av datorns delar",
+                  en:"Schematic diagram of the parts of a computer"},
+  hwWhyItMatters:{sv:"Säkerhetsvinkeln:", en:"The security angle:"},
+  hwSpeedTitle:  {sv:"Hur långsamt är långsamt?", en:"How slow is slow?"},
+  hwSpeedIntro:  {sv:"Skalan är logaritmisk — annars skulle sex av staplarna vara osynliga. Kolumnen längst till höger är samma väntetid omräknad så att en processortakt motsvarar en sekund.",
+                  en:"The scale is logarithmic — otherwise six of these bars would be invisible. The right-hand column is the same wait, rescaled so that one processor tick is one second."},
+  hwSpeedFoot:   {sv:"Det är därför program försöker hålla allt de använder ofta i RAM, och varför en SSD kändes som en ny dator.",
+                  en:"This is why programs try to keep whatever they touch often in RAM, and why swapping in an SSD felt like a new computer."},
   pyTitle:       {sv:"Lär dig Python",       en:"Learn Python"},
   pyBlurb:       {sv:"Nio kapitel från noll: variabler, listor, loopar, funktioner och filer. Du skriver koden och kör den på riktigt.",
                   en:"Nine chapters from zero: variables, lists, loops, functions and files. You write the code and actually run it."},
@@ -8689,8 +8738,8 @@ function pvIsRight(item, picked){
 /* ---------- view plumbing ----------
    The published page knows three modes. These add two more without touching
    setMode itself: the wrapper handles its own and delegates everything else. */
-const PV_MODES = ["exam", "review", "progress", "netlab", "python"];
-const PV_LABEL = {exam:"pvExam", review:"pvReview", progress:"pvProgress", netlab:"pvNetLab", python:"pyTitle"};
+const PV_MODES = ["exam", "review", "progress", "netlab", "python", "hardware"];
+const PV_LABEL = {exam:"pvExam", review:"pvReview", progress:"pvProgress", netlab:"pvNetLab", python:"pyTitle", hardware:"hwTitle"};
 let pvWrapped = false;
 
 function pvView(id){
@@ -8710,8 +8759,10 @@ function pvSidebar(mode){
   const list = $("modlist"), stats = document.querySelector(".stats");
   if(!list) return;
   list.innerHTML = "";
+    /* the drill's solved/accuracy/streak counters mean nothing in these views */
     if(stats) stats.style.display =
-      (mode === "netlab" || mode === "exam" || mode === "python") ? "none" : "";
+      (mode === "netlab" || mode === "exam" || mode === "python" ||
+       mode === "hardware") ? "none" : "";
 
   if(mode === "netlab"){
     NETLAB.tasks.forEach((task, i) => {
@@ -8722,6 +8773,18 @@ function pvSidebar(mode){
         '<span class="done">' + (NL.done[i] ? "done" : "") + "</span>";
       b.onclick = () => { const el = document.querySelectorAll("#pv-netlabview .ltask")[i];
         if(el) el.scrollIntoView({block:"center"}); };
+      list.appendChild(b);
+    });
+    return;
+  }
+  if(mode === "hardware"){
+    HWPARTS.forEach((part, i) => {
+      const b = document.createElement("button");
+      b.className = "mod" + (part.id === HW.part ? " isnow" : "");
+      b.setAttribute("aria-current", String(part.id === HW.part));
+      b.innerHTML = '<span class="n">' + String(i+1).padStart(2,"0") + "</span>"+
+        '<span class="mlong">' + esc(L(part.name)) + "</span>";
+      b.onclick = () => { HW.part = part.id; pvRenderHardware(); pvSidebar("hardware"); };
       list.appendChild(b);
     });
     return;
@@ -8804,7 +8867,7 @@ function pvInit(){
       pvSidebar(m);
       ({exam: pvRenderExam, review: pvRenderReview,
         progress: pvRenderProgress, netlab: pvRenderNetlab,
-        python: pvRenderPython})[m]();
+        python: pvRenderPython, hardware: pvRenderHardware})[m]();
       if(typeof transitionView === "function") transitionView();
       save();
       return;
@@ -8826,6 +8889,12 @@ function pvInit(){
   add("pv-progress", "progress", t("pvProgress"), T.pvProgressBlurb);
   add("pv-netlab",   "netlab",   t("pvNetLab"),   T.pvNetBlurb);
   add("pv-python",   "python",   t("pyTitle"),    T.pyBlurb);
+  /* two modes on purpose: its own diagrams, plus the ordinary quiz view, so
+     the questions reach exam mode and the review queue without a second copy
+     of the quiz machinery */
+  if(!tools.some(x => x.id === "pv-hardware"))
+    tools.push({id:"pv-hardware", title:t("hwTitle"), blurb:T.hwBlurb, ready:true,
+                modes:["hardware","quiz"], entry:"hardware", preview:true});
 
   /* enterCourse only knows the three published tabs; show ours and hide the
      others when one of these entries is the destination */
@@ -8834,9 +8903,14 @@ function pvInit(){
     const c = courseById(id);
     enter(id);
     if(c && c.modes && PV_MODES.includes(c.modes[0])){
-      ["drill","quiz","course"].forEach(x => { const b = $("m-"+x); if(b) b.style.display = "none"; });
+      /* Show a tab for every mode the entry declares, not only the first. An
+         entry can mix one of these views with a published one — the hardware
+         tool offers its diagrams AND the ordinary quiz view, which is what lets
+         it reuse the quiz machinery instead of growing a second copy. */
+      ["drill","quiz","course"].forEach(x => { const b = $("m-"+x);
+        if(b) b.style.display = c.modes.includes(x) ? "" : "none"; });
       PV_MODES.forEach(x => { const b = $("m-"+x);
-        if(b){ b.style.display = c.modes[0] === x ? "" : "none";
+        if(b){ b.style.display = c.modes.includes(x) ? "" : "none";
                b.textContent = t(PV_LABEL[x]); } });
       $("distro").style.display = "none";
       $("openref").style.display = "none";
@@ -10607,6 +10681,450 @@ function pyRender(){
   }
 }
 
+/* ===================== Computer hardware =====================
+   Two visual tools and a quiz.
+
+   The diagram is generated from this data — every part carries its own geometry
+   — so the picture cannot drift from the text describing it. Add a part here
+   and it appears on the board, in the list and in the sidebar.
+
+   The second visual is the one that actually changes how people think: the
+   memory hierarchy, drawn to scale in human time. "RAM is fast" means nothing
+   until you see that if a CPU cycle were one second, a disk seek would be a
+   fortnight. */
+
+const HWPARTS = [
+ {id:"cpu", x:196, y:96, w:96, h:88, kind:"core",
+  name:{sv:"Processor (CPU)", en:"Processor (CPU)"},
+  short:{sv:"CPU", en:"CPU"},
+  spec:{sv:"t.ex. 8 kärnor, 16 trådar, 3.4 GHz", en:"e.g. 8 cores, 16 threads, 3.4 GHz"},
+  what:{sv:"Räknar. Allt annat i lådan finns för att hålla processorn matad med "+
+           "instruktioner och data. Kärnor är hur många saker den gör samtidigt, "+
+           "gigahertz hur många takter per sekund varje kärna hinner.",
+        en:"It does the arithmetic. Everything else in the box exists to keep the "+
+           "processor fed with instructions and data. Cores are how many things it "+
+           "does at once; gigahertz is how many ticks per second each core gets."},
+  sec:{sv:"Processorn upprätthåller skyddsringarna som skiljer kärnan från dina "+
+          "program. Sårbarheter som Spectre var allvarliga just för att de bröt den gränsen.",
+       en:"The processor enforces the rings that separate the kernel from your "+
+          "programs. Flaws like Spectre mattered because they broke that boundary."}},
+
+ {id:"cooler", x:196, y:60, w:96, h:30, kind:"core",
+  name:{sv:"Kylning", en:"Cooling"},
+  short:{sv:"Kylning", en:"Cooling"},
+  spec:{sv:"fläkt eller vätskekylning", en:"fan or liquid cooling"},
+  what:{sv:"En processor som blir för varm saktar ner sig själv för att överleva — "+
+           "det kallas throttling. En dator som är snabb i två minuter och sedan trög "+
+           "har oftast ett kylproblem, inte ett prestandaproblem.",
+        en:"A processor that gets too hot slows itself down to survive — that is "+
+           "throttling. A machine that is fast for two minutes and then sluggish "+
+           "usually has a cooling problem, not a performance problem."},
+  sec:{sv:"Damm och trasiga fläktar är en driftsäkerhetsfråga: överhettning stänger "+
+          "av servrar lika effektivt som en attack.",
+       en:"Dust and dead fans are an availability problem: overheating takes servers "+
+          "down just as effectively as an attack does."}},
+
+ {id:"ram", x:312, y:60, w:112, h:124, kind:"core",
+  name:{sv:"Arbetsminne (RAM)", en:"Memory (RAM)"},
+  short:{sv:"RAM", en:"RAM"},
+  spec:{sv:"t.ex. 32 GB DDR5", en:"e.g. 32 GB DDR5"},
+  what:{sv:"Det snabba men glömska minnet. Program och data som används just nu "+
+           "ligger här. Slår du av strömmen är innehållet borta — därför sparas "+
+           "ingenting på riktigt förrän det nått en disk.",
+        en:"The fast, forgetful memory. Whatever is running right now lives here. "+
+           "Cut the power and it is gone — which is why nothing is really saved "+
+           "until it has reached a disk."},
+  sec:{sv:"Lösenord, nycklar och sessioner finns i klartext i RAM medan de används. "+
+          "Därför är minnesdumpar guld för en angripare och en central del av forensik.",
+       en:"Passwords, keys and sessions sit in RAM in the clear while they are in "+
+          "use. That is why a memory dump is gold to an attacker, and central to "+
+          "forensics."}},
+
+ {id:"storage", x:312, y:200, w:112, h:56, kind:"storage",
+  name:{sv:"Lagring (SSD/HDD)", en:"Storage (SSD/HDD)"},
+  short:{sv:"Lagring", en:"Storage"},
+  spec:{sv:"NVMe SSD ~3 500 MB/s · hårddisk ~150 MB/s", en:"NVMe SSD ~3,500 MB/s · hard disk ~150 MB/s"},
+  what:{sv:"Det långsamma minnet som kommer ihåg. En SSD har inga rörliga delar och "+
+           "hittar vilken plats som helst lika snabbt; en hårddisk måste flytta ett "+
+           "huvud dit datan ligger, vilket är den stora skillnaden.",
+        en:"The slow memory that remembers. An SSD has no moving parts and reaches "+
+           "any location equally fast; a hard disk has to move a head to where the "+
+           "data is, which is the whole difference."},
+  sec:{sv:"Att radera en fil tar oftast bara bort hänvisningen till den. Riktig "+
+          "radering kräver överskrivning — eller full diskkryptering från början, "+
+          "vilket är varför BitLocker och LUKS finns.",
+       en:"Deleting a file usually just removes the pointer to it. Real erasure "+
+          "means overwriting — or full disk encryption from the start, which is "+
+          "what BitLocker and LUKS are for."}},
+
+ {id:"gpu", x:80, y:212, w:200, h:44, kind:"card",
+  name:{sv:"Grafikkort (GPU)", en:"Graphics card (GPU)"},
+  short:{sv:"Grafikkort (GPU)", en:"Graphics card (GPU)"},
+  spec:{sv:"tusentals enkla kärnor", en:"thousands of simple cores"},
+  what:{sv:"Många små räknare som gör samma sak på mycket data samtidigt. Bra på "+
+           "bilder, och på allt annat som ser ut som bilder matematiskt: maskininlärning, "+
+           "simulering — och lösenordsknäckning.",
+        en:"Many small calculators doing the same thing to a lot of data at once. "+
+           "Good at images, and at everything else that looks like images "+
+           "mathematically: machine learning, simulation — and password cracking."},
+  sec:{sv:"En modern GPU provar miljarder lösenordsgissningar i sekunden mot en snabb "+
+          "hash. Det är hela skälet till att lösenord ska hashas med bcrypt eller "+
+          "Argon2 och inte med SHA-256.",
+       en:"A modern GPU tries billions of password guesses a second against a fast "+
+          "hash. That is the entire reason passwords should be hashed with bcrypt or "+
+          "Argon2 rather than SHA-256."}},
+
+ {id:"board", x:60, y:40, w:384, h:236, kind:"board",
+  name:{sv:"Moderkort", en:"Motherboard"},
+  short:{sv:"Moderkort", en:"Motherboard"},
+  spec:{sv:"chipset, kortplatser, bussar", en:"chipset, slots, buses"},
+  what:{sv:"Skivan som allt annat sitter på och pratar genom. Chipsetet bestämmer "+
+           "hur många och hur snabba anslutningar du får — hur många PCIe-banor, "+
+           "hur många diskar, vilka processorer som passar.",
+        en:"The board everything else sits on and talks through. The chipset decides "+
+           "how many connections you get and how fast — how many PCIe lanes, how many "+
+           "drives, which processors fit."},
+  sec:{sv:"Här sitter också firmware. Skadlig kod i firmware överlever både "+
+          "ominstallation och byte av disk, vilket gör den ovanligt svår att bli av med.",
+       en:"The firmware lives here too. Malicious code in firmware survives both a "+
+          "reinstall and a new disk, which makes it unusually hard to get rid of."}},
+
+ {id:"psu", x:60, y:288, w:132, h:52, kind:"power",
+  name:{sv:"Nätaggregat (PSU)", en:"Power supply (PSU)"},
+  short:{sv:"Nätaggregat", en:"Power supply"},
+  spec:{sv:"t.ex. 650 W, 80+ Gold", en:"e.g. 650 W, 80+ Gold"},
+  what:{sv:"Gör om växelström från väggen till de likspänningar datorn vill ha. "+
+           "För liten eller dålig PSU ger krascher som ser ut som mjukvarufel, "+
+           "särskilt under belastning.",
+        en:"Turns the wall's alternating current into the direct voltages the "+
+           "computer wants. An undersized or poor one causes crashes that look like "+
+           "software faults, especially under load."},
+  sec:{sv:"Strömförsörjning är tillgänglighet. UPS och redundanta aggregat finns i "+
+          "serverrum av samma skäl som brandväggar: för att tjänsten ska fortsätta fungera.",
+       en:"Power is availability. A UPS and redundant supplies are in the server room "+
+          "for the same reason firewalls are: so the service keeps running."}},
+
+ {id:"tpm", x:212, y:288, w:96, h:52, kind:"security",
+  name:{sv:"TPM och UEFI", en:"TPM and UEFI"},
+  short:{sv:"TPM / UEFI", en:"TPM / UEFI"},
+  spec:{sv:"säkerhetschip och firmware", en:"security chip and firmware"},
+  what:{sv:"UEFI är programmet som startar innan operativsystemet. TPM är ett litet "+
+           "chip som förvarar nycklar och mäter vad som startats — det kan inte "+
+           "läsas ut på samma sätt som en fil på disken.",
+        en:"UEFI is the program that runs before the operating system. The TPM is a "+
+           "small chip that stores keys and measures what has been booted — it "+
+           "cannot be read out the way a file on disk can."},
+  sec:{sv:"Secure Boot vägrar starta kod som inte är signerad, och TPM låser upp "+
+          "diskkryptering bara om maskinen startade som den skulle. Det är därför "+
+          "Windows 11 kräver TPM 2.0.",
+       en:"Secure Boot refuses to start unsigned code, and the TPM only releases the "+
+          "disk encryption key if the machine booted the way it should. That is why "+
+          "Windows 11 requires TPM 2.0."}},
+
+ {id:"nic", x:328, y:288, w:116, h:52, kind:"io",
+  name:{sv:"Nätverkskort och portar", en:"Network card and ports"},
+  short:{sv:"Nätverk / portar", en:"Network / ports"},
+  spec:{sv:"1 GbE, USB, HDMI", en:"1 GbE, USB, HDMI"},
+  what:{sv:"Vägen ut. Nätverkskortet har en MAC-adress som är unik för kortet, "+
+           "medan IP-adressen tilldelas av nätverket — de två förväxlas ofta.",
+        en:"The way out. The network card has a MAC address that belongs to the card, "+
+           "while the IP address is handed out by the network — the two get confused "+
+           "constantly."},
+  sec:{sv:"Varje port är också en ingång. USB är den klassiska vägen in i en maskin "+
+          "som annars är väl skyddad, vilket är därför portar spärras på känsliga system.",
+       en:"Every port is also a way in. USB is the classic route into a machine that "+
+          "is otherwise well defended, which is why ports get locked down on sensitive "+
+          "systems."}},
+];
+
+/* Access times, in nanoseconds, and the same times scaled so that one CPU cycle
+   is one second. The second column is the point of the whole exercise. */
+const HWSPEED = [
+ {id:"reg",   label:{sv:"Register i CPU:n", en:"Register in the CPU"},   ns:0.3,        human:{sv:"1 sekund", en:"1 second"}},
+ {id:"l1",    label:{sv:"L1-cache", en:"L1 cache"},                      ns:1,          human:{sv:"3 sekunder", en:"3 seconds"}},
+ {id:"l2",    label:{sv:"L2-cache", en:"L2 cache"},                      ns:4,          human:{sv:"13 sekunder", en:"13 seconds"}},
+ {id:"ram",   label:{sv:"Arbetsminne (RAM)", en:"Main memory (RAM)"},    ns:80,         human:{sv:"4 minuter", en:"4 minutes"}},
+ {id:"ssd",   label:{sv:"NVMe SSD", en:"NVMe SSD"},                      ns:100000,     human:{sv:"4 dygn", en:"4 days"}},
+ {id:"hdd",   label:{sv:"Hårddisk, sökning", en:"Hard disk seek"},       ns:10000000,   human:{sv:"1 år", en:"1 year"}},
+ {id:"net",   label:{sv:"Paket över internet", en:"Packet across the internet"}, ns:50000000, human:{sv:"5 år", en:"5 years"}},
+];
+
+if (typeof globalThis !== "undefined"){
+  globalThis.HWPARTS = HWPARTS;
+  globalThis.HWSPEED = HWSPEED;
+}
+
+/* The hardware quiz. It is registered into COURSE_QUIZZES under the tool's own
+   id rather than kept private, which means exam mode draws from it and the
+   review queue hands back whatever you got wrong — for free, with no second
+   copy of the quiz machinery. */
+const HWQUIZ = [
+{tier:{sv:"Delarna och vad de gör", en:"The parts and what they do"}, items:[
+ {q:{sv:"Vad skiljer arbetsminne (RAM) från lagring (SSD/hårddisk)?",
+     en:"What separates memory (RAM) from storage (SSD/hard disk)?"},
+  o:[{t:{sv:"RAM töms när strömmen går", en:"RAM is emptied when the power goes"}, c:true},
+     {t:{sv:"RAM är mycket snabbare att nå", en:"RAM is far quicker to reach"}, c:true},
+     {t:{sv:"Lagring behåller innehållet utan ström", en:"Storage keeps its contents without power"}, c:true},
+     {t:{sv:"RAM är alltid större än lagringen", en:"RAM is always larger than the storage"}, c:false}],
+  e:{sv:"Snabbt och glömskt mot långsamt och ihågkommande. Det är därför ett program "+
+        "körs i RAM men sparar till disk, och därför osparat arbete försvinner vid strömavbrott.",
+     en:"Fast and forgetful against slow and remembering. That is why a program runs in "+
+        "RAM but saves to disk, and why unsaved work disappears when the power cuts."}},
+
+ {q:{sv:"Vad betyder det att en processor har 8 kärnor och 16 trådar?",
+     en:"What does it mean that a processor has 8 cores and 16 threads?"},
+  o:[{t:{sv:"Den har 8 fysiska räkneenheter", en:"It has 8 physical execution units"}, c:true},
+     {t:{sv:"Operativsystemet ser 16 köer att lägga arbete i",
+         en:"The operating system sees 16 queues to put work in"}, c:true},
+     {t:{sv:"Två trådar per kärna delar på kärnans resurser",
+         en:"Two threads per core share that core's resources"}, c:true},
+     {t:{sv:"Den är dubbelt så snabb som en processor med 8 trådar",
+         en:"It is twice as fast as a processor with 8 threads"}, c:false}],
+  e:{sv:"Trådar är inte extra kärnor. De låter en kärna fylla väntetider med annat "+
+        "arbete, vilket ofta ger 20-30 procent — inte 100.",
+     en:"Threads are not extra cores. They let one core fill its waiting time with "+
+        "other work, which usually buys 20-30 percent, not 100."}},
+
+ {q:{sv:"Datorn är snabb i ett par minuter och blir sedan trög. Vad är mest troligt?",
+     en:"A machine is quick for a couple of minutes and then goes sluggish. What is most likely?"},
+  o:[{t:{sv:"Processorn blir för varm och saktar ner sig själv",
+         en:"The processor is overheating and slowing itself down"}, c:true},
+     {t:{sv:"Kylningen är dammig eller en fläkt har slutat",
+         en:"The cooling is dusty or a fan has stopped"}, c:true},
+     {t:{sv:"Det är alltid ett virus", en:"It is always a virus"}, c:false},
+     {t:{sv:"Ett värmeproblem kan se ut som ett mjukvaruproblem",
+         en:"A heat problem can look like a software problem"}, c:true}],
+  e:{sv:"Mönstret — snabbt först, långsamt sedan — är typiskt för throttling. "+
+        "Kolla temperaturer innan du felsöker mjukvaran.",
+     en:"The pattern — fast first, slow after — is the signature of throttling. "+
+        "Check temperatures before you start debugging software."}},
+
+ {q:{sv:"Vad gör ett grafikkort bra på?",
+     en:"What is a graphics card good at?"},
+  o:[{t:{sv:"Samma beräkning på väldigt mycket data samtidigt",
+         en:"The same calculation on a great deal of data at once"}, c:true},
+     {t:{sv:"Maskininlärning och simulering", en:"Machine learning and simulation"}, c:true},
+     {t:{sv:"Att prova enorma mängder lösenordsgissningar",
+         en:"Trying enormous numbers of password guesses"}, c:true},
+     {t:{sv:"Långa kedjor av beslut som beror på varandra",
+         en:"Long chains of decisions that depend on each other"}, c:false}],
+  e:{sv:"Många enkla kärnor slår få avancerade när arbetet går att dela upp. "+
+        "Beror varje steg på det förra hjälper inte bredden.",
+     en:"Many simple cores beat a few clever ones when the work divides. When each "+
+        "step depends on the last, all that width buys you nothing."}}]},
+
+{tier:{sv:"Hastighet, bussar och gränssnitt", en:"Speed, buses and interfaces"}, items:[
+ {q:{sv:"Varför är RAM så mycket snabbare än en SSD?",
+     en:"Why is RAM so much quicker than an SSD?"},
+  o:[{t:{sv:"Det sitter närmare processorn på en snabbare buss",
+         en:"It sits closer to the processor on a faster bus"}, c:true},
+     {t:{sv:"Det är byggt för att nås i mycket små bitar åt gången",
+         en:"It is built to be reached in very small pieces at a time"}, c:true},
+     {t:{sv:"Skillnaden är ungefär tusenfaldig i väntetid",
+         en:"The gap is roughly a thousandfold in waiting time"}, c:true},
+     {t:{sv:"SSD:er har rörliga delar", en:"SSDs have moving parts"}, c:false}],
+  e:{sv:"En SSD har inga rörliga delar — det är hårddisken som har det. "+
+        "Skillnaden mot RAM handlar om avstånd, buss och hur datan adresseras.",
+     en:"An SSD has no moving parts — that is the hard disk. The gap to RAM is about "+
+        "distance, the bus, and how the data is addressed."}},
+
+ {q:{sv:"Vad stämmer om MAC-adress och IP-adress?",
+     en:"What is true about MAC addresses and IP addresses?"},
+  o:[{t:{sv:"MAC-adressen hör till nätverkskortet", en:"The MAC address belongs to the network card"}, c:true},
+     {t:{sv:"IP-adressen delas ut av nätverket", en:"The IP address is handed out by the network"}, c:true},
+     {t:{sv:"MAC används inom det lokala nätet, IP mellan nät",
+         en:"MAC is used inside the local network, IP between networks"}, c:true},
+     {t:{sv:"En MAC-adress går aldrig att ändra", en:"A MAC address can never be changed"}, c:false}],
+  e:{sv:"MAC kan förfalskas med ett kommando, så den duger inte som säkerhetsgräns — "+
+        "vilket är varför portsäkerhet enbart baserad på MAC är svag.",
+     en:"A MAC can be spoofed with one command, so it is not a security boundary — "+
+        "which is why port security based on MAC alone is weak."}},
+
+ {q:{sv:"En dator kraschar slumpmässigt under tung belastning men aldrig när den är "+
+        "sysslolös. Vad är värt att misstänka?",
+     en:"A machine crashes at random under heavy load but never when idle. What is worth suspecting?"},
+  o:[{t:{sv:"Nätaggregatet orkar inte med toppbelastningen",
+         en:"The power supply cannot handle the peak load"}, c:true},
+     {t:{sv:"Överhettning när alla delar arbetar samtidigt",
+         en:"Overheating when everything works at once"}, c:true},
+     {t:{sv:"Trasigt arbetsminne", en:"Faulty memory"}, c:true},
+     {t:{sv:"Alltid ett fel i operativsystemet", en:"Always a fault in the operating system"}, c:false}],
+  e:{sv:"Belastningsberoende fel pekar mot ström, värme eller minne. Testa minnet och "+
+        "mät temperaturer innan du installerar om.",
+     en:"Load-dependent faults point at power, heat or memory. Test the memory and "+
+        "measure temperatures before reinstalling anything."}},
+
+ {q:{sv:"Vad avgör hur mycket ett moderkort kan koppla in?",
+     en:"What decides how much a motherboard can connect?"},
+  o:[{t:{sv:"Chipsetet", en:"The chipset"}, c:true},
+     {t:{sv:"Antalet PCIe-banor", en:"The number of PCIe lanes"}, c:true},
+     {t:{sv:"Antalet minnesplatser och diskportar", en:"The number of memory slots and drive ports"}, c:true},
+     {t:{sv:"Färgen på kortet", en:"The colour of the board"}, c:false}],
+  e:{sv:"Chipsetet är budgeten för anslutningar. Det är därför två moderkort med samma "+
+        "sockel ändå kan skilja sig kraftigt i vad de klarar.",
+     en:"The chipset is the budget for connections. That is why two boards with the "+
+        "same socket can still differ a lot in what they support."}}]},
+
+{tier:{sv:"Hårdvara och säkerhet", en:"Hardware and security"}, items:[
+ {q:{sv:"Vad gör en TPM?",
+     en:"What does a TPM do?"},
+  o:[{t:{sv:"Förvarar nycklar så att de inte kan läsas ut som en fil",
+         en:"Holds keys so they cannot be read out like a file"}, c:true},
+     {t:{sv:"Mäter vad som startats och kan vägra lämna ut nyckeln",
+         en:"Measures what was booted and can refuse to release the key"}, c:true},
+     {t:{sv:"Låter diskkryptering låsas upp utan att du skriver en lösenfras",
+         en:"Lets disk encryption unlock without you typing a passphrase"}, c:true},
+     {t:{sv:"Krypterar all nätverkstrafik", en:"Encrypts all network traffic"}, c:false}],
+  e:{sv:"TPM är en förvaringsplats med ett minne av hur maskinen startade. Startas den "+
+        "med något annat lämnas nyckeln inte ut — det är hela poängen.",
+     en:"A TPM is a vault with a memory of how the machine booted. Boot it with "+
+        "something else and the key is not released — that is the whole point."}},
+
+ {q:{sv:"Du kastar en gammal server. Vad räcker <b>inte</b> för att skydda datan?",
+     en:"You are scrapping an old server. What is <b>not</b> enough to protect the data?"},
+  o:[{t:{sv:"Radera filerna och tömma papperskorgen", en:"Delete the files and empty the bin"}, c:true},
+     {t:{sv:"Snabbformatera disken", en:"Quick-format the disk"}, c:true},
+     {t:{sv:"Skriva över hela disken", en:"Overwrite the whole disk"}, c:false},
+     {t:{sv:"Fysiskt förstöra disken", en:"Physically destroy the disk"}, c:false}],
+  e:{sv:"Radering och snabbformatering tar bort hänvisningarna, inte innehållet. "+
+        "Överskrivning, förstöring — eller att disken var krypterad hela tiden — är det som gäller.",
+     en:"Deleting and quick-formatting remove the pointers, not the content. "+
+        "Overwriting, destruction — or the disk having been encrypted all along — is what counts."}},
+
+ {q:{sv:"Varför ska lösenord hashas med bcrypt eller Argon2 i stället för SHA-256?",
+     en:"Why should passwords be hashed with bcrypt or Argon2 rather than SHA-256?"},
+  o:[{t:{sv:"SHA-256 är byggt för att vara snabbt", en:"SHA-256 is built to be fast"}, c:true},
+     {t:{sv:"Ett grafikkort provar miljarder gissningar per sekund mot snabba hashar",
+         en:"A graphics card tries billions of guesses a second against fast hashes"}, c:true},
+     {t:{sv:"bcrypt och Argon2 är avsiktligt långsamma och minneskrävande",
+         en:"bcrypt and Argon2 are deliberately slow and memory-hungry"}, c:true},
+     {t:{sv:"SHA-256 är knäckt", en:"SHA-256 is broken"}, c:false}],
+  e:{sv:"SHA-256 är inte trasigt — det är fel verktyg. Snabbhet är en dygd för en "+
+        "kontrollsumma och en defekt för ett lösenord.",
+     en:"SHA-256 is not broken — it is the wrong tool. Speed is a virtue for a "+
+        "checksum and a defect for a password."}},
+
+ {q:{sv:"Varför är skadlig kod i firmware särskilt besvärlig?",
+     en:"Why is malicious code in firmware particularly awkward?"},
+  o:[{t:{sv:"Den överlever ominstallation av operativsystemet",
+         en:"It survives reinstalling the operating system"}, c:true},
+     {t:{sv:"Den överlever byte av hårddisk", en:"It survives replacing the hard disk"}, c:true},
+     {t:{sv:"Den kör innan operativsystemets skydd har startat",
+         en:"It runs before the operating system's defences have started"}, c:true},
+     {t:{sv:"Vanliga antivirusprogram ser den enkelt", en:"Ordinary antivirus spots it easily"}, c:false}],
+  e:{sv:"Firmware startar först och ligger utanför disken. Secure Boot och signerade "+
+        "uppdateringar finns just för att göra det svårare att komma dit.",
+     en:"Firmware runs first and lives outside the disk. Secure Boot and signed "+
+        "updates exist precisely to make getting in there harder."}}]},
+];
+
+/* register it where the exam and the review queue already look */
+if(typeof COURSE_QUIZZES !== "undefined") COURSE_QUIZZES["pv-hardware"] = HWQUIZ;
+if (typeof globalThis !== "undefined") globalThis.HWQUIZ = HWQUIZ;
+
+/* ===================== the hardware tool's view =====================
+   A board you can click, and a chart of how slow things really are. Both are
+   drawn from HWPARTS / HWSPEED, so the picture and the words come from one
+   source and cannot disagree. The questions live in the ordinary quiz view —
+   this entry declares both modes rather than growing its own quiz. */
+
+const HW = {part: "cpu"};
+
+function hwPart(){ return HWPARTS.find(p => p.id === HW.part) || HWPARTS[0]; }
+
+/* the board, generated from the parts' own geometry */
+function hwBoardSvg(){
+  const W = 504, H = 356;
+  const board = HWPARTS.find(p => p.id === "board");
+  const fill = {core:"#16202c", storage:"#16202c", card:"#16202c",
+                power:"#16202c", security:"#16202c", io:"#16202c", board:"#0d141d"};
+
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="hwmap" role="img" '+
+          'aria-label="' + esc(t("hwDiagramAlt")) + '">';
+
+  /* case outline */
+  s += '<rect x="8" y="8" width="' + (W-16) + '" height="' + (H-16) + '" rx="4" '+
+       'fill="none" stroke="var(--line)" stroke-width="1"/>';
+
+  HWPARTS.forEach(p => {
+    const on = p.id === HW.part;
+    const stroke = on ? "var(--amber)" : "var(--line)";
+    const width = on ? 2 : 1;
+    s += '<g class="hwpart' + (on ? " on" : "") + '" data-part="' + p.id + '" '+
+         'tabindex="0" role="button" aria-pressed="' + on + '" '+
+         'aria-label="' + esc(plain(L(p.name))) + '">';
+    s += '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.w + '" height="' + p.h + '" rx="3" '+
+         'fill="' + (fill[p.kind] || "#16202c") + '" fill-opacity="' + (p.id === "board" ? ".55" : ".95") + '" '+
+         'stroke="' + stroke + '" stroke-width="' + width + '"/>';
+    /* the board's label goes in its corner so it does not sit under the parts */
+    const lx = p.id === "board" ? p.x + 9 : p.x + p.w / 2;
+    const ly = p.id === "board" ? p.y + 17 : p.y + p.h / 2 + 4;
+    s += '<text x="' + lx + '" y="' + ly + '" '+
+         'text-anchor="' + (p.id === "board" ? "start" : "middle") + '" '+
+         'fill="' + (on ? "var(--amber)" : "var(--dim)") + '" '+
+         /* the boxes are about 100px wide, so the diagram uses a short label and
+           the list and the detail panel keep the full name */
+        'font-size="11" font-family="var(--mono)">' +
+         esc(plain(L(p.short || p.name))) + "</text>";
+    s += "</g>";
+  });
+  s += "</svg>";
+  return s;
+}
+
+/* how long things take, drawn on a log scale because a linear one would show
+   six invisible bars and one that fills the page */
+function hwSpeedChart(){
+  const max = Math.log10(HWSPEED[HWSPEED.length - 1].ns);
+  const min = Math.log10(HWSPEED[0].ns);
+  return '<div class="hwspeed">' + HWSPEED.map(r => {
+    const pct = Math.max(4, ((Math.log10(r.ns) - min) / (max - min)) * 100);
+    const ns = r.ns < 1000 ? r.ns + " ns"
+             : r.ns < 1000000 ? (r.ns/1000) + " µs"
+             : (r.ns/1000000) + " ms";
+    return '<div class="hwrow">'+
+      '<span class="hwlabel">' + esc(L(r.label)) + "</span>"+
+      '<span class="hwbar"><i style="width:' + pct.toFixed(1) + '%"></i></span>'+
+      '<span class="hwns">' + ns + "</span>"+
+      '<span class="hwhuman">' + esc(L(r.human)) + "</span></div>";
+  }).join("") + "</div>";
+}
+
+function pvRenderHardware(){
+  const v = pvView("pv-hardwareview");
+  const p = hwPart();
+
+  v.innerHTML =
+    '<div class="cw">'+
+      '<div class="chead"><div class="cmeta"><span class="wk">' + t("hwTitle") + "</span>"+
+        '<span class="dt">' + HWPARTS.length + " " + t("hwParts") + "</span></div>"+
+        "<h1>" + t("hwHeading") + "</h1>"+
+        '<p class="cbrief">' + t("hwIntro") + "</p></div>"+
+
+      '<div class="csec"><h2>' + t("hwClickAround") + "</h2>"+
+        hwBoardSvg()+
+        '<div class="hwinfo">'+
+          '<div class="hwname">' + esc(L(p.name)) + '<span>' + esc(L(p.spec)) + "</span></div>"+
+          "<p>" + esc(L(p.what)) + "</p>"+
+          '<p class="hwsec"><b>' + t("hwWhyItMatters") + "</b> " + esc(L(p.sec)) + "</p>"+
+        "</div>"+
+      "</div>"+
+
+      '<div class="csec"><h2>' + t("hwSpeedTitle") + "</h2>"+
+        '<p class="hwlead">' + t("hwSpeedIntro") + "</p>"+
+        hwSpeedChart()+
+        '<p class="hwfoot">' + t("hwSpeedFoot") + "</p>"+
+      "</div>"+
+    "</div>";
+
+  v.querySelectorAll(".hwpart").forEach(g => {
+    const pick = () => { HW.part = g.dataset.part; pvRenderHardware();
+      if(typeof pvSidebar === "function") pvSidebar("hardware"); };
+    g.onclick = pick;
+    g.onkeydown = e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(); } };
+  });
+}
+
 /* ===================== preview: command palette =====================
    The site has grown to twelve entries, ~230 tasks, ~180 questions and a
    cheatsheet of a hundred commands, and the only way to reach any of it is to
@@ -10857,6 +11375,9 @@ if(typeof window !== "undefined" && typeof showStep === "function"){
 }
 
 /* ===== END simulated machine ===== */
+
+
+
 
 
 

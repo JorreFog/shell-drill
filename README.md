@@ -111,6 +111,12 @@ before it goes live. Nothing is named that at the moment.
   web log. An exercise is marked correct by running the program and reading what
   it printed; where the point is the construct, the check insists on the
   construct too, so printing the answer does not count.
+- **Computer hardware** — a motherboard you click part by part, each with what it
+  does and the security angle a normal hardware walkthrough leaves out, plus the
+  memory hierarchy drawn to scale in human time: if a CPU tick were one second, a
+  disk seek would be a year. Its 12 questions are registered under the tool's own
+  id in COURSE_QUIZZES, so exam mode draws from them and the review queue hands
+  back what you missed, with no second copy of the quiz machinery.
 - **Ctrl+K** — searches every entry, command, task and question by subsequence.
 - The tutorial opens on a contents page with counts read from the data.
 

@@ -57,6 +57,9 @@ const engine = BEGIN + '\n' +
   read('vm-netui.js') + '\n' +
   read('vm-pylab.js') + '\n' +
   read('vm-pyui.js') + '\n' +
+  read('vm-hwlab.js') + '\n' +
+  read('vm-hwquiz.js') + '\n' +
+  read('vm-hwui.js') + '\n' +
   read('vm-palette.js') + '\n' +
   read('vm-tourintro.js') + '\n' +
   /* Anything named pv-*.js stays preview-only: spliced into preview.html and
@@ -613,6 +616,38 @@ body::after{content:none}
   font-family:var(--sans);font-size:13px;color:var(--bone);line-height:1.55}
 
 .pvselall{color:var(--dim);margin-left:8px;letter-spacing:.12em}
+
+/* ---------- the hardware tool ---------- */
+.hwmap{width:100%;max-width:560px;height:auto;display:block;margin:0 auto 6px}
+.hwpart{cursor:pointer}
+.hwpart rect{transition:stroke .14s ease,fill-opacity .14s ease}
+.hwpart:hover rect{stroke:var(--cyan)}
+.hwpart:hover text{fill:var(--cyan)}
+.hwpart:focus{outline:none}
+.hwpart:focus-visible rect{stroke:var(--amber);stroke-width:2}
+.hwinfo{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.hwname{font-family:var(--sans);font-size:17px;color:var(--bone);font-weight:500;margin-bottom:8px}
+.hwname span{display:block;font-family:var(--mono);font-size:11.5px;color:var(--dim);
+  font-weight:400;margin-top:3px}
+.hwinfo p{font-family:var(--sans);font-size:13.5px;line-height:1.65;color:var(--dim);margin:0 0 10px}
+.hwinfo .hwsec{padding-left:11px;border-left:2px solid var(--amber);color:var(--bone)}
+.hwinfo .hwsec b{color:var(--amber);font-weight:500}
+
+.hwlead,.hwfoot{font-family:var(--sans);font-size:13px;color:var(--dim);line-height:1.6;margin:0 0 14px}
+.hwfoot{margin:14px 0 0;padding-left:11px;border-left:2px solid var(--lime)}
+.hwspeed{display:flex;flex-direction:column;gap:7px}
+.hwrow{display:flex;gap:11px;align-items:center;font-size:12.5px}
+.hwlabel{flex:0 0 33%;min-width:0;font-family:var(--sans);color:var(--bone);overflow-wrap:anywhere}
+.hwbar{flex:1 1 auto;height:9px;background:var(--panel);border:1px solid var(--line);overflow:hidden}
+.hwbar i{display:block;height:100%;background:linear-gradient(90deg,var(--lime),var(--amber))}
+.hwns{flex:0 0 66px;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.hwhuman{flex:0 0 82px;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--amber)}
+@media(max-width:560px){
+  .hwrow{flex-wrap:wrap;gap:5px}
+  .hwlabel{flex:1 1 100%}
+  .hwbar{flex:1 1 auto}
+  .hwns,.hwhuman{flex:0 0 auto}
+}
 
 /* ---------- the Python tool ---------- */
 .pyed{border:1px solid var(--line);background:var(--panel);margin-bottom:16px;
