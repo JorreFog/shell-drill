@@ -22,7 +22,16 @@ function hwBoardSvg(){
   s += '<rect x="8" y="8" width="' + (W-16) + '" height="' + (H-16) + '" rx="4" '+
        'fill="none" stroke="var(--line)" stroke-width="1"/>';
 
-  HWPARTS.forEach(p => {
+  /* The board encloses the parts that sit on it, and SVG paints in document
+     order — so drawing it in its authored position put a big semi-transparent
+     rect on top of the CPU, cooler, RAM, storage and GPU and swallowed every
+     click meant for them. It goes down first, as a backdrop, and stays
+     clickable wherever no part covers it. Stable sort, so everything else keeps
+     its authored order. */
+  const drawOrder = HWPARTS.slice()
+    .sort((a, b) => (a.kind === "board" ? 0 : 1) - (b.kind === "board" ? 0 : 1));
+
+  drawOrder.forEach(p => {
     const on = p.id === HW.part;
     const stroke = on ? "var(--amber)" : "var(--line)";
     const width = on ? 2 : 1;

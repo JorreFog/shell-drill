@@ -141,6 +141,37 @@ const flag = (sev, area, msg) => findings.push({sev, area, msg});
   if(new Set(ids).size !== ids.length) flag('high','programme','duplicate entry id');
 }
 
+/* ---------- 4b. the hardware diagram stacks correctly ----------
+   SVG paints in document order, so a part drawn after one it encloses covers it
+   and takes its clicks. The motherboard encloses five other parts and was drawn
+   sixth: clicking the CPU selected the board. Anything that contains another
+   part has to be drawn before it. */
+{
+  const hwlab = sources['vm-hwlab.js'];
+  const parts = new Function(hwlab.slice(hwlab.indexOf('const HWPARTS'),
+                                         hwlab.indexOf('const HWSPEED')) + '; return HWPARTS;')();
+  const ui = sources['vm-hwui.js'];
+  const encloses = (a, b) =>
+    a !== b && a.x <= b.x && a.y <= b.y &&
+    a.x + a.w >= b.x + b.w && a.y + a.h >= b.y + b.h;
+
+  const overlaps = [];
+  parts.forEach(a => parts.forEach(b => { if(encloses(a, b)) overlaps.push([a.id, b.id]); }));
+  if(overlaps.length && !/drawOrder|sort\(/.test(ui))
+    flag('high','hardware', overlaps.length + ' enclosing part(s), and the renderer does not reorder: ' +
+      overlaps.map(o => o[0] + ' covers ' + o[1]).join(', '));
+
+  /* every part needs a label short enough for its box: roughly 6.6px per
+     character at font-size 11 in the mono face */
+  parts.forEach(p => {
+    ['sv','en'].forEach(l => {
+      const label = ((p.short || p.name)[l] || '');
+      if(label.length * 6.6 > p.w - 8)
+        flag('med','hardware','"' + label + '" is too wide for the ' + p.id + ' box');
+    });
+  });
+}
+
 /* ---------- 5. markup and accessibility ---------- */
 {
   /* inputs need a label or an aria-label */
