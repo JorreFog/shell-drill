@@ -104,6 +104,13 @@ before it goes live. Nothing is named that at the moment.
   time. An item leaves only by being answered correctly with no help.
 - **Progress** — the whole programme at once, and a JSON backup that restores
   here or on another machine.
+- **Learn Python** — nine chapters from zero: printing, types, text, lists,
+  dictionaries, conditions, loops, functions and files. You write the code in an
+  editor and run it on the same interpreter the lab terminal uses, against the
+  same filesystem, so the last exercise counts the 404s in the machine's real
+  web log. An exercise is marked correct by running the program and reading what
+  it printed; where the point is the construct, the check insists on the
+  construct too, so printing the answer does not count.
 - **Ctrl+K** — searches every entry, command, task and question by subsequence.
 - The tutorial opens on a contents page with counts read from the data.
 
@@ -129,3 +136,4 @@ Tests run on plain Node with no dependencies:
     node test/nettest.js                #  83 network engine + network lab checks
     node test/pvtest.js                 # exam sampling: bias and course spread
     node test/deepaudit.js              # dead code, i18n, data integrity, a11y, hygiene
+    node test/pylabtest.js              # every Python exercise, and that none can be faked

@@ -9,6 +9,12 @@
 
 function pvProgressRows(){
   const rows = [];
+  /* the Python tool keeps its own progress, so it has to be added by hand */
+  if(typeof PYLAB !== "undefined"){
+    const p = pyRenderProgressLine();
+    if(p.total) rows.push({title:L(T.pyTitle), done:p.done, total:p.total,
+                           unit:"exercises", id:"pv-python"});
+  }
   PROGRAMME.courses.concat(PROGRAMME.tools).forEach(c => {
     if(!c.ready || c.preview) return;
     const p = courseProgress(c);

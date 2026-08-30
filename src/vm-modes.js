@@ -68,6 +68,22 @@ Object.assign(T, {
                   en:"Nothing done yet — start anywhere and it shows up here."},
   pvPastExams:   {sv:"Tidigare prov",        en:"Past tests"},
   pvNoExams:     {sv:"Inget prov gjort än.", en:"No test taken yet."},
+  pyTitle:       {sv:"Lär dig Python",       en:"Learn Python"},
+  pyBlurb:       {sv:"Nio kapitel från noll: variabler, listor, loopar, funktioner och filer. Du skriver koden och kör den på riktigt.",
+                  en:"Nine chapters from zero: variables, lists, loops, functions and files. You write the code and actually run it."},
+  pyChapter:     {sv:"Kapitel",              en:"Chapter"},
+  pyExercises:   {sv:"Övningar — koden körs på riktigt i rutan nedanför",
+                  en:"Exercises — the code really runs in the box below"},
+  pyExercise:    {sv:"övning",               en:"exercise"},
+  pyRun:         {sv:"Kör koden",            en:"Run the code"},
+  pyRunHint:     {sv:"eller Ctrl+Enter",     en:"or Ctrl+Enter"},
+  pyResetCode:   {sv:"börja om",             en:"start over"},
+  pyOutputHere:  {sv:"Utskriften hamnar här när du kört koden.",
+                  en:"Whatever the program prints shows up here once you run it."},
+  pyNoOutput:    {sv:"Programmet kördes men skrev inte ut något. Använd print().",
+                  en:"The program ran but printed nothing. Use print()."},
+  pyPassed:      {sv:"rätt svar",            en:"correct"},
+  pyOpen:        {sv:"öppna",                en:"open"},
   pvNetLab:      {sv:"Nätverkslabb",        en:"Network lab"},
   pvNetTasks:    {sv:"Labb — terminalen nedan sitter på ett riktigt simulerat nät",
                   en:"Lab — the terminal below sits on a real simulated network"},
@@ -193,8 +209,8 @@ function pvIsRight(item, picked){
 /* ---------- view plumbing ----------
    The published page knows three modes. These add two more without touching
    setMode itself: the wrapper handles its own and delegates everything else. */
-const PV_MODES = ["exam", "review", "progress", "netlab"];
-const PV_LABEL = {exam:"pvExam", review:"pvReview", progress:"pvProgress", netlab:"pvNetLab"};
+const PV_MODES = ["exam", "review", "progress", "netlab", "python"];
+const PV_LABEL = {exam:"pvExam", review:"pvReview", progress:"pvProgress", netlab:"pvNetLab", python:"pyTitle"};
 let pvWrapped = false;
 
 function pvView(id){
@@ -214,7 +230,8 @@ function pvSidebar(mode){
   const list = $("modlist"), stats = document.querySelector(".stats");
   if(!list) return;
   list.innerHTML = "";
-  if(stats) stats.style.display = (mode === "netlab" || mode === "exam") ? "none" : "";
+    if(stats) stats.style.display =
+      (mode === "netlab" || mode === "exam" || mode === "python") ? "none" : "";
 
   if(mode === "netlab"){
     NETLAB.tasks.forEach((task, i) => {
@@ -225,6 +242,20 @@ function pvSidebar(mode){
         '<span class="done">' + (NL.done[i] ? "done" : "") + "</span>";
       b.onclick = () => { const el = document.querySelectorAll("#pv-netlabview .ltask")[i];
         if(el) el.scrollIntoView({block:"center"}); };
+      list.appendChild(b);
+    });
+    return;
+  }
+  if(mode === "python"){
+    PYLAB.forEach((ch, i) => {
+      const b = document.createElement("button");
+      const n = pyChapterDone(i);
+      b.className = "mod" + (i === PY.ch ? " isnow" : "");
+      b.setAttribute("aria-current", String(i === PY.ch));
+      b.innerHTML = '<span class="n">' + String(i+1).padStart(2,"0") + "</span>"+
+        '<span class="mlong">' + esc(L(ch.title)) + "</span>"+
+        '<span class="done">' + n + "/" + ch.ex.length + "</span>";
+      b.onclick = () => pySelect(i, 0);
       list.appendChild(b);
     });
     return;
@@ -292,7 +323,8 @@ function pvInit(){
       $("sectlabel").textContent = t(PV_LABEL[m]);
       pvSidebar(m);
       ({exam: pvRenderExam, review: pvRenderReview,
-        progress: pvRenderProgress, netlab: pvRenderNetlab})[m]();
+        progress: pvRenderProgress, netlab: pvRenderNetlab,
+        python: pvRenderPython})[m]();
       if(typeof transitionView === "function") transitionView();
       save();
       return;
@@ -313,6 +345,7 @@ function pvInit(){
   add("pv-review",   "review",   t("pvReview"),   T.pvReviewBlurb);
   add("pv-progress", "progress", t("pvProgress"), T.pvProgressBlurb);
   add("pv-netlab",   "netlab",   t("pvNetLab"),   T.pvNetBlurb);
+  add("pv-python",   "python",   t("pyTitle"),    T.pyBlurb);
 
   /* enterCourse only knows the three published tabs; show ours and hide the
      others when one of these entries is the destination */

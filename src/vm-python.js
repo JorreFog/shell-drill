@@ -36,6 +36,10 @@ function attachPython(K){
 
   function repr(v){
     if(v === null) return "None";
+    /* type() hands back {__type:"int"}; without this print(type(x)) rendered
+       "[object Object]", which is the first thing anyone tries when they want
+       to know what a value is */
+    if(v && typeof v === "object" && v.__type) return "<class '" + v.__type + "'>";
     if(typeof v === "boolean") return v ? "True" : "False";
     if(isFloat(v)) return Number.isInteger(v.v) ? v.v.toFixed(1) : String(v.v);
     if(isInt(v)) return String(v);
@@ -502,6 +506,9 @@ function attachPython(K){
           strip: a => a && a[0] ? obj.replace(new RegExp("^["+a[0]+"]+|["+a[0]+"]+$","g"),"") : obj.trim(),
           lstrip: () => obj.replace(/^\s+/,""), rstrip: () => obj.replace(/\s+$/,""),
           split: a => a && a[0] !== undefined ? obj.split(str(a[0])) : obj.trim().split(/\s+/).filter(x=>x!==""),
+          /* the usual way to turn a file you have just read into lines, and it
+             drops the trailing empty string that split("\n") leaves behind */
+          splitlines: () => obj.replace(/\r?\n$/, "").split(/\r?\n/).filter((l,i,a) => !(a.length===1 && l==="")),
           replace: a => obj.split(str(a[0])).join(str(a[1])),
           startswith: a => obj.startsWith(str(a[0])), endswith: a => obj.endsWith(str(a[0])),
           find: a => obj.indexOf(str(a[0])), count: a => obj.split(str(a[0])).length-1,

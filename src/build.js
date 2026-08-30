@@ -55,6 +55,8 @@ const engine = BEGIN + '\n' +
   read('vm-net.js') + '\n' +
   read('vm-netlab.js') + '\n' +
   read('vm-netui.js') + '\n' +
+  read('vm-pylab.js') + '\n' +
+  read('vm-pyui.js') + '\n' +
   read('vm-palette.js') + '\n' +
   read('vm-tourintro.js') + '\n' +
   /* Anything named pv-*.js stays preview-only: spliced into preview.html and
@@ -81,7 +83,10 @@ ${CSS_MARK}
   border:1px solid var(--line);color:var(--dim)}
 .ltask.done .lnum{border-color:var(--lime);color:var(--lime)}
 .ltask .lbody{flex:1;min-width:0}
-.ltask .ltext{font-family:var(--sans);font-size:14px;line-height:1.55;display:block}
+/* a long path or f-string in a task is one unbreakable token; without this it
+   pushes the card wider than a phone screen */
+.ltask .ltext{font-family:var(--sans);font-size:14px;line-height:1.55;display:block;
+  overflow-wrap:anywhere}
 .ltask.done .ltext{color:var(--dim)}
 .ltask .ltext code{font-family:var(--mono);font-size:12.5px;background:rgba(92,207,230,.1);
   color:var(--cyan);padding:1px 5px}
@@ -608,6 +613,30 @@ body::after{content:none}
   font-family:var(--sans);font-size:13px;color:var(--bone);line-height:1.55}
 
 .pvselall{color:var(--dim);margin-left:8px;letter-spacing:.12em}
+
+/* ---------- the Python tool ---------- */
+.pyed{border:1px solid var(--line);background:var(--panel);margin-bottom:16px;
+  display:flex;flex-direction:column;border-radius:3px}
+.pyed .bar{border-bottom:1px solid var(--line)}
+#py-code{width:100%;min-height:210px;background:var(--void);color:var(--bone);border:0;
+  resize:vertical;font-family:var(--mono);font-size:13.5px;line-height:1.65;padding:14px;
+  outline:none;tab-size:4}
+#py-code:focus{box-shadow:inset 0 0 0 1px rgba(63,185,80,.35)}
+.pyfoot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:11px 14px;
+  border-top:1px solid var(--line)}
+.pyfoot button{margin:0;padding:9px 18px;font-size:12px;line-height:1.25;min-height:34px}
+.pyhintline{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.pydone{margin-left:auto;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--lime)}
+.pyout{border-top:1px solid var(--line);padding:12px 14px;min-height:56px;background:var(--void)}
+.pyout pre{margin:0;font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--lime);
+  white-space:pre-wrap;overflow-wrap:anywhere}
+.pyout pre.pyerr{color:var(--rose)}
+.pymuted{font-family:var(--sans);font-size:12.5px;color:var(--dim)}
+/* the exercise you are editing, so the list and the box stay connected */
+.ltask.pyhere{border-color:var(--amber);background:rgba(126,231,135,.05)}
+.ltask.pyhere .lnum{border-color:var(--amber);color:var(--amber)}
+@media(max-width:560px){#py-code{min-height:170px;font-size:13px}.pyfoot button{flex:1 1 auto}}
 
 .nlmap{max-width:100%;height:auto}
 
